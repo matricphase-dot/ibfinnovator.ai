@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  FOUNDER
+  STUDENT
+  SUPER_ADMIN
+}
+enum ProjectStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id                   String       @id @default(cuid())
+  email                String       @unique
+  name                 String
+  password             String?
+  role                 Role         @default(STUDENT)
+  avatar               String?
+  bio                   String?
+  skills               String[]
+  interests            String[]
+  portfolioUrls        String[]
+  availability         String?
+  company              String?
+  goals                String?
+  isCoFounder          Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  projects             Project[]
+  connectionsAsStudent Connection[] @relation("StudentConnections")
+  connectionsAsFounder Connection[] @relation("FounderConnections")
+  messages             Message[]
+  notifications        Notification[]
+  milestones           Milestone[]
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  title            String
+  description      String
+  requiredSkills   String[]
+  domain           String?
+  stage            String?
+  problemStatement String?
+  solutionOverview String?
+  engagementType   String?
+  commitmentHours  Int?
+  duration         Int?
+  status           ProjectStatus @default(OPEN)
+  founderId        String
+  founder          User          @relation(fields: [founderId], references: [id], onDelete: Cascade)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  connections      Connection[]
+  milestones       Milestone[]
+  messages         Message[]
+  @@index([founderId, status])
+}
+
+model Connection {
+  id        String           @id @default(cuid())
+  studentId String
+  student   User             @relation("StudentConnections", fields: [studentId], references: [id])
+  founderId String
+  founder   User             @relation("FounderConnections", fields: [founderId], references: [id])
+  projectId String
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status    ConnectionStatus @default(PENDING)
+  type      String           @default("PROJECT")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  @@unique([studentId, projectId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  channel   String   @default("GENERAL")
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([channel, createdAt])
+}
+
+model Milestone {
+  id           String          @id @default(cuid())
+  projectId    String
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  dueDate      DateTime?
+  status       MilestoneStatus @default(PENDING)
+  assignedToId String?
+  assignedTo   User?           @relation(fields: [assignedToId], references: [id])
+  order        Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([userId, isRead])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  reviewerId String
+  revieweeId String
+  projectId  String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  @@unique([projectId, reviewerId, revieweeId])
+}
+
+model Endorsement {
+  id         String   @id @default(cuid())
+  giverId    String
+  receiverId String
+  skill      String
+  createdAt  DateTime @default(now())
+  @@unique([giverId, receiverId, skill])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  studentId String?
+  createdAt DateTime @default(now())
+  @@unique([userId, projectId])
+  @@unique([userId, studentId])
+}
+
+model University {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  domain    String   @unique
+  apiKey    String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
