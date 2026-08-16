@@ -85,6 +85,20 @@ export default function Home() {
           <div className="hero-orb hero-orb-a" />
           <div className="hero-orb hero-orb-b" />
           <div className="hero-lines" />
+          <div className="hero-particles" aria-hidden="true">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <i
+                key={i}
+                style={{
+                  left: `${(i + 1) * 6.5}%`,
+                  animationDelay: `${-(i % 7) * 0.85}s`,
+                  animationDuration: `${5 + (i % 4) * 1.2}s`,
+                }}
+              />
+            ))}
+          </div>
+          <div className="hero-orbit orbit-one" aria-hidden="true" />
+          <div className="hero-orbit orbit-two" aria-hidden="true" />
           <div className="absolute inset-x-0 top-28 hidden lg:block pointer-events-none">
             {domains.map((d, i) => (
               <span key={d} className={`domain-float domain-${i}`}>
@@ -100,12 +114,16 @@ export default function Home() {
               </span>
               Next-gen startup × talent matching
             </div>
-            <h1 className="hero-title mt-8 font-black leading-[.9] tracking-[-.065em]">
-              Where
-              <br className="sm:hidden" />
-              <span className="text-white">Visionaries</span>
-              <br />
-              <span className="hero-gradient">Meet Prodigies</span>
+            <h1
+              className="hero-title mt-8 font-black tracking-[-.055em]"
+              aria-label="Where Visionaries Meet Prodigies"
+            >
+              <span className="hero-title-line text-white">
+                Where Visionaries
+              </span>
+              <span className="hero-title-line hero-gradient">
+                Meet Prodigies
+              </span>
             </h1>
             <p className="mx-auto mt-8 max-w-3xl text-base md:text-lg leading-8 text-slate-400">
               An intelligent collaboration network connecting ambitious founders
