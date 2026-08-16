@@ -7,7 +7,7 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
   return (
     <>
       <header
-        className={`h-16 flex items-center px-5 lg:px-8 border-b z-50 ${dashboard ? "bg-[#08101c] border-white/[.07]" : "bg-[#060a12]/80 backdrop-blur-xl border-white/[.07] sticky top-0"}`}
+        className={`h-16 flex items-center px-5 lg:px-8 border-b z-50 ${dashboard ? "bg-[#0d1422] border-white/[.07]" : "bg-[#0a0f1e]/80 backdrop-blur-xl border-white/[.07] sticky top-0"}`}
       >
         <Link href="/" className="flex items-center gap-2.5 group">
           <span className="w-9 h-9 rounded-lg bg-cyan-300 grid place-items-center text-slate-950 shadow-[0_0_25px_rgba(0,245,212,.15)] transition group-hover:rotate-6">
@@ -43,7 +43,7 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
             <>
               <button className="relative p-2 text-slate-400 hover:text-cyan-300">
                 <Bell size={20} />
-                <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-300 border-2 border-[#08101c]" />
+                <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-300 border-2 border-[#0d1422]" />
               </button>
               <div className="h-7 w-px bg-white/10" />
               <div className="w-9 h-9 rounded-full bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center font-bold text-sm">
@@ -83,7 +83,7 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
         </div>
       </header>
       {open && !dashboard && (
-        <div className="fixed inset-x-0 top-16 z-40 md:hidden border-b border-white/10 bg-[#080e18]/95 backdrop-blur-xl p-5 grid gap-2 shadow-2xl">
+        <div className="fixed inset-x-0 top-16 z-40 md:hidden border-b border-white/10 bg-[#0d1322]/95 backdrop-blur-xl p-5 grid gap-2 shadow-2xl">
           <Link
             onClick={() => setOpen(false)}
             className="p-3 rounded-lg hover:bg-white/5"

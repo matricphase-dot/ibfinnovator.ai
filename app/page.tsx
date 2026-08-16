@@ -221,7 +221,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="border-b border-white/[.06] bg-[#080d17]">
+        <section className="border-b border-white/[.06] bg-[#0d1322]">
           <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[.06]">
             {[
               ["98%", "Match rate"],
@@ -286,7 +286,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="py-28 bg-[#080d17] border-y border-white/[.05]">
+        <section className="py-28 bg-[#0d1322] border-y border-white/[.05]">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center max-w-3xl mx-auto">
               <div className="section-kicker justify-center">Core features</div>
@@ -450,7 +450,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="border-t border-white/[.07] bg-[#05080e]">
+      <footer className="border-t border-white/[.07] bg-[#0a0f1e]">
         <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
           <div>
             <div className="flex items-center gap-2 text-xl font-black">
