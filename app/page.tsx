@@ -1,3 +1,494 @@
-import Link from 'next/link';import NavBar from '@/components/NavBar';import {ArrowRight,Check,Code2,Lightbulb,MessagesSquare,ShieldCheck,Sparkles,Users} from 'lucide-react';
-const steps=[['01','Create your profile','Tell us what you know, what you care about, and how you want to contribute.'],['02','Meet your matches','Our AI finds people and projects aligned on skills, availability and values.'],['03','Build together','Use shared rooms, milestones and meetings to turn an introduction into progress.']];
-export default function Home(){return <div><NavBar/><section className="relative overflow-hidden bg-[#060a12] dot-grid"><div className="absolute w-[500px] h-[500px] rounded-full bg-purple-200/40 blur-3xl -top-60 -right-20"/><div className="max-w-7xl mx-auto px-6 pt-20 pb-24 lg:pt-28 lg:pb-32 grid lg:grid-cols-[1.05fr_.95fr] gap-14 items-center relative"><div><span className="pill bg-violet-100 text-violet-700 mb-6"><Sparkles size={13}/>AI-powered collaboration</span><h1 className="text-5xl md:text-7xl font-black tracking-[-.05em] leading-[.98]">Ideas need people.<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f5d4] to-[#00b8ff]">Meet yours.</span></h1><p className="mt-7 text-lg text-slate-600 max-w-xl leading-8">IBF brings ambitious founders and emerging talent together to build startups, ship meaningful work, and grow through real collaboration.</p><div className="flex flex-wrap gap-3 mt-9"><Link href="/auth/signup" className="btn btn-primary px-6 py-3.5">Find your people <ArrowRight size={18}/></Link><Link href="/projects" className="btn btn-secondary px-6 py-3.5">Explore projects</Link></div><div className="flex items-center gap-5 mt-9 text-sm text-slate-500"><div className="flex -space-x-2">{['#755de1','#e9836e','#4fb59e','#e4a14f'].map((c,i)=><span key={c} className="w-8 h-8 rounded-full border-2 border-white text-[10px] text-white grid place-items-center font-bold" style={{background:c}}>{['AR','MC','DK','IS'][i]}</span>)}</div><p><b className="text-slate-900">2,800+</b> builders already collaborating</p></div></div><div className="relative"><div className="absolute inset-8 bg-gradient-to-br from-violet-300 to-fuchsia-300 blur-3xl opacity-40"/><div className="glass rounded-[28px] p-5 relative rotate-1"><div className="bg-[#08111e] rounded-2xl p-6 text-white"><div className="flex items-center"><div className="w-11 h-11 rounded-xl bg-emerald-400 grid place-items-center font-black">EC</div><div className="ml-3"><b>EcoTrack AI</b><p className="text-xs text-slate-400">Climate tech · MVP</p></div><span className="ml-auto pill bg-emerald-400/15 text-emerald-300"><Sparkles size={12}/>94% match</span></div><p className="text-sm text-slate-300 mt-5 leading-6">Help small businesses understand and reduce their carbon footprint using practical AI.</p><div className="flex gap-2 mt-4"><span className="pill bg-white/10">Python</span><span className="pill bg-white/10">ML</span><span className="pill bg-white/10">React</span></div><div className="mt-6 pt-5 border-t border-white/10 flex items-center"><div className="w-8 h-8 rounded-full bg-orange-400 grid place-items-center text-xs font-bold">SC</div><p className="ml-2 text-xs"><b>Sarah Chen</b><br/><span className="text-slate-400">Founder</span></p><button className="ml-auto btn bg-white text-slate-900 text-xs py-2">Connect</button></div></div></div><div className="absolute -left-8 -bottom-8 glass rounded-2xl p-4 flex items-center gap-3"><span className="w-10 h-10 bg-violet-100 text-violet-600 rounded-xl grid place-items-center"><Users/></span><div><b className="text-sm">A new team is forming</b><p className="text-xs text-slate-500">3 aligned builders joined</p></div></div></div></div></section><section id="how" className="max-w-7xl mx-auto px-6 py-24"><div className="text-center max-w-2xl mx-auto"><span className="text-xs font-black tracking-widest text-violet-600">HOW IBF WORKS</span><h2 className="text-4xl font-black tracking-tight mt-3">From shared ambition to<br/>shared momentum.</h2><p className="text-slate-500 mt-4">No noisy job boards. No cold outreach. Just thoughtful matches and tools built for doing the work.</p></div><div className="grid md:grid-cols-3 gap-5 mt-14">{steps.map((s,i)=><div key={s[0]} className="relative p-7 rounded-2xl bg-white border border-slate-200"><span className="text-5xl font-black text-violet-100">{s[0]}</span><div className="w-11 h-11 rounded-xl bg-violet-100 text-violet-600 grid place-items-center mt-5">{i===0?<Users/>:i===1?<Sparkles/>:<Code2/>}</div><h3 className="text-lg font-extrabold mt-5">{s[1]}</h3><p className="text-sm text-slate-500 leading-6 mt-2">{s[2]}</p></div>)}</div></section><section className="dark-bg text-white py-24"><div className="max-w-6xl mx-auto px-6 text-center"><span className="pill bg-white/10 text-violet-200">Built for both sides of the table</span><h2 className="text-4xl md:text-5xl font-black mt-5">Different goals. One place to grow.</h2><div className="grid md:grid-cols-2 gap-5 mt-12 text-left"><div className="glass-dark rounded-3xl p-8"><Lightbulb className="text-amber-300"/><h3 className="text-2xl font-bold mt-5">For founders</h3>{['Meet committed, pre-vetted talent','Match on skills, values and availability','Manage projects without tool overload'].map(x=><p key={x} className="flex gap-2 mt-4 text-slate-300"><Check className="text-emerald-300" size={18}/>{x}</p>)}</div><div className="glass-dark rounded-3xl p-8"><ShieldCheck className="text-emerald-300"/><h3 className="text-2xl font-bold mt-5">For emerging talent</h3>{['Build a portfolio through real work','Collaborate directly with founders','Earn trusted reviews and endorsements'].map(x=><p key={x} className="flex gap-2 mt-4 text-slate-300"><Check className="text-emerald-300" size={18}/>{x}</p>)}</div></div></div></section><footer className="bg-[#050911] text-slate-400 border-t border-white/10 py-8"><div className="max-w-7xl mx-auto px-6 flex flex-wrap gap-4 items-center"><b className="text-white text-xl">✦ IBF</b><p className="text-sm">© 2026 Innovator Bridge Foundry</p><div className="ml-auto flex gap-6 text-sm"><a>Privacy</a><a>Terms</a><a>Contact</a></div></div></footer></div>}
+import Link from "next/link";
+import NavBar from "@/components/NavBar";
+import {
+  ArrowRight,
+  BarChart3,
+  BrainCircuit,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Code2,
+  Globe2,
+  Layers3,
+  LockKeyhole,
+  MessageSquareText,
+  Play,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Target,
+  Users2,
+  Zap,
+} from "lucide-react";
+const domains = [
+  "Fintech",
+  "E-commerce",
+  "HealthTech",
+  "Logistics",
+  "Sustainability",
+  "EdTech",
+];
+const steps = [
+  {
+    n: "01",
+    icon: Users2,
+    title: "Create Your Profile",
+    text: "A role-aware onboarding flow captures your skills, startup context, goals and availability without unnecessary friction.",
+  },
+  {
+    n: "02",
+    icon: BrainCircuit,
+    title: "AI Matches You",
+    text: "Our matching engine scores skill fit, domain alignment, availability and preferred engagement style.",
+  },
+  {
+    n: "03",
+    icon: Zap,
+    title: "Start Building",
+    text: "Connect, enter a shared workspace and turn the right introduction into visible weekly progress.",
+  },
+];
+const testimonials = [
+  [
+    "“IBF found the exact product and ML talent our climate startup needed. We went from stalled idea to working pilot in weeks.”",
+    "Aisha K.",
+    "Founder · GreenScale",
+    "AK",
+  ],
+  [
+    "“Instead of another course project, I shipped a real recommendation engine and earned endorsements I can actually show.”",
+    "Rahul M.",
+    "Engineering student",
+    "RM",
+  ],
+  [
+    "“The quality of context is different. Every introduction already understands the problem, scope and expected commitment.”",
+    "Sara L.",
+    "Founder · FinFlow",
+    "SL",
+  ],
+  [
+    "“I joined for experience and found a team where I could own meaningful design work from the first week.”",
+    "Dev P.",
+    "Product designer",
+    "DP",
+  ],
+];
+export default function Home() {
+  return (
+    <div className="landing-shell overflow-hidden">
+      <NavBar />
+      <main>
+        <section className="hero-cyber relative min-h-[820px] flex items-center border-b border-white/5">
+          <div className="hero-orb hero-orb-a" />
+          <div className="hero-orb hero-orb-b" />
+          <div className="hero-lines" />
+          <div className="absolute inset-x-0 top-28 hidden lg:block pointer-events-none">
+            {domains.map((d, i) => (
+              <span key={d} className={`domain-float domain-${i}`}>
+                {d}
+              </span>
+            ))}
+          </div>
+          <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[.06] px-4 py-2 text-[11px] font-bold tracking-[.16em] text-cyan-300 uppercase">
+              <span className="relative flex h-2 w-2">
+                <i className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300 opacity-75" />
+                <i className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
+              </span>
+              Next-gen startup × talent matching
+            </div>
+            <h1 className="hero-title mt-8 font-black leading-[.9] tracking-[-.065em]">
+              Where
+              <br className="sm:hidden" />
+              <span className="text-white">Visionaries</span>
+              <br />
+              <span className="hero-gradient">Meet Prodigies</span>
+            </h1>
+            <p className="mx-auto mt-8 max-w-3xl text-base md:text-lg leading-8 text-slate-400">
+              An intelligent collaboration network connecting ambitious founders
+              with high-potential students and professionals—matched on skills,
+              context, pace and purpose.
+            </p>
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/auth/signup"
+                className="cyber-btn cyber-btn-primary group"
+              >
+                I’m a Founder{" "}
+                <ArrowRight
+                  size={17}
+                  className="transition group-hover:translate-x-1"
+                />
+              </Link>
+              <Link href="/auth/signup" className="cyber-btn cyber-btn-ghost">
+                I’m a Student <ChevronRight size={17} />
+              </Link>
+            </div>
+            <div className="mt-12 flex flex-wrap justify-center gap-x-8 gap-y-4 text-xs text-slate-400">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-cyan-300" />
+                Free to get started
+              </span>
+              <span className="flex items-center gap-2">
+                <ShieldCheck size={15} className="text-cyan-300" />
+                Verified collaboration history
+              </span>
+              <span className="flex items-center gap-2">
+                <Globe2 size={15} className="text-cyan-300" />
+                Remote-first network
+              </span>
+            </div>
+            <div className="relative mx-auto mt-16 max-w-4xl">
+              <div className="dashboard-glow" />
+              <div className="hero-console relative">
+                <div className="flex items-center gap-2 border-b border-white/[.07] px-5 py-3">
+                  <i className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+                  <i className="h-2.5 w-2.5 rounded-full bg-amber-300/80" />
+                  <i className="h-2.5 w-2.5 rounded-full bg-cyan-300/80" />
+                  <span className="ml-3 font-mono text-[10px] text-slate-500">
+                    IBF / MATCH ENGINE / LIVE
+                  </span>
+                  <span className="ml-auto flex items-center gap-1.5 text-[10px] text-cyan-300">
+                    <i className="h-1.5 w-1.5 rounded-full bg-cyan-300 animate-pulse" />
+                    SYSTEM ONLINE
+                  </span>
+                </div>
+                <div className="grid md:grid-cols-[1fr_180px] gap-4 p-4 md:p-6 text-left">
+                  <div className="console-card">
+                    <div className="flex items-start gap-3">
+                      <span className="h-11 w-11 rounded-xl grid place-items-center bg-cyan-300 text-slate-950 font-black">
+                        EC
+                      </span>
+                      <div>
+                        <p className="font-bold text-white">EcoTrack AI</p>
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          Climate Intelligence · MVP
+                        </p>
+                      </div>
+                      <span className="ml-auto match-chip">
+                        <Sparkles size={11} />
+                        94% MATCH
+                      </span>
+                    </div>
+                    <p className="mt-5 text-sm leading-6 text-slate-400">
+                      Building practical AI that turns business activity into
+                      measurable, actionable climate progress.
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {["Python", "Machine Learning", "React"].map((x) => (
+                        <span key={x} className="tech-chip">
+                          {x}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/5">
+                      <div className="match-progress h-full w-[94%] rounded-full" />
+                    </div>
+                  </div>
+                  <div className="grid gap-3">
+                    <div className="metric-mini">
+                      <span>Match quality</span>
+                      <b>94%</b>
+                    </div>
+                    <div className="metric-mini">
+                      <span>Availability</span>
+                      <b>Aligned</b>
+                    </div>
+                    <div className="metric-mini">
+                      <span>Skills overlap</span>
+                      <b>3 / 3</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="avatar-stack absolute -bottom-5 left-1/2 -translate-x-1/2">
+                <div className="flex -space-x-2">
+                  {["AK", "RM", "SL", "DP"].map((x, i) => (
+                    <span
+                      key={x}
+                      className="avatar-node"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    >
+                      {x}
+                    </span>
+                  ))}
+                </div>
+                <span className="ml-3 text-xs text-slate-400">
+                  <b className="text-white">500+</b> active builders
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="border-b border-white/[.06] bg-[#080d17]">
+          <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[.06]">
+            {[
+              ["98%", "Match rate"],
+              ["24h", "Avg. match time"],
+              ["1.8K+", "Milestones shipped"],
+              ["430+", "Projects launched"],
+            ].map(([v, l]) => (
+              <div className="px-6 py-10 text-center">
+                <p className="font-display text-3xl md:text-4xl font-black text-white">
+                  {v}
+                </p>
+                <p className="mt-2 text-xs uppercase tracking-[.16em] text-slate-500">
+                  {l}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section id="how" className="section-dark relative py-28">
+          <div className="section-grid" />
+          <div className="max-w-6xl mx-auto px-6 relative">
+            <div className="section-kicker">Simple process</div>
+            <div className="flex flex-col md:flex-row md:items-end gap-6">
+              <div>
+                <h2 className="section-title">
+                  From profile to
+                  <br />
+                  <span className="text-cyan-300">
+                    progress in three steps.
+                  </span>
+                </h2>
+              </div>
+              <p className="md:ml-auto max-w-md text-slate-400 leading-7">
+                No noisy job boards, cold outreach or contextless applications.
+                IBF is designed around high-intent collaboration.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-5 mt-16">
+              {steps.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <article className="process-card group" key={s.n}>
+                    <div className="flex items-center justify-between">
+                      <span className="step-number">{s.n}</span>
+                      <span className="icon-cube">
+                        <Icon size={21} />
+                      </span>
+                    </div>
+                    <div className="process-line">
+                      <i />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">{s.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-slate-400">
+                      {s.text}
+                    </p>
+                    <div className="mt-7 flex items-center gap-2 text-xs font-bold text-cyan-300 opacity-0 transition group-hover:opacity-100">
+                      Learn more <ArrowRight size={13} />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+        <section className="py-28 bg-[#080d17] border-y border-white/[.05]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="section-kicker justify-center">Core features</div>
+              <h2 className="section-title">
+                Built for <span className="text-cyan-300">scale & speed.</span>
+              </h2>
+              <p className="mt-5 text-slate-400 leading-7">
+                Everything needed to discover, evaluate and collaborate with the
+                right people—inside one focused operating system.
+              </p>
+            </div>
+            <div className="bento-grid mt-16">
+              <article className="bento-card bento-large">
+                <div className="feature-icon">
+                  <BrainCircuit />
+                </div>
+                <span className="feature-label">Matching intelligence</span>
+                <h3>Context, not just keywords.</h3>
+                <p>
+                  Multidimensional scoring understands requirements, experience,
+                  domain interest, availability and collaboration preferences.
+                </p>
+                <div className="radar-visual">
+                  <div className="radar-ring r1" />
+                  <div className="radar-ring r2" />
+                  <div className="radar-ring r3" />
+                  <div className="radar-sweep" />
+                  <span className="radar-dot d1" />
+                  <span className="radar-dot d2" />
+                  <span className="radar-dot d3" />
+                  <b>94%</b>
+                </div>
+              </article>
+              <article className="bento-card">
+                <div className="feature-icon amber">
+                  <MessageSquareText />
+                </div>
+                <span className="feature-label">IBF Advisor</span>
+                <h3>Guidance with context.</h3>
+                <div className="advisor-bubble">
+                  “Your seed-stage project needs a React builder with strong
+                  product instincts and 10+ weekly hours.”
+                </div>
+              </article>
+              <article className="bento-card">
+                <div className="feature-icon">
+                  <Layers3 />
+                </div>
+                <span className="feature-label">Team workspace</span>
+                <h3>Move from match to momentum.</h3>
+                <div className="milestone-list">
+                  <span>
+                    <i className="done" />
+                    Onboarding <b>Done</b>
+                  </span>
+                  <span>
+                    <i className="active" />
+                    Core build <b>In progress</b>
+                  </span>
+                  <span>
+                    <i />
+                    Pilot launch <b>Upcoming</b>
+                  </span>
+                </div>
+              </article>
+              <article className="bento-card bento-wide">
+                <div>
+                  <div className="feature-icon amber">
+                    <BarChart3 />
+                  </div>
+                  <span className="feature-label">Verifiable growth</span>
+                  <h3>Work that compounds your reputation.</h3>
+                  <p>
+                    Milestones, reviews and skill endorsements turn every
+                    successful project into trusted proof for the next
+                    opportunity.
+                  </p>
+                </div>
+                <div className="reputation-card">
+                  <div className="flex items-center">
+                    <span className="h-10 w-10 rounded-full bg-cyan-300 text-slate-950 grid place-items-center font-bold">
+                      AR
+                    </span>
+                    <div className="ml-3">
+                      <b>Alex Rivera</b>
+                      <p>ML Engineer</p>
+                    </div>
+                    <span className="ml-auto text-amber-300 flex">
+                      <Star size={13} fill="currentColor" /> 4.9
+                    </span>
+                  </div>
+                  <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                    <span>
+                      <b>8</b>Projects
+                    </span>
+                    <span>
+                      <b>24</b>Endorsements
+                    </span>
+                    <span>
+                      <b>96%</b>Reliability
+                    </span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+        <section className="py-28 section-dark overflow-hidden">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="section-kicker">Social proof</div>
+            <h2 className="section-title">
+              Built by ambition.
+              <br />
+              <span className="text-cyan-300">Trusted through outcomes.</span>
+            </h2>
+          </div>
+          <div className="testimonial-marquee mt-14">
+            <div className="testimonial-track">
+              {[...testimonials, ...testimonials].map((t, i) => (
+                <article className="testimonial-card" key={i}>
+                  <div className="flex text-amber-300 gap-1">
+                    {[1, 2, 3, 4, 5].map((x) => (
+                      <Star key={x} size={13} fill="currentColor" />
+                    ))}
+                  </div>
+                  <blockquote>{t[0]}</blockquote>
+                  <div className="flex items-center mt-6">
+                    <span>{t[3]}</span>
+                    <div className="ml-3">
+                      <b>{t[1]}</b>
+                      <p>{t[2]}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="px-6 pb-24 section-dark">
+          <div className="cta-panel max-w-6xl mx-auto relative overflow-hidden">
+            <div className="cta-grid" />
+            <div className="relative z-10 max-w-3xl">
+              <span className="section-kicker">
+                Your next build starts here
+              </span>
+              <h2 className="text-4xl md:text-6xl font-black leading-[1] text-white mt-5">
+                The right people are closer than you think.
+              </h2>
+              <p className="mt-6 text-slate-400 max-w-xl leading-7">
+                Create your profile, meet your strongest matches and start
+                building something that matters.
+              </p>
+              <Link
+                href="/auth/signup"
+                className="cyber-btn cyber-btn-primary mt-8"
+              >
+                Join IBF for free <ArrowRight size={17} />
+              </Link>
+            </div>
+            <div className="cta-symbol">✦</div>
+          </div>
+        </section>
+      </main>
+      <footer className="border-t border-white/[.07] bg-[#05080e]">
+        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
+          <div>
+            <div className="flex items-center gap-2 text-xl font-black">
+              <span className="h-9 w-9 rounded-lg bg-cyan-300 text-slate-950 grid place-items-center">
+                ✦
+              </span>
+              IBF
+            </div>
+            <p className="mt-3 max-w-xs text-sm text-slate-500">
+              The intelligent collaboration network for founders and emerging
+              talent.
+            </p>
+          </div>
+          <div className="md:ml-auto grid grid-cols-2 sm:grid-cols-3 gap-x-16 gap-y-3 text-sm text-slate-400">
+            <div>
+              <b className="text-white block mb-3">Platform</b>
+              <Link href="/projects">Projects</Link>
+              <Link href="/matches" className="block mt-2">
+                Matches
+              </Link>
+            </div>
+            <div>
+              <b className="text-white block mb-3">Company</b>
+              <Link href="/investors">Investors</Link>
+              <a className="block mt-2">Contact</a>
+            </div>
+            <div>
+              <b className="text-white block mb-3">Legal</b>
+              <a>Privacy</a>
+              <a className="block mt-2">Terms</a>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-6 py-5 border-t border-white/[.05] text-xs text-slate-600 flex">
+          <span>© 2026 Innovator Bridge Foundry</span>
+          <span className="ml-auto">Built for people who build.</span>
+        </div>
+      </footer>
+    </div>
+  );
+}
