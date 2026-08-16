@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import MotionController from "@/components/MotionController";
 import {
   ArrowRight,
   BarChart3,
@@ -78,6 +79,7 @@ export default function Home() {
   return (
     <div className="landing-shell overflow-hidden">
       <NavBar />
+      <MotionController />
       <main>
         <section className="hero-cyber relative min-h-[820px] flex items-center border-b border-white/5">
           <div className="hero-orb hero-orb-a" />
@@ -394,6 +396,216 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <section className="py-28 section-dark border-b border-white/[.05]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="section-kicker">One network, two ambitions</div>
+            <h2 className="section-title max-w-3xl">
+              Designed for both sides of the{" "}
+              <span className="text-cyan-300">building equation.</span>
+            </h2>
+            <p className="mt-5 max-w-2xl text-slate-400 leading-7">
+              IBF is not a traditional recruitment marketplace. It creates
+              structured, high-context collaborations where founders get
+              meaningful execution and emerging talent gets meaningful
+              ownership.
+            </p>
+            <div className="audience-grid mt-14">
+              <article className="audience-card founder-card">
+                <div className="audience-top">
+                  <span className="feature-icon">
+                    <Target />
+                  </span>
+                  <span>FOR FOUNDERS</span>
+                </div>
+                <h3>Turn an ambitious idea into an operating team.</h3>
+                <p>
+                  Publish what you are building, explain the stage and define
+                  exactly where you need momentum. IBF ranks compatible students
+                  and professionals by more than a résumé keyword.
+                </p>
+                <ul>
+                  {[
+                    "Discover talent aligned to your domain and pace",
+                    "Review portfolios, availability and collaboration goals",
+                    "Create milestones, schedule meetings and manage delivery",
+                    "Build a trusted long-term team without recruitment noise",
+                  ].map((x) => (
+                    <li key={x}>
+                      <CheckCircle2 size={15} />
+                      {x}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/auth/signup" className="audience-link">
+                  Build your team <ArrowRight size={15} />
+                </Link>
+              </article>
+              <article className="audience-card talent-card">
+                <div className="audience-top">
+                  <span className="feature-icon amber">
+                    <Code2 />
+                  </span>
+                  <span>FOR STUDENTS & PROFESSIONALS</span>
+                </div>
+                <h3>Build proof through work that actually matters.</h3>
+                <p>
+                  Move beyond simulated assignments. Join startups where your
+                  contribution has visible product impact and every completed
+                  milestone strengthens your professional identity.
+                </p>
+                <ul>
+                  {[
+                    "Find projects matched to your real skills and interests",
+                    "Work directly with founders in structured team rooms",
+                    "Earn reviews, skill endorsements and portfolio proof",
+                    "Explore co-founder opportunities with values alignment",
+                  ].map((x) => (
+                    <li key={x}>
+                      <CheckCircle2 size={15} />
+                      {x}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/auth/signup" className="audience-link">
+                  Find your project <ArrowRight size={15} />
+                </Link>
+              </article>
+            </div>
+          </div>
+        </section>
+        <section className="py-28 bg-[#0d1322] border-b border-white/[.05]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="section-kicker justify-center">
+                The collaboration lifecycle
+              </div>
+              <h2 className="section-title">
+                Everything after the{" "}
+                <span className="text-cyan-300">match.</span>
+              </h2>
+              <p className="mt-5 text-slate-400 leading-7">
+                A strong introduction is only the beginning. IBF gives every
+                team a clear path from first conversation to completed outcomes.
+              </p>
+            </div>
+            <div className="lifecycle mt-16">
+              {[
+                [
+                  "01",
+                  "Connect",
+                  "Send or accept a context-rich collaboration request.",
+                  Users2,
+                ],
+                [
+                  "02",
+                  "Align",
+                  "Discuss scope, commitment, ownership and working style.",
+                  MessageSquareText,
+                ],
+                [
+                  "03",
+                  "Plan",
+                  "Turn the project into assigned milestones and due dates.",
+                  Layers3,
+                ],
+                [
+                  "04",
+                  "Build",
+                  "Collaborate in focused channels with files and updates.",
+                  Code2,
+                ],
+                [
+                  "05",
+                  "Verify",
+                  "Close the loop with reviews, endorsements and proof.",
+                  ShieldCheck,
+                ],
+              ].map(([n, title, text, Icon]: any) => (
+                <article className="lifecycle-step" key={n}>
+                  <span className="lifecycle-number">{n}</span>
+                  <span className="lifecycle-icon">
+                    <Icon size={18} />
+                  </span>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
+            <div className="trust-strip mt-14">
+              <div>
+                <LockKeyhole />
+                <span>
+                  <b>Privacy by design</b>Role-aware access and protected
+                  collaboration rooms.
+                </span>
+              </div>
+              <div>
+                <Clock3 />
+                <span>
+                  <b>Built for momentum</b>Clear availability, milestones and
+                  response signals.
+                </span>
+              </div>
+              <div>
+                <ShieldCheck />
+                <span>
+                  <b>Reputation that travels</b>Reviews and endorsements tied to
+                  completed work.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="py-28 section-dark">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="section-kicker">What you can build here</div>
+            <h2 className="section-title max-w-3xl">
+              From first prototype to{" "}
+              <span className="text-cyan-300">founding team.</span>
+            </h2>
+            <div className="usecase-grid mt-14">
+              {[
+                [
+                  "MVP & product builds",
+                  "Find engineering, design and product collaborators to move from idea to testable release.",
+                  "01",
+                ],
+                [
+                  "AI and data projects",
+                  "Match with ML, analytics and data talent for models, automation and decision tools.",
+                  "02",
+                ],
+                [
+                  "Growth experiments",
+                  "Bring in research, content, sales and marketing talent to validate distribution channels.",
+                  "03",
+                ],
+                [
+                  "Co-founder discovery",
+                  "Compare vision, values, commitment and complementary skills before making a major decision.",
+                  "04",
+                ],
+                [
+                  "University collaboration",
+                  "Connect students to startup work that produces experience, evidence and employability.",
+                  "05",
+                ],
+                [
+                  "Mission-driven innovation",
+                  "Form multidisciplinary teams around climate, education, health and social-impact problems.",
+                  "06",
+                ],
+              ].map((x) => (
+                <article className="usecase-card" key={x[2]}>
+                  <span>{x[2]}</span>
+                  <h3>{x[0]}</h3>
+                  <p>{x[1]}</p>
+                  <i />
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
         <section className="py-28 section-dark overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="section-kicker">Social proof</div>
@@ -425,7 +637,56 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="px-6 pb-24 section-dark">
+        <section className="py-28 bg-[#0d1322] border-y border-white/[.05]">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="text-center">
+              <div className="section-kicker justify-center">
+                Frequently asked questions
+              </div>
+              <h2 className="section-title">
+                Understand IBF before you{" "}
+                <span className="text-cyan-300">jump in.</span>
+              </h2>
+            </div>
+            <div className="faq-grid mt-14">
+              {[
+                [
+                  "Is IBF a job board?",
+                  "No. IBF is a collaboration platform built around projects, team formation and verifiable outcomes. A project can evolve into an internship, long-term role or co-founder relationship, but the starting point is meaningful work.",
+                ],
+                [
+                  "How does matchmaking work?",
+                  "Each project and profile is scored using required-skill overlap, domain interest, weekly availability and engagement preference. The result includes a transparent compatibility score and clear reasons.",
+                ],
+                [
+                  "Can founders offer equity or stipends?",
+                  "Yes. Founders can describe equity, stipend or volunteer arrangements, expected commitment and duration so candidates understand the opportunity before connecting.",
+                ],
+                [
+                  "What makes student experience verifiable?",
+                  "Completed milestones, project reviews and skill endorsements become part of the user’s IBF reputation and can be referenced from their public profile.",
+                ],
+                [
+                  "Can I search for a co-founder?",
+                  "Yes. Co-founder mode adds deeper compatibility dimensions such as vision, values, commitment, equity expectations and decision-making style.",
+                ],
+                [
+                  "Is the platform free?",
+                  "You can create an account, complete a profile and explore opportunities for free. Future premium tools can be added without blocking the core collaboration experience.",
+                ],
+              ].map(([q, a]) => (
+                <details className="faq-card" key={q}>
+                  <summary>
+                    {q}
+                    <span>+</span>
+                  </summary>
+                  <p>{a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="px-6 py-24 section-dark">
           <div className="cta-panel max-w-6xl mx-auto relative overflow-hidden">
             <div className="cta-grid" />
             <div className="relative z-10 max-w-3xl">
