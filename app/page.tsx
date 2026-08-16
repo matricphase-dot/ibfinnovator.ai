@@ -245,18 +245,15 @@ export default function Home() {
         <section id="how" className="section-dark relative py-28">
           <div className="section-grid" />
           <div className="max-w-6xl mx-auto px-6 relative">
-            <div className="section-kicker">Simple process</div>
-            <div className="flex flex-col md:flex-row md:items-end gap-6">
-              <div>
-                <h2 className="section-title">
-                  From profile to
-                  <br />
-                  <span className="text-cyan-300">
-                    progress in three steps.
-                  </span>
-                </h2>
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="section-kicker justify-center">
+                Simple process
               </div>
-              <p className="md:ml-auto max-w-md text-slate-400 leading-7">
+              <h2 className="section-title">
+                From profile to{" "}
+                <span className="text-cyan-300">progress in three steps.</span>
+              </h2>
+              <p className="mt-5 mx-auto max-w-2xl text-slate-400 leading-7">
                 No noisy job boards, cold outreach or contextless applications.
                 IBF is designed around high-intent collaboration.
               </p>
@@ -398,17 +395,21 @@ export default function Home() {
         </section>
         <section className="py-28 section-dark border-b border-white/[.05]">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="section-kicker">One network, two ambitions</div>
-            <h2 className="section-title max-w-3xl">
-              Designed for both sides of the{" "}
-              <span className="text-cyan-300">building equation.</span>
-            </h2>
-            <p className="mt-5 max-w-2xl text-slate-400 leading-7">
-              IBF is not a traditional recruitment marketplace. It creates
-              structured, high-context collaborations where founders get
-              meaningful execution and emerging talent gets meaningful
-              ownership.
-            </p>
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="section-kicker justify-center">
+                One network, two ambitions
+              </div>
+              <h2 className="section-title">
+                Designed for both sides of the{" "}
+                <span className="text-cyan-300">building equation.</span>
+              </h2>
+              <p className="mt-5 mx-auto max-w-2xl text-slate-400 leading-7">
+                IBF is not a traditional recruitment marketplace. It creates
+                structured, high-context collaborations where founders get
+                meaningful execution and emerging talent gets meaningful
+                ownership.
+              </p>
+            </div>
             <div className="audience-grid mt-14">
               <article className="audience-card founder-card">
                 <div className="audience-top">
@@ -558,11 +559,15 @@ export default function Home() {
         </section>
         <section className="py-28 section-dark">
           <div className="max-w-6xl mx-auto px-6">
-            <div className="section-kicker">What you can build here</div>
-            <h2 className="section-title max-w-3xl">
-              From first prototype to{" "}
-              <span className="text-cyan-300">founding team.</span>
-            </h2>
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="section-kicker justify-center">
+                What you can build here
+              </div>
+              <h2 className="section-title">
+                From first prototype to{" "}
+                <span className="text-cyan-300">founding team.</span>
+              </h2>
+            </div>
             <div className="usecase-grid mt-14">
               {[
                 [
@@ -607,11 +612,10 @@ export default function Home() {
           </div>
         </section>
         <section className="py-28 section-dark overflow-hidden">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="section-kicker">Social proof</div>
+          <div className="max-w-6xl mx-auto px-6 text-center">
+            <div className="section-kicker justify-center">Social proof</div>
             <h2 className="section-title">
-              Built by ambition.
-              <br />
+              Built by ambition.{" "}
               <span className="text-cyan-300">Trusted through outcomes.</span>
             </h2>
           </div>
