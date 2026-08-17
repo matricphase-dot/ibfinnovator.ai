@@ -6,11 +6,11 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   useEffect(() => {
-    if (dashboard)
-      fetch("/api/profile")
-        .then((r) => (r.ok ? r.json() : null))
-        .then(setProfile);
-  }, [dashboard]);
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setProfile)
+      .catch(() => null);
+  }, []);
   const name = profile?.name || "IBF Member",
     role = profile?.role ? String(profile.role).replace("_", " ") : "Member",
     initials = name
@@ -82,18 +82,40 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
             </>
           ) : (
             <>
-              <Link
-                href="/auth/signin"
-                className="hidden sm:block text-xs font-bold px-3 text-slate-300 hover:text-cyan-300"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="cyber-btn cyber-btn-primary !min-w-0 !py-2.5 !px-4"
-              >
-                Join IBF <span className="hidden sm:inline">Free</span>
-              </Link>
+              {profile ? (
+                <>
+                  <Link
+                    href="/settings"
+                    className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-cyan-300"
+                  >
+                    <span className="w-7 h-7 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center">
+                      {initials}
+                    </span>
+                    {name}
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="cyber-btn cyber-btn-primary !min-w-0 !py-2.5 !px-4"
+                  >
+                    Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/signin"
+                    className="hidden sm:block text-xs font-bold px-3 text-slate-300 hover:text-cyan-300"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="cyber-btn cyber-btn-primary !min-w-0 !py-2.5 !px-4"
+                  >
+                    Join IBF <span className="hidden sm:inline">Free</span>
+                  </Link>
+                </>
+              )}
               <button
                 aria-label="Toggle menu"
                 className="md:hidden text-slate-300"

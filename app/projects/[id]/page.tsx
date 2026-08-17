@@ -20,15 +20,26 @@ import toast from "react-hot-toast";
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<any>(null),
+    [me, setMe] = useState<any>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
   useEffect(() => {
-    fetch(`/api/projects/${id}`)
-      .then(async (r) => {
+    Promise.all([
+      fetch(`/api/projects/${id}`).then(async (r) => {
         const d = await r.json();
-        r.ok ? setP(d) : setError(d.error);
+        if (!r.ok) throw new Error(d.error);
+        return d;
+      }),
+      fetch("/api/profile")
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ])
+      .then(([project, profile]) => {
+        setP(project);
+        setMe(profile);
       })
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
   async function bookmark() {
@@ -95,6 +106,7 @@ export default function Detail() {
       </>
     );
   const created = new Date(p.created_at);
+  const isOwner = me?.id === p.founder_id;
   return (
     <>
       <NavBar />
@@ -207,13 +219,27 @@ export default function Detail() {
                   Remote collaboration
                 </p>
               </div>
-              <button
-                disabled={busy === "connect"}
-                onClick={connect}
-                className="btn btn-primary w-full"
-              >
-                {busy === "connect" ? "Sending…" : "Request to connect"}
-              </button>
+              {isOwner ? (
+                <div className="p-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[.05] text-center">
+                  <p className="text-xs text-cyan-300 font-bold">
+                    THIS IS YOUR PROJECT
+                  </p>
+                  <Link
+                    href="/dashboard"
+                    className="btn btn-primary w-full mt-3"
+                  >
+                    Manage from dashboard
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  disabled={busy === "connect"}
+                  onClick={connect}
+                  className="btn btn-primary w-full"
+                >
+                  {busy === "connect" ? "Sending…" : "Request to connect"}
+                </button>
+              )}
               <button
                 disabled={busy === "bookmark"}
                 onClick={bookmark}
