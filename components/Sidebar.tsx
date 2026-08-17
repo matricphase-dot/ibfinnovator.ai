@@ -1,3 +1,107 @@
-'use client';import Link from 'next/link';import {usePathname} from 'next/navigation';import {LayoutDashboard,Sparkles,FolderKanban,MessagesSquare,Users,Bookmark,CalendarDays,BarChart3,Settings,HelpCircle,ChevronRight,Zap} from 'lucide-react';
-const links=[[LayoutDashboard,'Overview','/dashboard'],[Sparkles,'AI Matches','/matches'],[FolderKanban,'Projects','/projects'],[MessagesSquare,'Messages','/chat/general'],[Users,'Team rooms','/team/1'],[Bookmark,'Bookmarks','/bookmarks'],[CalendarDays,'Meetings','/meetings'],[BarChart3,'Analytics','/analytics']];
-export default function Sidebar(){const p=usePathname();return <aside className="hidden lg:flex w-60 bg-[#0d1322] border-r border-white/[.07] min-h-[calc(100vh-64px)] p-4 flex-col sticky top-16 h-[calc(100vh-64px)]"><div className="px-3 pt-2 pb-4"><p className="text-[9px] tracking-[.22em] font-bold text-slate-600">COMMAND CENTER</p><div className="flex items-center gap-2 mt-3"><span className="relative flex h-2 w-2"><i className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300 opacity-60"/><i className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300"/></span><span className="text-[10px] text-cyan-300 font-mono">WORKSPACE ONLINE</span></div></div><div className="space-y-1">{links.map(([I,label,href]:any)=>{const active=p===href||href!=='/'&&p.startsWith(href);return <Link key={label} href={href} className={`sidebar-link group ${active?'active':''}`}><I size={17}/><span>{label}</span>{label==='Messages'&&<b className="ml-auto bg-cyan-300 text-slate-950 text-[9px] w-5 h-5 rounded-full grid place-items-center">3</b>}{active&&label!=='Messages'&&<ChevronRight size={13} className="ml-auto"/>}</Link>})}</div><div className="mt-auto border-t border-white/[.07] pt-3"><Link href="/settings" className="sidebar-link"><Settings size={17}/>Settings</Link><Link href="/help" className="sidebar-link"><HelpCircle size={17}/>Help center</Link><div className="m-1 mt-4 p-4 rounded-xl bg-gradient-to-br from-cyan-300/[.08] to-blue-500/[.04] border border-cyan-300/[.12] relative overflow-hidden"><Zap className="absolute -right-3 -top-3 text-cyan-300/[.08]" size={65}/><p className="text-[11px] font-extrabold text-white relative">PROFILE SIGNAL</p><p className="text-[10px] text-slate-500 mt-1 relative">Complete your profile to improve match accuracy.</p><div className="h-1 bg-white/5 rounded-full mt-3 relative"><div className="w-3/4 h-full bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(0,245,212,.5)]"/></div><p className="text-[9px] text-right mt-1.5 text-cyan-300 font-bold relative">75% OPTIMIZED</p></div></div></aside>}
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Sparkles,
+  FolderKanban,
+  MessagesSquare,
+  Users,
+  Bookmark,
+  CalendarDays,
+  BarChart3,
+  Settings,
+  HelpCircle,
+  ChevronRight,
+  Zap,
+  PlusCircle,
+} from "lucide-react";
+const links = [
+  [LayoutDashboard, "Overview", "/dashboard"],
+  [Sparkles, "AI Matches", "/matches"],
+  [FolderKanban, "Projects", "/projects"],
+  [MessagesSquare, "Messages", "/chat/general"],
+  [Users, "Team rooms", "/team/1"],
+  [Bookmark, "Bookmarks", "/bookmarks"],
+  [CalendarDays, "Meetings", "/meetings"],
+  [BarChart3, "Analytics", "/analytics"],
+];
+export default function Sidebar() {
+  const p = usePathname();
+  return (
+    <aside className="hidden lg:flex w-60 bg-[#0d1322] border-r border-white/[.07] min-h-[calc(100vh-64px)] p-4 flex-col sticky top-16 h-[calc(100vh-64px)]">
+      <div className="px-3 pt-2 pb-4">
+        <p className="text-[9px] tracking-[.22em] font-bold text-slate-600">
+          COMMAND CENTER
+        </p>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="relative flex h-2 w-2">
+            <i className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-300 opacity-60" />
+            <i className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
+          </span>
+          <span className="text-[10px] text-cyan-300 font-mono">
+            WORKSPACE ONLINE
+          </span>
+        </div>
+      </div>
+      <Link
+        href="/projects/new"
+        className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-3 py-2.5 text-xs font-black text-slate-950 hover:bg-cyan-200 transition"
+      >
+        <PlusCircle size={16} />
+        Submit project
+      </Link>
+      <div className="space-y-1">
+        {links.map(([I, label, href]: any) => {
+          const active = p === href || (href !== "/" && p.startsWith(href));
+          return (
+            <Link
+              key={label}
+              href={href}
+              className={`sidebar-link group ${active ? "active" : ""}`}
+            >
+              <I size={17} />
+              <span>{label}</span>
+              {label === "Messages" && (
+                <b className="ml-auto bg-cyan-300 text-slate-950 text-[9px] w-5 h-5 rounded-full grid place-items-center">
+                  3
+                </b>
+              )}
+              {active && label !== "Messages" && (
+                <ChevronRight size={13} className="ml-auto" />
+              )}
+            </Link>
+          );
+        })}
+      </div>
+      <div className="mt-auto border-t border-white/[.07] pt-3">
+        <Link href="/settings" className="sidebar-link">
+          <Settings size={17} />
+          Settings
+        </Link>
+        <Link href="/help" className="sidebar-link">
+          <HelpCircle size={17} />
+          Help center
+        </Link>
+        <div className="m-1 mt-4 p-4 rounded-xl bg-gradient-to-br from-cyan-300/[.08] to-blue-500/[.04] border border-cyan-300/[.12] relative overflow-hidden">
+          <Zap
+            className="absolute -right-3 -top-3 text-cyan-300/[.08]"
+            size={65}
+          />
+          <p className="text-[11px] font-extrabold text-white relative">
+            PROFILE SIGNAL
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1 relative">
+            Complete your profile to improve match accuracy.
+          </p>
+          <div className="h-1 bg-white/5 rounded-full mt-3 relative">
+            <div className="w-3/4 h-full bg-cyan-300 rounded-full shadow-[0_0_8px_rgba(0,245,212,.5)]" />
+          </div>
+          <p className="text-[9px] text-right mt-1.5 text-cyan-300 font-bold relative">
+            75% OPTIMIZED
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}

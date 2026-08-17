@@ -1,9 +1,24 @@
 "use client";
 import Link from "next/link";
 import { Bell, ChevronDown, Menu, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  useEffect(() => {
+    if (dashboard)
+      fetch("/api/profile")
+        .then((r) => (r.ok ? r.json() : null))
+        .then(setProfile);
+  }, [dashboard]);
+  const name = profile?.name || "IBF Member",
+    role = profile?.role ? String(profile.role).replace("_", " ") : "Member",
+    initials = name
+      .split(" ")
+      .map((x: string) => x[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
   return (
     <>
       <header
@@ -41,21 +56,29 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
         <div className="ml-auto flex items-center gap-3">
           {dashboard ? (
             <>
-              <button className="relative p-2 text-slate-400 hover:text-cyan-300">
+              <Link
+                href="/notifications"
+                aria-label="Notifications"
+                className="relative p-2 text-slate-400 hover:text-cyan-300"
+              >
                 <Bell size={20} />
                 <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-300 border-2 border-[#0d1422]" />
-              </button>
+              </Link>
               <div className="h-7 w-px bg-white/10" />
-              <div className="w-9 h-9 rounded-full bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center font-bold text-sm">
-                AR
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-bold leading-none text-white">
-                  Alex Rivera
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Student</p>
-              </div>
-              <ChevronDown size={15} className="text-slate-500" />
+              <Link href="/settings" className="flex items-center gap-3 group">
+                <div className="w-9 h-9 rounded-full bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center font-bold text-sm">
+                  {initials}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-bold leading-none text-white group-hover:text-cyan-300">
+                    {name}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1 capitalize">
+                    {role.toLowerCase()}
+                  </p>
+                </div>
+                <ChevronDown size={15} className="text-slate-500" />
+              </Link>
             </>
           ) : (
             <>
