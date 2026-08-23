@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import ApplyToProject from '@/components/ApplyToProject';
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<any>(null),
@@ -232,13 +233,7 @@ export default function Detail() {
                   </Link>
                 </div>
               ) : (
-                <button
-                  disabled={busy === "connect"}
-                  onClick={connect}
-                  className="btn btn-primary w-full"
-                >
-                  {busy === "connect" ? "Sending…" : "Request to connect"}
-                </button>
+                <div className="space-y-2"><ApplyToProject projectId={id}/><button disabled={busy==='connect'} onClick={connect} className="btn btn-secondary w-full">{busy==='connect'?'Sending…':'Request a conversation'}</button></div>
               )}
               <button
                 disabled={busy === "bookmark"}
