@@ -95,6 +95,19 @@ export default function Settings() {
     await createClient().auth.signOut();
     location.href = "/";
   }
+  async function deleteAccount() {
+    if (
+      !confirm(
+        "Permanently delete your IBF account and all associated data? This cannot be undone.",
+      )
+    )
+      return;
+    const r = await fetch("/api/account", { method: "DELETE" });
+    if (r.ok) {
+      await createClient().auth.signOut();
+      location.href = "/";
+    } else toast.error("Account deletion failed");
+  }
   const tabs: [[Tab, any, string], [Tab, any, string], [Tab, any, string]] = [
     ["profile", UserRound, "Profile"],
     ["notifications", Bell, "Notifications"],
@@ -319,6 +332,24 @@ export default function Settings() {
                   <LogOut size={16} />
                   Sign out
                 </button>
+              </div>
+              <div className="mt-8 pt-6 border-t border-white/[.07]">
+                <b className="text-sm">Privacy and your data</b>
+                <p className="text-xs text-slate-500 mt-2">
+                  Download a portable copy of your IBF information or
+                  permanently delete your account.
+                </p>
+                <div className="flex gap-2 mt-4">
+                  <a href="/api/account" className="btn btn-secondary">
+                    Download my data
+                  </a>
+                  <button
+                    onClick={deleteAccount}
+                    className="btn btn-secondary text-red-300"
+                  >
+                    Delete account
+                  </button>
+                </div>
               </div>
             </section>
           )}
