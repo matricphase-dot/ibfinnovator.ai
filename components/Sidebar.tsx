@@ -18,6 +18,7 @@ import {
   PlusCircle,
   FileText,
   HeartHandshake,
+  Award,
 } from "lucide-react";
 const links = [
   [LayoutDashboard, "Overview", "/dashboard"],
@@ -25,6 +26,7 @@ const links = [
   [FolderKanban, "Projects", "/projects"],
   [FileText, "Applications", "/applications"],
   [HeartHandshake, "Co-founder mode", "/cofounder-matches"],
+  [Award, "Credentials", "/credentials"],
   [MessagesSquare, "Messages", "/chat/general"],
   [Users, "Team rooms", "/team/1"],
   [Bookmark, "Bookmarks", "/bookmarks"],
