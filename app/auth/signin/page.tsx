@@ -22,13 +22,19 @@ export default function SignIn() {
     setError("");
     const f = new FormData(e.currentTarget);
     try {
-      const s = createClient();
-      const { error } = await s.auth.signInWithPassword({
-        email: String(f.get("email")).trim(),
-        password: String(f.get("password")),
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: String(f.get("email")).trim(),
+          password: String(f.get("password")),
+        }),
       });
-      if (error) throw error;
-      location.href = "/dashboard";
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to sign in");
+      const next =
+        new URLSearchParams(location.search).get("next") || "/dashboard";
+      window.location.assign(next);
     } catch (e: any) {
       setError(
         e.message === "Email not confirmed"
