@@ -10,9 +10,9 @@ const input = z.object({
 });
 export async function GET(
   _: Request,
-  { params }: { params: Promise<{ projectId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const { projectId } = await params,
+  const { id: projectId } = await params,
     s = await createClient();
   const { data, error } = await s
     .from("milestones")
@@ -25,10 +25,10 @@ export async function GET(
 }
 export async function POST(
   r: Request,
-  { params }: { params: Promise<{ projectId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { projectId } = await params,
+    const { id: projectId } = await params,
       { supabase, user } = await requireUser();
     const p = input.safeParse(await r.json());
     if (!p.success)
