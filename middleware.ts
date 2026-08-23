@@ -8,7 +8,6 @@ const protectedPaths = [
   "/chat",
   "/team",
   "/cofounder-matches",
-  "/admin",
   "/meetings",
   "/analytics",
   "/settings",
