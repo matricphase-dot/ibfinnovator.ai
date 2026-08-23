@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Sparkles,
@@ -15,11 +16,15 @@ import {
   ChevronRight,
   Zap,
   PlusCircle,
+  FileText,
+  HeartHandshake,
 } from "lucide-react";
 const links = [
   [LayoutDashboard, "Overview", "/dashboard"],
   [Sparkles, "AI Matches", "/matches"],
   [FolderKanban, "Projects", "/projects"],
+  [FileText, "Applications", "/applications"],
+  [HeartHandshake, "Co-founder mode", "/cofounder-matches"],
   [MessagesSquare, "Messages", "/chat/general"],
   [Users, "Team rooms", "/team/1"],
   [Bookmark, "Bookmarks", "/bookmarks"],
@@ -28,6 +33,13 @@ const links = [
 ];
 export default function Sidebar() {
   const p = usePathname();
+  const [role, setRole] = useState<string>("");
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x) => setRole(x?.role || ""));
+  }, []);
+  const founder = role === "FOUNDER" || role === "SUPER_ADMIN";
   return (
     <aside className="hidden lg:flex w-60 bg-[#0d1322] border-r border-white/[.07] min-h-[calc(100vh-64px)] p-4 flex-col sticky top-16 h-[calc(100vh-64px)]">
       <div className="px-3 pt-2 pb-4">
@@ -45,11 +57,11 @@ export default function Sidebar() {
         </div>
       </div>
       <Link
-        href="/projects/new"
+        href={founder ? "/projects/new" : "/matches"}
         className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-3 py-2.5 text-xs font-black text-slate-950 hover:bg-cyan-200 transition"
       >
-        <PlusCircle size={16} />
-        Submit project
+        {founder ? <PlusCircle size={16} /> : <Sparkles size={16} />}{" "}
+        {founder ? "Submit project" : "Find matched projects"}
       </Link>
       <div className="space-y-1">
         {links.map(([I, label, href]: any) => {
