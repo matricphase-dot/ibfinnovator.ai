@@ -31,3 +31,25 @@ export async function POST(r: Request) {
     return NextResponse.json({ error: e.message }, { status: 400 });
   }
 }
+export async function PATCH(r: Request) {
+  try {
+    const { supabase } = await requireUser();
+    const p = z
+      .object({
+        id: z.string().uuid(),
+        pinned: z.boolean().optional(),
+        content: z.string().trim().min(1).max(5000).optional(),
+      })
+      .parse(await r.json());
+    const { data, error } = await supabase
+      .from("messages")
+      .update(p)
+      .eq("id", p.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return NextResponse.json(data);
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 400 });
+  }
+}

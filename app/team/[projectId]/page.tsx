@@ -59,6 +59,22 @@ export default function Team() {
     });
     load();
   }
+  async function react(message_id: string, emoji: string) {
+    await fetch("/api/team/reactions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message_id, emoji }),
+    });
+    load();
+  }
+  async function pin(id: string, pinned: boolean) {
+    await fetch("/api/team/messages", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id, pinned }),
+    });
+    load();
+  }
   if (loading)
     return (
       <AppShell>
@@ -121,9 +137,35 @@ export default function Team() {
                     <span className="w-9 h-9 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center text-xs">
                       {m.sender?.name?.slice(0, 2).toUpperCase()}
                     </span>
-                    <div>
-                      <b className="text-sm">{m.sender?.name}</b>
+                    <div className="flex-1">
+                      <div className="flex">
+                        <b className="text-sm">{m.sender?.name}</b>
+                        {m.pinned && (
+                          <span className="ml-2 text-[9px] text-amber-300">
+                            PINNED
+                          </span>
+                        )}
+                        <button
+                          onClick={() => pin(m.id, !m.pinned)}
+                          className="ml-auto text-[10px] text-slate-500 hover:text-cyan-300"
+                        >
+                          {m.pinned ? "Unpin" : "Pin"}
+                        </button>
+                      </div>
                       <p className="text-sm text-slate-400 mt-1">{m.content}</p>
+                      <div className="flex gap-1 mt-2">
+                        {["👍", "❤️", "🚀"].map((e) => (
+                          <button
+                            key={e}
+                            onClick={() => react(m.id, e)}
+                            className="px-2 py-1 rounded-full bg-white/[.04] text-[10px]"
+                          >
+                            {e}{" "}
+                            {m.reactions?.filter((r: any) => r.emoji === e)
+                              .length || ""}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))
