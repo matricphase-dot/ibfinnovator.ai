@@ -19,6 +19,8 @@ import {
   FileText,
   HeartHandshake,
   Award,
+  Store,
+  CalendarRange,
 } from "lucide-react";
 const links = [
   [LayoutDashboard, "Overview", "/dashboard"],
@@ -27,6 +29,8 @@ const links = [
   [FileText, "Applications", "/applications"],
   [HeartHandshake, "Co-founder mode", "/cofounder-matches"],
   [Award, "Credentials", "/credentials"],
+  [Store, "Marketplace", "/marketplace"],
+  [CalendarRange, "Community events", "/events"],
   [MessagesSquare, "Messages", "/chat/general"],
   [Users, "Team rooms", "/team/1"],
   [Bookmark, "Bookmarks", "/bookmarks"],
