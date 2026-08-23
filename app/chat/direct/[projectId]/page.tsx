@@ -4,7 +4,6 @@ import { ArrowLeft, Loader2, Send } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 export default function DirectChat() {
   const { projectId } = useParams<{ projectId: string }>(),
     [msgs, setMsgs] = useState<any[]>([]),
@@ -22,23 +21,8 @@ export default function DirectChat() {
   }
   useEffect(() => {
     load();
-    const s = createClient(),
-      c = s
-        .channel(`direct-${projectId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: `project_id=eq.${projectId}`,
-          },
-          () => load(),
-        )
-        .subscribe();
-    return () => {
-      s.removeChannel(c);
-    };
+    const timer=window.setInterval(load,4000);
+    return () => window.clearInterval(timer);
   }, [projectId]);
   useEffect(
     () => bottom.current?.scrollIntoView({ behavior: "smooth" }),

@@ -2,7 +2,6 @@
 import AppShell from "@/components/AppShell";
 import { Paperclip, Send, Smile, Users, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 export default function Chat() {
   const [msgs, setMsgs] = useState<any[]>([]),
     [text, setText] = useState(""),
@@ -16,23 +15,8 @@ export default function Chat() {
   }
   useEffect(() => {
     load();
-    const s = createClient(),
-      channel = s
-        .channel("general-chat")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: "room_type=eq.GENERAL",
-          },
-          () => load(),
-        )
-        .subscribe();
-    return () => {
-      s.removeChannel(channel);
-    };
+    const timer=window.setInterval(load,4000);
+    return () => window.clearInterval(timer);
   }, []);
   useEffect(
     () => bottom.current?.scrollIntoView({ behavior: "smooth" }),
