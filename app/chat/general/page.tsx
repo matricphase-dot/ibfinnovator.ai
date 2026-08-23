@@ -9,19 +9,27 @@ export default function Chat() {
     [sending, setSending] = useState(false),
     bottom = useRef<HTMLDivElement>(null);
   async function load() {
-    const r = await fetch("/api/chat/general", { cache: "no-store" });
-    if (r.ok) setMsgs(await r.json());
-    setLoading(false);
+    try {
+      const r = await fetch("/api/chat/general", { cache: "no-store" });
+      if (r.ok) {
+        const data = await r.json();
+        setMsgs(Array.isArray(data) ? data : []);
+      }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     load();
-    const timer=window.setInterval(load,4000);
+    const timer = window.setInterval(load, 4000);
     return () => window.clearInterval(timer);
   }, []);
-  useEffect(
-    () => bottom.current?.scrollIntoView({ behavior: "smooth" }),
-    [msgs],
-  );
+  useEffect(() => {
+    const node = bottom.current;
+    if (node && typeof node.scrollIntoView === "function")
+      node.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
   async function send() {
     if (!text.trim() || sending) return;
     setSending(true);

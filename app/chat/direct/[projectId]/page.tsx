@@ -12,22 +12,29 @@ export default function DirectChat() {
     [loading, setLoading] = useState(true),
     bottom = useRef<HTMLDivElement>(null);
   async function load() {
-    const r = await fetch(`/api/chat/direct/${projectId}`, {
-        cache: "no-store",
-      }),
-      d = await r.json();
-    r.ok ? setMsgs(d.messages || []) : setError(d.error);
-    setLoading(false);
+    try {
+      const r = await fetch(`/api/chat/direct/${projectId}`, {
+          cache: "no-store",
+        }),
+        d = await r.json();
+      if (r.ok) setMsgs(Array.isArray(d.messages) ? d.messages : []);
+      else setError(d.error || "Unable to load chat");
+    } catch {
+      setError("Unable to reach the chat service.");
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     load();
-    const timer=window.setInterval(load,4000);
+    const timer = window.setInterval(load, 4000);
     return () => window.clearInterval(timer);
   }, [projectId]);
-  useEffect(
-    () => bottom.current?.scrollIntoView({ behavior: "smooth" }),
-    [msgs],
-  );
+  useEffect(() => {
+    const node = bottom.current;
+    if (node && typeof node.scrollIntoView === "function")
+      node.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
   async function send() {
     if (!text.trim()) return;
     const value = text;
