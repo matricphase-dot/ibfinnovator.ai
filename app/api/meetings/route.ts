@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const meeting = z
   .object({
     project_id: z.string().uuid(),
@@ -9,7 +10,7 @@ const meeting = z
     starts_at: z.string().datetime(),
     ends_at: z.string().datetime(),
     location: z.string().max(500).optional(),
-    attendee_ids: z.array(z.string().uuid()).default([]),
+    attendee_ids: z.array(userId).default([]),
   })
   .refine((x) => new Date(x.ends_at) > new Date(x.starts_at), {
     message: "End time must be after start time",

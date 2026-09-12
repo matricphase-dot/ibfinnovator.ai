@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const input = z.object({
-  recipient_id: z.string().uuid(),
+  recipient_id: userId,
   project_id: z.string().uuid().nullable().optional(),
   type: z.enum(["PROJECT", "COFOUNDER"]).default("PROJECT"),
 });

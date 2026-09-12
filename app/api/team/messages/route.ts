@@ -12,6 +12,27 @@ export async function POST(r: Request) {
   try {
     const { supabase, user } = await requireUser();
     const p = schema.parse(await r.json());
+    // Only room members (or the project founder) may post in a team room.
+    const { data: room } = await supabase
+      .from("team_rooms")
+      .select("id,project:projects(founder_id)")
+      .eq("id", p.room_id)
+      .single();
+    const founderId =
+      (room as any)?.project?.founder_id ?? (room as any)?.project?.[0]?.founder_id;
+    if (!room) throw new Error("Team room not found");
+    if (founderId !== user.id) {
+      const { count } = await supabase
+        .from("team_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("room_id", p.room_id)
+        .eq("user_id", user.id);
+      if (!count)
+        return NextResponse.json(
+          { error: "Team membership required." },
+          { status: 403 },
+        );
+    }
     const { data, error } = await supabase
       .from("messages")
       .insert({
@@ -33,7 +54,7 @@ export async function POST(r: Request) {
 }
 export async function PATCH(r: Request) {
   try {
-    const { supabase } = await requireUser();
+    const { supabase, user } = await requireUser();
     const p = z
       .object({
         id: z.string().uuid(),
@@ -41,6 +62,26 @@ export async function PATCH(r: Request) {
         content: z.string().trim().min(1).max(5000).optional(),
       })
       .parse(await r.json());
+    // Only the sender or a member of the team room may edit/pin a message.
+    const { data: message } = await supabase
+      .from("messages")
+      .select("sender_id,room_id,room_type")
+      .eq("id", p.id)
+      .maybeSingle();
+    if (!message)
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    if (message.sender_id !== user.id) {
+      const { count } = await supabase
+        .from("team_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("room_id", message.room_id)
+        .eq("user_id", user.id);
+      if (!count)
+        return NextResponse.json(
+          { error: "You can only edit your own messages." },
+          { status: 403 },
+        );
+    }
     const { data, error } = await supabase
       .from("messages")
       .update(p)

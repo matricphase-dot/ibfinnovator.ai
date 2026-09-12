@@ -123,7 +123,7 @@ const faqs = [
   ],
   [
     "Why did Google or GitHub login fail?",
-    "Social login only works after that provider is enabled with valid OAuth credentials in Supabase. Email/password login remains available.",
+    "Social sign-in options are managed by Clerk. If a provider isn't showing on the sign-in screen, it hasn't been enabled yet — email/password sign-in always works.",
   ],
   [
     "Why is my bookmark list empty?",

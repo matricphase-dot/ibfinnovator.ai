@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -22,13 +23,24 @@ export async function POST(r: Request) {
     const { supabase, user } = await requireUser();
     const p = z
       .object({
-        receiver_id: z.string().uuid(),
+        receiver_id: userId,
         project_id: z.string().uuid(),
         role_title: z.string().min(2).max(120),
         started_at: z.string().optional(),
         completed_at: z.string().optional(),
       })
       .parse(await r.json());
+    // Only the project's founder may issue certificates for it.
+    const { data: project } = await supabase
+      .from("projects")
+      .select("founder_id")
+      .eq("id", p.project_id)
+      .single();
+    if (!project || project.founder_id !== user.id)
+      return NextResponse.json(
+        { error: "Only the project founder can issue certificates." },
+        { status: 403 },
+      );
     const { data, error } = await supabase
       .from("certificates")
       .insert({ ...p, issued_by: user.id })

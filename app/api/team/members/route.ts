@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const schema = z.object({
   room_id: z.string().uuid(),
-  user_id: z.string().uuid(),
+  user_id: userId,
   action: z.enum(["ADD", "REMOVE"]),
   role: z.enum(["ADMIN", "MEMBER", "OBSERVER"]).default("MEMBER"),
 });
