@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const input = z.object({
   title: z.string().min(2).max(160),
   description: z.string().max(1500).optional(),
   due_date: z.string().datetime().optional(),
-  assigned_to: z.string().uuid().optional(),
+  assigned_to: userId.optional(),
   sort_order: z.number().int().default(0),
 });
 export async function GET(

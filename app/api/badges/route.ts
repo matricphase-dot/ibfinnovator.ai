@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -28,11 +29,22 @@ export async function POST(r: Request) {
     const p = z
       .object({
         badge_id: z.string().uuid(),
-        receiver_id: z.string().uuid(),
+        receiver_id: userId,
         project_id: z.string().uuid(),
         evidence: z.string().min(10).max(2000),
       })
       .parse(await r.json());
+    // Only the project's founder may award badges for it.
+    const { data: project } = await supabase
+      .from("projects")
+      .select("founder_id")
+      .eq("id", p.project_id)
+      .single();
+    if (!project || project.founder_id !== user.id)
+      return NextResponse.json(
+        { error: "Only the project founder can award badges." },
+        { status: 403 },
+      );
     const { data, error } = await supabase
       .from("user_badges")
       .insert({ ...p, awarded_by: user.id })

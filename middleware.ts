@@ -1,5 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { NextRequest } from "next/server";
+
 const protectedPaths = [
   "/dashboard",
   "/matches",
@@ -13,50 +14,20 @@ const protectedPaths = [
   "/settings",
   "/notifications",
   "/applications",
+  "/credentials",
+  "/onboarding",
 ];
-export async function middleware(request: NextRequest) {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
-    return NextResponse.next();
-  let response = NextResponse.next({ request });
-  const s = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll(items) {
-          items.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          items.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
+
+function isProtected(pathname: string) {
+  return protectedPaths.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
   );
-  const {
-    data: { user },
-  } = await s.auth.getUser();
-  const path = request.nextUrl.pathname;
-  if (
-    !user &&
-    protectedPaths.some((p) => path === p || path.startsWith(p + "/"))
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/signin";
-    url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
-  }
-  if (user && (path === "/auth/signin" || path === "/auth/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-  return response;
 }
+
+export default clerkMiddleware(async (auth, request: NextRequest) => {
+  if (isProtected(request.nextUrl.pathname)) await auth.protect();
+});
+
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json).*)",

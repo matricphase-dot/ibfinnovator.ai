@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const input = z.object({
-  receiver_id: z.string().uuid(),
+  receiver_id: userId,
   skill: z.string().trim().min(1).max(80),
   project_id: z.string().uuid().optional(),
 });

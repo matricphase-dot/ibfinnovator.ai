@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const update = z.object({
   title: z.string().min(2).max(160).optional(),
   description: z.string().max(1500).nullable().optional(),
   due_date: z.string().datetime().nullable().optional(),
-  assigned_to: z.string().uuid().nullable().optional(),
+  assigned_to: userId.nullable().optional(),
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]).optional(),
   sort_order: z.number().int().optional(),
 });

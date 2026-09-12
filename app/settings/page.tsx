@@ -2,9 +2,6 @@
 import AppShell from "@/components/AppShell";
 import {
   Bell,
-  Check,
-  Eye,
-  EyeOff,
   Lock,
   LogOut,
   Save,
@@ -12,14 +9,14 @@ import {
   UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useClerk } from "@clerk/nextjs";
 import toast from "react-hot-toast";
 type Tab = "profile" | "notifications" | "security";
 export default function Settings() {
+  const { openUserProfile, signOut } = useClerk();
   const [p, setP] = useState<any>(null),
     [tab, setTab] = useState<Tab>("profile"),
     [saving, setSaving] = useState(false),
-    [show, setShow] = useState(false),
     [prefs, setPrefs] = useState({
       connection: true,
       messages: true,
@@ -31,11 +28,11 @@ export default function Settings() {
     fetch("/api/profile")
       .then((r) => r.json())
       .then(setP);
-    createClient()
-      .auth.getUser()
-      .then(({ data }) => {
-        const x = data.user?.user_metadata?.notifications;
-        if (x) setPrefs({ ...prefs, ...x });
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const x = d?.notifications;
+        if (x) setPrefs((prev) => ({ ...prev, ...x }));
       });
   }, []);
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
@@ -67,33 +64,18 @@ export default function Settings() {
   }
   async function saveNotifications() {
     setSaving(true);
-    const s = createClient();
-    const { error } = await s.auth.updateUser({
-      data: { notifications: prefs },
+    const r = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ notifications: prefs }),
     });
     setSaving(false);
-    error
-      ? toast.error(error.message)
-      : toast.success("Notification preferences saved");
+    r.ok
+      ? toast.success("Notification preferences saved")
+      : toast.error("Could not save preferences");
   }
-  async function changePassword(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget),
-      a = String(f.get("password")),
-      b = String(f.get("confirm"));
-    if (a.length < 8)
-      return toast.error("Password must be at least 8 characters");
-    if (a !== b) return toast.error("Passwords do not match");
-    setSaving(true);
-    const { error } = await createClient().auth.updateUser({ password: a });
-    setSaving(false);
-    error
-      ? toast.error(error.message)
-      : (toast.success("Password updated"), e.currentTarget.reset());
-  }
-  async function logout() {
-    await createClient().auth.signOut();
-    location.href = "/";
+  function logout() {
+    signOut(() => window.location.assign("/"));
   }
   async function deleteAccount() {
     if (
@@ -104,8 +86,7 @@ export default function Settings() {
       return;
     const r = await fetch("/api/account", { method: "DELETE" });
     if (r.ok) {
-      await createClient().auth.signOut();
-      location.href = "/";
+      window.location.assign("/");
     } else toast.error("Account deletion failed");
   }
   const tabs: [[Tab, any, string], [Tab, any, string], [Tab, any, string]] = [
@@ -280,46 +261,25 @@ export default function Settings() {
                 <div className="ml-3">
                   <h2 className="font-bold text-lg">Password and security</h2>
                   <p className="text-sm text-slate-500 mt-1">
-                    Update the password for your Supabase account.
+                    Your credentials are managed securely by Clerk.
                   </p>
                 </div>
               </div>
-              <form onSubmit={changePassword} className="mt-6">
-                <label className="block text-sm font-bold">
-                  New password
-                  <div className="relative mt-2">
-                    <input
-                      name="password"
-                      required
-                      minLength={8}
-                      type={show ? "text" : "password"}
-                      className="field pr-12"
-                      placeholder="At least 8 characters"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShow(!show)}
-                      className="absolute right-3 top-3 text-slate-500"
-                    >
-                      {show ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </label>
-                <label className="block text-sm font-bold mt-4">
-                  Confirm new password
-                  <input
-                    name="confirm"
-                    required
-                    minLength={8}
-                    type={show ? "text" : "password"}
-                    className="field mt-2"
-                  />
-                </label>
-                <button disabled={saving} className="btn btn-primary mt-6">
+              <div className="mt-6 rounded-xl border border-white/10 bg-cyan-300/[.04] p-4">
+                <b className="text-sm">Account security center</b>
+                <p className="text-xs text-slate-500 mt-2 leading-5">
+                  Change your password, manage email addresses, connect social
+                  accounts (Google, GitHub and more) and enable two-factor
+                  authentication — all in one place.
+                </p>
+                <button
+                  onClick={() => openUserProfile()}
+                  className="btn btn-primary mt-4"
+                >
                   <Lock size={16} />
-                  {saving ? "Updating…" : "Update password"}
+                  Manage account security
                 </button>
-              </form>
+              </div>
               <div className="mt-8 pt-6 border-t border-white/[.07]">
                 <b className="text-sm">Active session</b>
                 <p className="text-xs text-slate-500 mt-2">

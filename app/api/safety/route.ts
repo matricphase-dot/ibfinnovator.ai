@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { userId } from "@/lib/validators";
 const report = z.object({
   action: z.literal("REPORT"),
-  reported_user_id: z.string().uuid().optional(),
+  reported_user_id: userId.optional(),
   project_id: z.string().uuid().optional(),
   message_id: z.string().uuid().optional(),
   reason: z.string().min(3).max(120),
@@ -11,7 +12,7 @@ const report = z.object({
 });
 const block = z.object({
   action: z.enum(["BLOCK", "UNBLOCK"]),
-  blocked_id: z.string().uuid(),
+  blocked_id: userId,
 });
 export async function POST(r: Request) {
   try {

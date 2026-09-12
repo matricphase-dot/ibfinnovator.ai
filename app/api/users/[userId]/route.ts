@@ -14,6 +14,7 @@ export async function GET(
           "id,name,role,avatar_url,bio,skills,interests,portfolio_urls,availability,company,goals,is_cofounder,average_rating,endorsement_count,created_at",
         )
         .eq("id", userId)
+        .eq("suspended", false)
         .single(),
       s
         .from("reviews")

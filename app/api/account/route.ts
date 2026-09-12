@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { requireUser } from "@/lib/supabase/server";
 export async function GET() {
   try {
@@ -66,9 +67,16 @@ export async function GET() {
 }
 export async function DELETE() {
   try {
-    const { supabase } = await requireUser();
-    const { error } = await supabase.rpc("delete_own_account");
+    const { supabase, user } = await requireUser();
+    // Deleting the profile cascades to all app data (projects,
+    // applications, messages, etc. per the schema's foreign keys).
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", user.id);
     if (error) throw error;
+    // Then remove the Clerk account itself.
+    await (await clerkClient()).users.deleteUser(user.id);
     return NextResponse.json({ deleted: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
