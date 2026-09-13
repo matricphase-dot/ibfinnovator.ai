@@ -62,6 +62,9 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
                 className="relative p-2 text-slate-400 hover:text-cyan-300"
               >
                 <Bell size={20} />
+                <span className="sr-only" aria-live="polite">
+                  Unread notifications available
+                </span>
                 <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-300 border-2 border-[#0d1422]" />
               </Link>
               <div className="h-7 w-px bg-white/10" />

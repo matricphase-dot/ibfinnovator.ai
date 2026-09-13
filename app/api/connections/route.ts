@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { dispatchEmail } from "@/lib/email/dispatch";
+import ConnectionRequestEmail from "@/lib/email/templates/ConnectionRequestEmail";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const input = z.object({
   recipient_id: z.string().uuid(),
   project_id: z.string().uuid().nullable().optional(),
@@ -25,6 +28,8 @@ export async function GET() {
 export async function POST(r: Request) {
   try {
     const { supabase, user } = await requireUser();
+    const limit = checkRateLimit(`${user.id}:connections`, 10, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
     const p = input.safeParse(await r.json());
     if (!p.success)
       return NextResponse.json({ error: p.error.flatten() }, { status: 400 });
@@ -83,14 +88,20 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase
-      .from("notifications")
-      .insert({
-        user_id: p.data.recipient_id,
-        type: "CONNECTION_REQUEST",
-        message: "You have a new connection request",
-        link: "/dashboard",
-      });
+    await supabase.from("notifications").insert({
+      user_id: p.data.recipient_id,
+      type: "CONNECTION_REQUEST",
+      message: "You have a new connection request",
+      link: "/dashboard",
+    });
+    dispatchEmail({
+      profileId: p.data.recipient_id,
+      subject: "New IBF connection request",
+      react: ConnectionRequestEmail({
+        name: "IBF member",
+        href: `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/dashboard`,
+      }),
+    });
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const message = z.object({
   content: z.string().trim().min(1).max(5000),
   attachments: z.array(z.string().url()).max(10).default([]),
@@ -25,8 +26,10 @@ export async function GET(req: NextRequest) {
 }
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser(),
-      p = message.parse(await r.json());
+    const { supabase, user } = await requireUser();
+    const limit = checkRateLimit(`${user.id}:general-chat`, 30, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
+    const p = message.parse(await r.json());
     const { data, error } = await supabase
       .from("messages")
       .insert({ sender_id: user.id, room_type: "GENERAL", ...p })

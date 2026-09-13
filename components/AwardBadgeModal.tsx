@@ -2,6 +2,7 @@
 import { Award, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useModalA11y } from "./useModalA11y";
 type Person = { id: string; name: string };
 export default function AwardBadgeModal({
   projectId,
@@ -14,6 +15,7 @@ export default function AwardBadgeModal({
     [people, setPeople] = useState<Person[]>([]),
     [badges, setBadges] = useState<any[]>([]),
     [loading, setLoading] = useState(false);
+  const modalRef = useModalA11y(open, () => setOpen(false));
   async function show() {
     if (disabled) return;
     setOpen(true);
@@ -72,7 +74,9 @@ export default function AwardBadgeModal({
             className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6"
           >
             <div className="flex">
-              <h2 className="text-xl font-black">Award contribution badge</h2>
+              <h2 id="award-title" className="text-xl font-black">
+                Award contribution badge
+              </h2>
               <button
                 type="button"
                 aria-label="Close"

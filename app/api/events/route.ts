@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 export async function GET() {
   const s = await createClient();
   const { data, error } = await s
@@ -17,20 +18,22 @@ export async function GET() {
 }
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser(),
-      p = z
-        .object({
-          title: z.string().min(3).max(160),
-          description: z.string().max(3000).optional(),
-          event_type: z
-            .enum(["EVENT", "AMA", "WORKSHOP", "DEMO_DAY"])
-            .default("EVENT"),
-          starts_at: z.string().datetime(),
-          ends_at: z.string().datetime().optional(),
-          location: z.string().max(500).optional(),
-          capacity: z.number().int().positive().optional(),
-        })
-        .parse(await r.json());
+    const { supabase, user } = await requireUser();
+    const limit = checkRateLimit(`${user.id}:events-create`, 5, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
+    const p = z
+      .object({
+        title: z.string().min(3).max(160),
+        description: z.string().max(3000).optional(),
+        event_type: z
+          .enum(["EVENT", "AMA", "WORKSHOP", "DEMO_DAY"])
+          .default("EVENT"),
+        starts_at: z.string().datetime(),
+        ends_at: z.string().datetime().optional(),
+        location: z.string().max(500).optional(),
+        capacity: z.number().int().positive().optional(),
+      })
+      .parse(await r.json());
     const { data, error } = await supabase
       .from("community_events")
       .insert({ ...p, host_id: user.id })

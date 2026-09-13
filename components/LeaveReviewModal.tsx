@@ -2,6 +2,7 @@
 import { Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useModalA11y } from "./useModalA11y";
 export default function LeaveReviewModal({
   userId,
   onSuccess,
@@ -13,6 +14,7 @@ export default function LeaveReviewModal({
     [projects, setProjects] = useState<any[]>([]),
     [rating, setRating] = useState(5),
     [loading, setLoading] = useState(false);
+  const modalRef = useModalA11y(open, () => setOpen(false));
   async function loadEligibility() {
     const [connections, me] = await Promise.all([
       fetch("/api/connections").then((r) => r.json()),
@@ -73,7 +75,9 @@ export default function LeaveReviewModal({
             className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6"
           >
             <div className="flex">
-              <h2 className="text-xl font-black">Review collaboration</h2>
+              <h2 id="review-title" className="text-xl font-black">
+                Review collaboration
+              </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}

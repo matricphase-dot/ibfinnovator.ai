@@ -1,6 +1,7 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {dispatchEmail} from '@/lib/email/dispatch';import WelcomeEmail from '@/lib/email/templates/WelcomeEmail';
 export const runtime = "nodejs";
 async function findShadow(email: string) {
   for (let page = 1; page <= 100; page++) {
@@ -159,8 +160,8 @@ export async function POST(req: Request) {
   }
   if (!claim) return new Response("ok", { status: 200 });
   try {
-    if (evt.type === "user.created" || evt.type === "user.updated")
-      await handleUser(evt.data);
+    if (evt.type === "user.created" || evt.type === "user.updated") await handleUser(evt.data);
+    if(evt.type==='user.created'&&['FOUNDER','STUDENT'].includes(evt.data.public_metadata?.role)){const verified=(evt.data.email_addresses||[]).filter((x:any)=>x.verification?.status==='verified');const primary=verified.find((x:any)=>x.id===evt.data.primary_email_address_id)||verified[0];if(primary)dispatchEmail({to:primary.email_address,subject:'Welcome to IBF',react:WelcomeEmail({name:[evt.data.first_name,evt.data.last_name].filter(Boolean).join(' ')||'IBF member',href:`${process.env.NEXT_PUBLIC_APP_URL||'https://innovators-global.com'}/dashboard`})})}
     if (evt.type === "user.deleted") {
       const { data: p } = await supabaseAdmin
         .from("profiles")

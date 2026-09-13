@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { projectMatch } from "@/lib/matching";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const emptyUrl = z.preprocess(
   (v) => (v === "" || v == null ? undefined : v),
   z.string().url().optional(),
@@ -73,7 +74,7 @@ const student = z.object({
 });
 export async function POST(req: Request) {
   try {
-    await requireUser();
+    const { user } = await requireUser();
     const body = await req.json();
     const envelope = z
       .object({
@@ -82,6 +83,16 @@ export async function POST(req: Request) {
         data: z.unknown(),
       })
       .parse(body);
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const limit = checkRateLimit(
+      envelope.action === "preview"
+        ? `${ip}:onboarding-preview`
+        : `${user.id}:onboarding-finalize`,
+      envelope.action === "preview" ? 20 : 5,
+      60,
+    );
+    if (!limit.allowed) return rateLimitResponse(limit);
     const parsed =
       envelope.role === "FOUNDER"
         ? founder.parse(envelope.data)

@@ -54,6 +54,24 @@ Passwords cannot be transferred. Existing users use Clerk password recovery or G
 5. Keep additive identity columns/tables in place.
 6. Restore policies from migrations 001–009 only if required and only after a database backup.
 
+## Final cutover validation
+
+- Build succeeds with Node.js 22.
+- Legacy Supabase login and Clerk login access the same UUID profile.
+- Clerk signup, role selection and five-step onboarding pass.
+- Webhook creation, duplicate, retry, deletion and conflict tests pass.
+- Public APIs remain public; protected routes redirect signed-out users.
+- Two-user RLS and Storage isolation tests pass.
+- Resend, Sentry, rate limits, sitemap, headers and PWA pass on Preview.
+
+## Production cutover
+
+1. Back up Supabase and retain the last stable Vercel deployment.
+2. Complete `docs/PRODUCTION_READINESS.md` on Preview.
+3. Apply production migrations and deploy hybrid auth with legacy login visible.
+4. Monitor Clerk events, Sentry, email delivery and API latency.
+5. Hide legacy login after two clean weeks and remove it only in a later release.
+
 ## Risk warnings
 
 Applying RLS migrations before enabling Supabase's Clerk provider may deny Clerk requests. Switching to Clerk-only middleware would lock out legacy users. Never expose the service-role or Clerk secret in browser code. Test in Vercel Preview before production.

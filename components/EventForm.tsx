@@ -2,6 +2,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useModalA11y } from "./useModalA11y";
 export default function EventForm({
   event,
   onSaved,
@@ -12,6 +13,7 @@ export default function EventForm({
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const modalRef = useModalA11y(true, onClose);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);

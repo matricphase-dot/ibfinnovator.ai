@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { dispatchEmail } from "@/lib/email/dispatch";
+import MeetingInviteEmail from "@/lib/email/templates/MeetingInviteEmail";
 const meeting = z
   .object({
     project_id: z.string().uuid(),
@@ -65,6 +67,15 @@ export async function POST(r: Request) {
           attendee_ids.map((id) => ({ meeting_id: data.id, user_id: id })),
         );
       if (ae) throw ae;
+      attendee_ids.forEach((profileId) =>
+        dispatchEmail({
+          profileId,
+          subject: `Meeting invitation: ${data.title}`,
+          react: MeetingInviteEmail({
+            href: `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/meetings`,
+          }),
+        }),
+      );
     }
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {

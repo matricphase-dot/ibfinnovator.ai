@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const schema = z.object({
   title: z.string().min(3).max(140),
   description: z
@@ -29,8 +30,10 @@ export async function GET() {
 }
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser(),
-      p = schema.parse(await r.json());
+    const { supabase, user } = await requireUser();
+    const limit = checkRateLimit(`${user.id}:marketplace-create`, 5, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
+    const p = schema.parse(await r.json());
     const { data, error } = await supabase
       .from("marketplace_services")
       .insert({ ...p, provider_id: user.id })

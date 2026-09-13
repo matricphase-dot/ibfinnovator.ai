@@ -2,6 +2,7 @@
 import { Check, Copy, FileCheck2, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useModalA11y } from "./useModalA11y";
 export default function IssueCertificateModal({
   projectId,
   disabled = false,
@@ -13,6 +14,7 @@ export default function IssueCertificateModal({
     [people, setPeople] = useState<any[]>([]),
     [loading, setLoading] = useState(false),
     [code, setCode] = useState("");
+  const modalRef = useModalA11y(open, () => setOpen(false));
   async function show() {
     if (disabled) return;
     setOpen(true);
@@ -63,7 +65,13 @@ export default function IssueCertificateModal({
       </button>
       {open && (
         <div className="fixed inset-0 z-[120] bg-black/75 grid place-items-center p-4">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6">
+          <div
+            ref={modalRef as any}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="certificate-title"
+            className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6"
+          >
             {code ? (
               <div className="text-center">
                 <Check className="mx-auto text-cyan-300" size={40} />

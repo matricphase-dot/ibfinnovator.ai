@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const report = z.object({
   action: z.literal("REPORT"),
   reported_user_id: z.string().uuid().optional(),
@@ -18,6 +19,8 @@ export async function POST(r: Request) {
     const { supabase, user } = await requireUser(),
       body = await r.json();
     if (body.action === "REPORT") {
+      const limit = checkRateLimit(`${user.id}:reports`, 3, 60);
+      if (!limit.allowed) return rateLimitResponse(limit);
       const p = report.parse(body);
       const { action, ...row } = p;
       const { data, error } = await supabase

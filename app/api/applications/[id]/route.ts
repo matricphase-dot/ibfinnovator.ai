@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { dispatchEmail } from "@/lib/email/dispatch";
+import ApplicationStatusEmail from "@/lib/email/templates/ApplicationStatusEmail";
 export async function PATCH(
   r: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -28,14 +30,19 @@ export async function PATCH(
       .select()
       .single();
     if (error) throw error;
-    await supabase
-      .from("notifications")
-      .insert({
-        user_id: application.student_id,
-        type: "APPLICATION_UPDATE",
-        message: `Your application for ${application.project.title} was ${status.toLowerCase()}`,
-        link: `/projects/${application.project_id}`,
-      });
+    await supabase.from("notifications").insert({
+      user_id: application.student_id,
+      type: "APPLICATION_UPDATE",
+      message: `Your application for ${application.project.title} was ${status.toLowerCase()}`,
+      link: `/projects/${application.project_id}`,
+    });
+    dispatchEmail({
+      profileId: application.student_id,
+      subject: `Application ${status.toLowerCase()}`,
+      react: ApplicationStatusEmail({
+        href: `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/applications`,
+      }),
+    });
     return NextResponse.json(data);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

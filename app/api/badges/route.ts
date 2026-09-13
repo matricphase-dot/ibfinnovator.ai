@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { dispatchEmail } from "@/lib/email/dispatch";
+import BadgeAwardedEmail from "@/lib/email/templates/BadgeAwardedEmail";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -73,14 +75,19 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase
-      .from("notifications")
-      .insert({
-        user_id: p.receiver_id,
-        type: "BADGE_AWARDED",
-        message: `You earned the ${data.badge.name} badge`,
-        link: "/credentials",
-      });
+    await supabase.from("notifications").insert({
+      user_id: p.receiver_id,
+      type: "BADGE_AWARDED",
+      message: `You earned the ${data.badge.name} badge`,
+      link: "/credentials",
+    });
+    dispatchEmail({
+      profileId: p.receiver_id,
+      subject: `You earned the ${data.badge.name} badge`,
+      react: BadgeAwardedEmail({
+        href: `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/credentials`,
+      }),
+    });
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

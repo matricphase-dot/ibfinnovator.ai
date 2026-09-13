@@ -2,6 +2,7 @@
 import { Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useModalA11y } from "./useModalA11y";
 export default function ServiceListingForm({
   service,
   onSaved,
@@ -13,6 +14,7 @@ export default function ServiceListingForm({
 }) {
   const [skills, setSkills] = useState<string[]>(service?.skills || [""]),
     [loading, setLoading] = useState(false);
+  const modalRef = useModalA11y(true, onClose);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget),

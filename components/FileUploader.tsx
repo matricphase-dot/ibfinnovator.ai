@@ -81,6 +81,14 @@ export default function FileUploader({
     <div>
       <button
         type="button"
+        role="button"
+        aria-label={label}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            input.current?.click();
+          }
+        }}
         onClick={() => input.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {

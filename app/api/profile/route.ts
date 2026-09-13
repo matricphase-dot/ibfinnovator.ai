@@ -27,6 +27,7 @@ const update = z.object({
   is_cofounder: z.boolean().optional(),
   investor_visible: z.boolean().optional(),
   investor_pitch: z.string().max(3000).nullable().optional(),
+  email_opt_in: z.boolean().optional(),
 });
 export async function GET() {
   try {

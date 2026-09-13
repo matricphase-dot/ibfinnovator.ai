@@ -13,10 +13,13 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useClerk, useUser } from "@clerk/nextjs";
 import toast from "react-hot-toast";
 import FileUploader from "@/components/FileUploader";
 type Tab = "profile" | "notifications" | "security" | "investor";
 export default function Settings() {
+  const { signOut } = useClerk();
+  const { user: clerkUser } = useUser();
   const [p, setP] = useState<any>(null),
     [tab, setTab] = useState<Tab>("profile"),
     [saving, setSaving] = useState(false),
@@ -32,7 +35,11 @@ export default function Settings() {
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => r.json())
-      .then(setP);
+      .then((x) => {
+        setP(x);
+        if (x?.email_opt_in !== undefined)
+          setPrefs((v) => ({ ...v, email: x.email_opt_in }));
+      });
     createClient()
       .auth.getUser()
       .then(({ data }) => {
@@ -94,15 +101,18 @@ export default function Settings() {
   }
   async function saveNotifications() {
     setSaving(true);
-    const s = createClient();
-    const { error } = await s.auth.updateUser({
-      data: { notifications: prefs },
-    });
+    const r = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email_opt_in: prefs.email }),
+      }),
+      d = await r.json();
     setSaving(false);
-    error
-      ? toast.error(error.message)
-      : toast.success("Notification preferences saved");
+    r.ok
+      ? (setP(d), toast.success("Notification preferences saved"))
+      : toast.error(d.error || "Could not save preferences");
   }
+
   async function changePassword(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget),
@@ -138,9 +148,13 @@ export default function Settings() {
     } else toast.error(d.error || "Could not update visibility");
   }
   async function logout() {
-    await createClient().auth.signOut();
-    location.href = "/";
+    if (clerkUser) await signOut({ redirectUrl: "/" });
+    else {
+      await createClient().auth.signOut();
+      location.href = "/";
+    }
   }
+
   async function deleteAccount() {
     if (
       !confirm(
@@ -150,8 +164,11 @@ export default function Settings() {
       return;
     const r = await fetch("/api/account", { method: "DELETE" });
     if (r.ok) {
-      await createClient().auth.signOut();
-      location.href = "/";
+      if (clerkUser) await signOut({ redirectUrl: "/" });
+      else {
+        await createClient().auth.signOut();
+        location.href = "/";
+      }
     } else toast.error("Account deletion failed");
   }
   const tabs: Array<[Tab, any, string]> = [

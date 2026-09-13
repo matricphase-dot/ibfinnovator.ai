@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
-import { z } from "zod";
+import { z } from "zod";import {checkRateLimit,rateLimitResponse} from '@/lib/rate-limit';
 const schema = z.object({
   room_id: z.string().uuid(),
   channel: z.string().max(80).default("General"),
@@ -10,7 +10,7 @@ const schema = z.object({
 });
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser();
+    const { supabase, user } = await requireUser();const limit=checkRateLimit(`${user.id}:team-messages`,60,60);if(!limit.allowed)return rateLimitResponse(limit);
     const p = schema.parse(await r.json());
     const { data, error } = await supabase
       .from("messages")

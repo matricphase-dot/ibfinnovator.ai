@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { dispatchEmail } from "@/lib/email/dispatch";
+import ApplicationReceivedEmail from "@/lib/email/templates/ApplicationReceivedEmail";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const input = z.object({
   project_id: z.string().uuid(),
   cover_letter: z.string().trim().min(30).max(3000),
@@ -43,6 +46,8 @@ export async function GET() {
 export async function POST(r: Request) {
   try {
     const { supabase, user } = await requireUser();
+    const limit = checkRateLimit(`${user.id}:applications`, 5, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
     const p = input.safeParse(await r.json());
     if (!p.success)
       return NextResponse.json({ error: p.error.flatten() }, { status: 400 });
@@ -74,14 +79,19 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase
-      .from("notifications")
-      .insert({
-        user_id: project.founder_id,
-        type: "NEW_APPLICATION",
-        message: `New application for ${project.title}`,
-        link: "/dashboard",
-      });
+    await supabase.from("notifications").insert({
+      user_id: project.founder_id,
+      type: "NEW_APPLICATION",
+      message: `New application for ${project.title}`,
+      link: "/dashboard",
+    });
+    dispatchEmail({
+      profileId: project.founder_id,
+      subject: `New application for ${project.title}`,
+      react: ApplicationReceivedEmail({
+        href: `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/applications`,
+      }),
+    });
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

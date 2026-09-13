@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
+import { dispatchEmail } from "@/lib/email/dispatch";
+import NewMessageEmail from "@/lib/email/templates/NewMessageEmail";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 async function authorize(projectId: string, userId: string, s: any) {
   const { data: project } = await s
     .from("projects")
@@ -74,6 +77,8 @@ export async function POST(
   try {
     const { projectId } = await params,
       { supabase, user } = await requireUser();
+    const limit = checkRateLimit(`${user.id}:direct-chat`, 60, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
     const access = await authorize(projectId, user.id, supabase);
     if (!access?.other)
       return NextResponse.json(
@@ -109,6 +114,22 @@ export async function POST(
       message: "You received a new project message",
       link: `/chat/direct/${projectId}`,
     });
+    const { data: recipient } = await supabase
+      .from("profiles")
+      .select("last_seen_at")
+      .eq("id", access.other)
+      .maybeSingle();
+    if (
+      !recipient?.last_seen_at ||
+      Date.now() - new Date(recipient.last_seen_at).getTime() > 5 * 60 * 1000
+    )
+      dispatchEmail({
+        profileId: access.other,
+        subject: "New IBF message",
+        react: NewMessageEmail({
+          href: `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/chat/direct/${projectId}`,
+        }),
+      });
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
