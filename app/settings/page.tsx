@@ -135,6 +135,23 @@ export default function Settings() {
           ACCOUNT CONTROL
         </p>
         <h1 className="text-3xl font-black mt-2">Settings</h1>
+        {p && !p.onboarding_completed && (
+          <div className="mt-6 p-4 rounded-2xl border border-amber-300/20 bg-amber-300/[.06] flex items-center gap-4">
+            <div>
+              <b className="text-amber-200">Finish your onboarding</b>
+              <p className="text-sm text-slate-500 mt-1">
+                Complete your profile to unlock accurate matching and
+                collaboration tools.
+              </p>
+            </div>
+            <a
+              href="/auth/complete-onboarding"
+              className="btn btn-primary ml-auto"
+            >
+              Complete now
+            </a>
+          </div>
+        )}
         <div className="grid md:grid-cols-[190px_1fr] gap-6 mt-8">
           <aside className="space-y-1">
             {tabs.map(([id, I, label]) => (

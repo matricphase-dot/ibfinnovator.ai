@@ -112,6 +112,22 @@ export default function Dashboard() {
   return (
     <AppShell>
       <div className="p-5 md:p-8 max-w-7xl mx-auto">
+        {!p.onboarding_completed && (
+          <div className="p-4 mb-6 rounded-2xl border border-amber-300/20 bg-amber-300/[.06] flex items-center gap-4">
+            <div>
+              <b className="text-amber-200">Finish your onboarding</b>
+              <p className="text-sm text-slate-500 mt-1">
+                Complete your role-specific profile to unlock accurate matches.
+              </p>
+            </div>
+            <Link
+              href="/auth/complete-onboarding"
+              className="btn btn-primary ml-auto"
+            >
+              Complete now
+            </Link>
+          </div>
+        )}
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <p className="text-sm text-slate-500">
