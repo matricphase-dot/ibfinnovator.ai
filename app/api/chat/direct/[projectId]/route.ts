@@ -39,7 +39,9 @@ export async function GET(
     const before = req.nextUrl.searchParams.get("before");
     let q = supabase
       .from("messages")
-      .select("*,sender:profiles!sender_id(id,name,username,avatar_url)")
+      .select(
+        "*,sender:profiles!sender_id(id,name,username,avatar_url),reactions:message_reactions(user_id,emoji),parent:messages!parent_id(id,content,sender:profiles!sender_id(name,username))",
+      )
       .eq("project_id", projectId)
       .eq("room_type", "DIRECT")
       .order("created_at", { ascending: false })
@@ -47,6 +49,13 @@ export async function GET(
     if (before) q = q.lt("created_at", before);
     const { data, error } = await q;
     if (error) throw error;
+    await supabase
+      .from("messages")
+      .update({ read_at: new Date().toISOString() })
+      .eq("project_id", projectId)
+      .eq("room_type", "DIRECT")
+      .eq("recipient_id", user.id)
+      .is("read_at", null);
     return NextResponse.json({
       messages: (data || []).reverse(),
       other_user_id: access.other,
@@ -71,8 +80,12 @@ export async function POST(
         { error: "An accepted connection is required." },
         { status: 403 },
       );
-    const { content } = z
-      .object({ content: z.string().trim().min(1).max(5000) })
+    const { content, attachments, parent_id } = z
+      .object({
+        content: z.string().trim().min(1).max(5000),
+        attachments: z.array(z.string().url()).max(10).default([]),
+        parent_id: z.string().uuid().nullable().optional(),
+      })
       .parse(await r.json());
     const { data, error } = await supabase
       .from("messages")
@@ -82,18 +95,20 @@ export async function POST(
         recipient_id: access.other,
         room_type: "DIRECT",
         content,
+        attachments,
+        parent_id,
       })
-      .select("*,sender:profiles!sender_id(id,name,username,avatar_url)")
+      .select(
+        "*,sender:profiles!sender_id(id,name,username,avatar_url),reactions:message_reactions(user_id,emoji)",
+      )
       .single();
     if (error) throw error;
-    await supabase
-      .from("notifications")
-      .insert({
-        user_id: access.other,
-        type: "NEW_MESSAGE",
-        message: "You received a new project message",
-        link: `/chat/direct/${projectId}`,
-      });
+    await supabase.from("notifications").insert({
+      user_id: access.other,
+      type: "NEW_MESSAGE",
+      message: "You received a new project message",
+      link: `/chat/direct/${projectId}`,
+    });
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

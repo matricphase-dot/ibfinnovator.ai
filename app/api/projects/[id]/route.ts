@@ -13,6 +13,7 @@ const update = z.object({
   commitment_hours: z.number().int().min(1).max(80).nullable().optional(),
   duration_weeks: z.number().int().min(1).max(260).nullable().optional(),
   status: z.enum(["OPEN", "CLOSED", "COMPLETED"]).optional(),
+  attachments: z.array(z.string().url()).max(20).optional(),
 });
 export async function GET(
   _: Request,

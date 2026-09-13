@@ -17,7 +17,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import ApplyToProject from '@/components/ApplyToProject';
+import ApplyToProject from "@/components/ApplyToProject";
+import FileUploader from "@/components/FileUploader";
+import AttachmentPreview from "@/components/AttachmentPreview";
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<any>(null),
@@ -80,6 +82,18 @@ export default function Detail() {
   async function share() {
     await navigator.clipboard.writeText(location.href);
     toast.success("Project link copied");
+  }
+  async function addProjectFiles(urls: string[]) {
+    const attachments = [...(p.attachments || []), ...urls];
+    const r = await fetch(`/api/projects/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ attachments }),
+    });
+    if (r.ok) {
+      setP({ ...p, attachments });
+      toast.success("Project files added");
+    } else toast.error("Could not save project files");
   }
   if (loading)
     return (
@@ -170,6 +184,21 @@ export default function Detail() {
                 </span>
               ))}
             </div>
+            <h2 className="font-extrabold text-lg mt-8">Project files</h2>
+            <AttachmentPreview attachments={p.attachments} />
+            {isOwner && me?.id && (
+              <div className="mt-3">
+                <FileUploader
+                  bucket="project-files"
+                  folderKey={me.id}
+                  multiple
+                  onUploaded={(files) =>
+                    addProjectFiles(files.map((f) => f.url))
+                  }
+                  label="Add project documents"
+                />
+              </div>
+            )}
             <h2 className="font-extrabold text-lg mt-8">Project milestones</h2>
             {p.milestones?.length ? (
               p.milestones.map((x: any) => (
@@ -233,7 +262,16 @@ export default function Detail() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-2"><ApplyToProject projectId={id}/><button disabled={busy==='connect'} onClick={connect} className="btn btn-secondary w-full">{busy==='connect'?'Sending…':'Request a conversation'}</button></div>
+                <div className="space-y-2">
+                  <ApplyToProject projectId={id} />
+                  <button
+                    disabled={busy === "connect"}
+                    onClick={connect}
+                    className="btn btn-secondary w-full"
+                  >
+                    {busy === "connect" ? "Sending…" : "Request a conversation"}
+                  </button>
+                </div>
               )}
               <button
                 disabled={busy === "bookmark"}

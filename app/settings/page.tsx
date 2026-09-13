@@ -14,6 +14,7 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import FileUploader from "@/components/FileUploader";
 type Tab = "profile" | "notifications" | "security";
 export default function Settings() {
   const [p, setP] = useState<any>(null),
@@ -39,6 +40,17 @@ export default function Settings() {
         if (x) setPrefs({ ...prefs, ...x });
       });
   }, []);
+  async function saveAvatar(url: string) {
+    const r = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ avatar_url: url }),
+    });
+    if (r.ok) {
+      setP(await r.json());
+      toast.success("Avatar updated");
+    } else toast.error("Could not update avatar");
+  }
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setUsernameError("");
@@ -174,6 +186,28 @@ export default function Settings() {
               <p className="text-sm text-slate-500 mt-1">
                 These details are used by matching and public discovery.
               </p>
+              {p?.id && (
+                <div className="mt-6 grid sm:grid-cols-[90px_1fr] gap-4 items-start">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-cyan-300/10 text-cyan-300 grid place-items-center font-black">
+                    {p.avatar_url ? (
+                      <img
+                        src={p.avatar_url}
+                        alt="Current avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      (p.name || "IB").slice(0, 2).toUpperCase()
+                    )}
+                  </div>
+                  <FileUploader
+                    bucket="avatars"
+                    folderKey={p.id}
+                    maxMB={2}
+                    onUploaded={(files) => files[0] && saveAvatar(files[0].url)}
+                    label="Upload profile image"
+                  />
+                </div>
+              )}
               <label className="block text-sm font-bold mt-6">
                 Display name
                 <input

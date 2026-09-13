@@ -15,6 +15,7 @@ const usernameSchema = z
 const update = z.object({
   name: z.string().min(2).optional(),
   username: usernameSchema.optional(),
+  avatar_url: z.string().url().nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
   skills: z.array(z.string()).max(30).optional(),
   interests: z.array(z.string()).max(30).optional(),

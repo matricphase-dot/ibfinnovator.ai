@@ -91,6 +91,16 @@ export default function Applications() {
                   >
                     View project
                   </Link>
+                  {founder && a.resume_url && (
+                    <a
+                      href={a.resume_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-bold text-cyan-300 ml-4"
+                    >
+                      View resume
+                    </a>
+                  )}
                   {founder && a.status === "PENDING" && (
                     <div className="ml-auto flex gap-2">
                       <button

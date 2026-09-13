@@ -2,15 +2,25 @@
 import AppShell from "@/components/AppShell";
 import { Loader2, Plus, Send, Users } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import FileUploader, { type UploadedFile } from "@/components/FileUploader";
+import AttachmentPreview from "@/components/AttachmentPreview";
+import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
 export default function Team() {
+  const supabase = useClerkSupabaseClient();
   const { projectId } = useParams<{ projectId: string }>(),
     [d, setD] = useState<any>(null),
     [loading, setLoading] = useState(true),
     [channel, setChannel] = useState("General"),
     [text, setText] = useState(""),
-    [task, setTask] = useState("");
+    [files, setFiles] = useState<UploadedFile[]>([]),
+    [showUpload, setShowUpload] = useState(false),
+    [typing, setTyping] = useState(""),
+    [me, setMe] = useState<any>(null),
+    [task, setTask] = useState(""),
+    presence = useRef<any>(null),
+    typingTimer = useRef<any>(null);
   async function load() {
     const r = await fetch(`/api/team/${projectId}`, { cache: "no-store" }),
       x = await r.json();
@@ -22,6 +32,47 @@ export default function Team() {
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
   }, [projectId]);
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setMe);
+  }, []);
+  useEffect(() => {
+    if (!d?.room?.id) return;
+    let c: any;
+    try {
+      c = supabase
+        .channel(`team-presence-${d.room.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "messages",
+            filter: `room_id=eq.${d.room.id}`,
+          },
+          load,
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "message_reactions" },
+          load,
+        )
+        .on("broadcast", { event: "typing" }, ({ payload }: any) => {
+          if (payload.profileId !== me?.id) {
+            setTyping(payload.name || "Someone");
+            clearTimeout(typingTimer.current);
+            typingTimer.current = setTimeout(() => setTyping(""), 1800);
+          }
+        })
+        .subscribe();
+      presence.current = c;
+    } catch {}
+    return () => {
+      clearTimeout(typingTimer.current);
+      if (c) void supabase.removeChannel(c);
+    };
+  }, [d?.room?.id, supabase, me?.id]);
   async function message() {
     if (!text.trim()) return;
     const r = await fetch("/api/team/messages", {
@@ -31,11 +82,13 @@ export default function Team() {
         room_id: d.room.id,
         channel,
         content: text,
-        attachments: [],
+        attachments: files.map((f) => f.url),
       }),
     });
     if (r.ok) {
       setText("");
+      setFiles([]);
+      setShowUpload(false);
       load();
     } else toast.error("Could not send message");
   }
@@ -136,6 +189,11 @@ export default function Team() {
           <section className="bg-white border border-slate-200 rounded-2xl min-h-[560px] flex flex-col">
             <div className="p-4 border-b border-white/[.07]">
               <b># {channel}</b>
+              {typing && (
+                <span className="text-xs text-cyan-300 ml-3">
+                  {typing} is typing…
+                </span>
+              )}
             </div>
             <div className="p-5 space-y-5 flex-1 overflow-auto">
               {messages.length ? (
@@ -165,6 +223,7 @@ export default function Team() {
                         </button>
                       </div>
                       <p className="text-sm text-slate-400 mt-1">{m.content}</p>
+                      <AttachmentPreview attachments={m.attachments} />
                       <div className="flex gap-1 mt-2">
                         {["👍", "❤️", "🚀"].map((e) => (
                           <button
@@ -187,10 +246,35 @@ export default function Team() {
                 </p>
               )}
             </div>
+            <div className="mx-4">
+              {showUpload && (
+                <FileUploader
+                  bucket="team-files"
+                  folderKey={d.room.id}
+                  multiple
+                  onUploaded={setFiles}
+                  label="Attach team files"
+                />
+              )}
+            </div>
             <div className="m-4 flex gap-2">
+              <button
+                aria-label="Attach files"
+                onClick={() => setShowUpload(!showUpload)}
+                className="btn btn-secondary !px-3"
+              >
+                +
+              </button>
               <input
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  void presence.current?.send({
+                    type: "broadcast",
+                    event: "typing",
+                    payload: { profileId: me?.id, name: me?.name },
+                  });
+                }}
                 onKeyDown={(e) => e.key === "Enter" && message()}
                 className="field"
                 placeholder={`Message #${channel}`}
