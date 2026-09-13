@@ -85,6 +85,11 @@ export default function DirectChat() {
                 </span>
                 <div>
                   <b className="text-xs">{m.sender?.name}</b>
+                  {m.sender?.username && (
+                    <span className="text-[10px] text-cyan-300 ml-2">
+                      @{m.sender.username}
+                    </span>
+                  )}
                   <p className="mt-1 p-3 rounded-r-xl rounded-bl-xl border border-white/[.08] bg-white/[.025] text-sm">
                     {m.content}
                   </p>

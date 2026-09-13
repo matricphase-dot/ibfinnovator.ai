@@ -119,6 +119,11 @@ export default function Matches() {
                       </span>
                       <div className="ml-3">
                         <h2 className="font-bold text-white">{x.name}</h2>
+                        {x.username && (
+                          <p className="text-[10px] text-cyan-300">
+                            @{x.username}
+                          </p>
+                        )}
                         <p className="text-xs text-slate-500 mt-1">
                           {x.availability || "Availability not set"}
                         </p>

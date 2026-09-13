@@ -71,6 +71,11 @@ export default function Chat() {
                   <div>
                     <p className="text-xs">
                       <b>{m.sender?.name || "IBF member"}</b>
+                      {m.sender?.username && (
+                        <span className="text-cyan-300 ml-2">
+                          @{m.sender.username}
+                        </span>
+                      )}
                       <time className="text-slate-500 ml-2">
                         {new Date(m.created_at).toLocaleTimeString([], {
                           hour: "2-digit",

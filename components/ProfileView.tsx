@@ -76,6 +76,9 @@ export default function ProfileView({
                 {p.name}
                 <CheckCircle2 className="text-cyan-300" size={21} />
               </h1>
+              {p.username && (
+                <p className="text-cyan-300 text-sm mt-1">@{p.username}</p>
+              )}
               <p className="text-slate-400 font-semibold mt-1">
                 {p.company || String(p.role).replace("_", " ")}
               </p>

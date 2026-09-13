@@ -23,7 +23,7 @@ export async function POST(r: Request) {
         parent_id: p.parent_id,
         attachments: p.attachments,
       })
-      .select("*,sender:profiles!sender_id(id,name,avatar_url)")
+      .select("*,sender:profiles!sender_id(id,name,username,avatar_url)")
       .single();
     if (error) throw error;
     return NextResponse.json(data, { status: 201 });

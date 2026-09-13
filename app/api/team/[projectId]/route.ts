@@ -68,12 +68,12 @@ export async function GET(
       await Promise.all([
         supabase
           .from("team_members")
-          .select("*,profile:profiles!user_id(id,name,avatar_url,skills)")
+          .select("*,profile:profiles!user_id(id,name,username,avatar_url,skills)")
           .eq("room_id", room.id),
         supabase
           .from("messages")
           .select(
-            "*,sender:profiles!sender_id(id,name,avatar_url),reactions:message_reactions(user_id,emoji)",
+            "*,sender:profiles!sender_id(id,name,username,avatar_url),reactions:message_reactions(user_id,emoji)",
           )
           .eq("room_id", room.id)
           .eq("room_type", "TEAM")

@@ -30,6 +30,10 @@ drop policy if exists "authenticated messages create" on public.messages;
 create policy "authenticated messages create" on public.messages for insert to authenticated with check(sender_id=public.current_profile_id());
 drop policy if exists "team members update messages" on public.messages;
 create policy "team members update messages" on public.messages for update to authenticated using(sender_id=public.current_profile_id() or (room_type='TEAM' and public.can_access_team_room(room_id)));
+drop policy if exists "room members read team messages" on public.messages;
+create policy "room members read team messages" on public.messages for select to authenticated using(room_type<>'TEAM' or public.can_access_team_room(room_id));
+drop policy if exists "room members send team messages" on public.messages;
+create policy "room members send team messages" on public.messages for insert to authenticated with check(sender_id=public.current_profile_id() and (room_type<>'TEAM' or public.can_access_team_room(room_id)));
 -- Bookmarks
 drop policy if exists "own bookmarks" on public.bookmarks;
 create policy "own bookmarks" on public.bookmarks for all to authenticated using(user_id=public.current_profile_id()) with check(user_id=public.current_profile_id());

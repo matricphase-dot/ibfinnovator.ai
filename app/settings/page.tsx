@@ -19,6 +19,7 @@ export default function Settings() {
   const [p, setP] = useState<any>(null),
     [tab, setTab] = useState<Tab>("profile"),
     [saving, setSaving] = useState(false),
+    [usernameError, setUsernameError] = useState(""),
     [show, setShow] = useState(false),
     [prefs, setPrefs] = useState({
       connection: true,
@@ -40,10 +41,19 @@ export default function Settings() {
   }, []);
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
+    setUsernameError("");
     const f = new FormData(e.currentTarget);
+    const username = String(f.get("username") || "")
+      .trim()
+      .toLowerCase();
+    if (!/^[a-z0-9_]{3,30}$/.test(username)) {
+      setUsernameError("Use 3–30 lowercase letters, numbers, or underscores.");
+      return;
+    }
+    setSaving(true);
     const body = {
       name: f.get("name"),
+      username,
       bio: f.get("bio"),
       availability: f.get("availability"),
       skills: String(f.get("skills"))
@@ -60,10 +70,15 @@ export default function Settings() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
+    const result = await r.json().catch(() => ({}));
     setSaving(false);
+    if (r.status === 409) {
+      setUsernameError("Username already taken");
+      return;
+    }
     r.ok
-      ? toast.success("Profile settings saved")
-      : toast.error("Could not save settings");
+      ? (setP(result), toast.success("Profile settings saved"))
+      : toast.error(result.error || "Could not save settings");
   }
   async function saveNotifications() {
     setSaving(true);
@@ -149,6 +164,29 @@ export default function Settings() {
                   defaultValue={p?.name || ""}
                   className="field mt-2"
                 />
+              </label>
+              <label className="block text-sm font-bold mt-4">
+                Username
+                <input
+                  name="username"
+                  defaultValue={p?.username || ""}
+                  onChange={(e) => {
+                    e.currentTarget.value = e.currentTarget.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9_]/g, "");
+                    setUsernameError("");
+                  }}
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[a-z0-9_]{3,30}"
+                  className="field mt-2"
+                  placeholder="your_username"
+                />
+                {usernameError && (
+                  <span className="block text-xs text-red-300 mt-2">
+                    {usernameError}
+                  </span>
+                )}
               </label>
               <label className="block text-sm font-bold mt-4">
                 Bio

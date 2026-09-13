@@ -122,7 +122,14 @@ export default function Team() {
                 <span className="h-7 w-7 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center text-[9px]">
                   {m.profile?.name?.slice(0, 2).toUpperCase()}
                 </span>
-                <span className="text-xs">{m.profile?.name}</span>
+                <span className="text-xs">
+                  {m.profile?.name}
+                  {m.profile?.username && (
+                    <small className="block text-cyan-300">
+                      @{m.profile.username}
+                    </small>
+                  )}
+                </span>
               </div>
             ))}
           </aside>
@@ -140,6 +147,11 @@ export default function Team() {
                     <div className="flex-1">
                       <div className="flex">
                         <b className="text-sm">{m.sender?.name}</b>
+                        {m.sender?.username && (
+                          <span className="text-[10px] text-cyan-300 ml-2">
+                            @{m.sender.username}
+                          </span>
+                        )}
                         {m.pinned && (
                           <span className="ml-2 text-[9px] text-amber-300">
                             PINNED

@@ -39,7 +39,7 @@ export async function GET(
     const before = req.nextUrl.searchParams.get("before");
     let q = supabase
       .from("messages")
-      .select("*,sender:profiles!sender_id(id,name,avatar_url)")
+      .select("*,sender:profiles!sender_id(id,name,username,avatar_url)")
       .eq("project_id", projectId)
       .eq("room_type", "DIRECT")
       .order("created_at", { ascending: false })
@@ -83,7 +83,7 @@ export async function POST(
         room_type: "DIRECT",
         content,
       })
-      .select("*,sender:profiles!sender_id(id,name,avatar_url)")
+      .select("*,sender:profiles!sender_id(id,name,username,avatar_url)")
       .single();
     if (error) throw error;
     await supabase

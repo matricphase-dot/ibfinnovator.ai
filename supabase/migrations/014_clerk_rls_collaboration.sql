@@ -5,6 +5,14 @@ create or replace function public.is_super_admin() returns boolean language sql 
 create or replace function public.delete_own_account() returns void language plpgsql security definer set search_path=public,auth as $$ declare pid uuid:=public.current_profile_id(); legacy_id uuid; begin if pid is null then raise exception 'Not authenticated'; end if; select id into legacy_id from auth.users where id=pid; if legacy_id is not null then delete from auth.users where id=pid; else delete from public.profiles where id=pid; end if; end; $$;
 revoke all on function public.delete_own_account() from public; grant execute on function public.delete_own_account() to authenticated;
 
+-- Open roles and analytics
+drop policy if exists "founders manage roles" on public.open_roles;
+create policy "founders manage roles" on public.open_roles for all to authenticated using(exists(select 1 from public.projects p where p.id=project_id and p.founder_id=public.current_profile_id())) with check(exists(select 1 from public.projects p where p.id=project_id and p.founder_id=public.current_profile_id()));
+drop policy if exists "own analytics" on public.analytics_events;
+create policy "own analytics" on public.analytics_events for insert to authenticated with check(user_id=public.current_profile_id() or user_id is null);
+drop policy if exists "own analytics read" on public.analytics_events;
+create policy "own analytics read" on public.analytics_events for select to authenticated using(user_id=public.current_profile_id());
+
 -- Milestones
 drop policy if exists "founder milestones manage" on public.milestones;
 create policy "founder milestones manage" on public.milestones for all to authenticated using(exists(select 1 from public.projects p where p.id=project_id and p.founder_id=public.current_profile_id()));

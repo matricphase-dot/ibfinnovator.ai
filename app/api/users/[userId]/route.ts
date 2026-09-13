@@ -11,7 +11,7 @@ export async function GET(
       s
         .from("profiles")
         .select(
-          "id,name,role,avatar_url,bio,skills,interests,portfolio_urls,availability,company,goals,is_cofounder,average_rating,endorsement_count,created_at",
+          "id,name,username,role,avatar_url,bio,skills,interests,portfolio_urls,availability,company,goals,is_cofounder,average_rating,endorsement_count,created_at",
         )
         .eq("id", userId)
         .single(),
