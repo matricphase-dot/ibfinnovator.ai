@@ -15,7 +15,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import FileUploader from "@/components/FileUploader";
-type Tab = "profile" | "notifications" | "security";
+type Tab = "profile" | "notifications" | "security" | "investor";
 export default function Settings() {
   const [p, setP] = useState<any>(null),
     [tab, setTab] = useState<Tab>("profile"),
@@ -118,6 +118,25 @@ export default function Settings() {
       ? toast.error(error.message)
       : (toast.success("Password updated"), e.currentTarget.reset());
   }
+  async function saveInvestor(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget),
+      visible = f.get("investor_visible") === "on",
+      pitch = String(f.get("investor_pitch") || "");
+    const r = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          investor_visible: visible,
+          investor_pitch: pitch,
+        }),
+      }),
+      d = await r.json();
+    if (r.ok) {
+      setP(d);
+      toast.success("Investor visibility updated");
+    } else toast.error(d.error || "Could not update visibility");
+  }
   async function logout() {
     await createClient().auth.signOut();
     location.href = "/";
@@ -135,10 +154,11 @@ export default function Settings() {
       location.href = "/";
     } else toast.error("Account deletion failed");
   }
-  const tabs: [[Tab, any, string], [Tab, any, string], [Tab, any, string]] = [
+  const tabs: Array<[Tab, any, string]> = [
     ["profile", UserRound, "Profile"],
     ["notifications", Bell, "Notifications"],
     ["security", Lock, "Security"],
+    ["investor", Eye, "Investor Visibility"],
   ];
   return (
     <AppShell>
@@ -359,6 +379,46 @@ export default function Settings() {
                 {saving ? "Saving…" : "Save preferences"}
               </button>
             </section>
+          )}
+          {tab === "investor" && (
+            <form
+              onSubmit={saveInvestor}
+              className="bg-white border border-slate-200 rounded-2xl p-6"
+            >
+              <h2 className="font-bold text-lg">Investor Visibility</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Let verified investors discover your founder profile without
+                exposing contact details.
+              </p>
+              <label className="flex items-center gap-3 mt-6">
+                <input
+                  type="checkbox"
+                  name="investor_visible"
+                  defaultChecked={p?.investor_visible}
+                  className="w-5 h-5 accent-cyan-300"
+                />
+                <span>
+                  <b className="text-sm">Open to investor conversations</b>
+                  <small className="block text-slate-500">
+                    Your name, username, company, stage, and pitch become
+                    public.
+                  </small>
+                </span>
+              </label>
+              <label className="block text-sm font-bold mt-5">
+                Public investor pitch (minimum 50 words)
+                <textarea
+                  name="investor_pitch"
+                  defaultValue={p?.investor_pitch || ""}
+                  className="field mt-2 min-h-40"
+                  placeholder="Explain the problem, traction, market, business model, current stage, and what kind of investor conversation you want."
+                />
+              </label>
+              <button className="btn btn-primary mt-6">
+                <Save size={16} />
+                Save visibility
+              </button>
+            </form>
           )}
           {tab === "security" && (
             <section className="bg-white border border-slate-200 rounded-2xl p-6">

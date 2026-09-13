@@ -25,6 +25,8 @@ const update = z.object({
   company: z.string().nullable().optional(),
   goals: z.string().nullable().optional(),
   is_cofounder: z.boolean().optional(),
+  investor_visible: z.boolean().optional(),
+  investor_pitch: z.string().max(3000).nullable().optional(),
 });
 export async function GET() {
   try {
@@ -54,6 +56,15 @@ export async function PATCH(r: Request) {
     const p = update.safeParse(await r.json());
     if (!p.success)
       return NextResponse.json({ error: p.error.flatten() }, { status: 400 });
+    if (
+      p.data.investor_visible &&
+      (!p.data.investor_pitch ||
+        p.data.investor_pitch.trim().split(/\s+/).filter(Boolean).length < 50)
+    )
+      return NextResponse.json(
+        { error: "Investor pitch must contain at least 50 words" },
+        { status: 400 },
+      );
     if (p.data.username) {
       const { data: taken, error: lookupError } = await supabase
         .from("profiles")

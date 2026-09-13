@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 const requestOptions = [
   ["PITCH_DECK", "Pitch deck"],
   ["DATA_ROOM", "Data room access"],
@@ -37,7 +38,13 @@ export default function Page() {
     [sector, setSector] = useState<string[]>([]),
     [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
-    [success, setSuccess] = useState(false);
+    [success, setSuccess] = useState(false),
+    [startups, setStartups] = useState<any[]>([]);
+  useEffect(() => {
+    fetch("/api/investors")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setStartups);
+  }, []);
   function toggle(v: string, list: string[], set: (v: string[]) => void) {
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   }
@@ -157,6 +164,54 @@ export default function Page() {
             </div>
           ))}
         </div>
+      </section>
+      <section className="max-w-6xl mx-auto px-6 pb-20">
+        <div className="text-center">
+          <p className="text-[10px] tracking-[.2em] text-cyan-300 font-bold">
+            LIVE FOUNDER DIRECTORY
+          </p>
+          <h2 className="text-3xl font-black mt-2">
+            Startups Open to Investor Conversations
+          </h2>
+          <p className="text-slate-500 mt-2">
+            Founder-controlled visibility with no private contact information
+            exposed.
+          </p>
+        </div>
+        {startups.length ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+            {startups.map((s) => (
+              <Link
+                href={`/profile/${s.id}`}
+                className="project-cyber-card"
+                key={s.id}
+              >
+                <div className="flex items-center">
+                  <span className="w-11 h-11 rounded-xl bg-cyan-300 text-slate-950 grid place-items-center font-black">
+                    {s.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <div className="ml-3">
+                    <b>{s.company || s.name}</b>
+                    <p className="text-xs text-cyan-300">@{s.username}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-400 mt-4 line-clamp-4">
+                  {s.pitch}
+                </p>
+                <div className="flex gap-2 mt-4">
+                  <span className="tech-chip">
+                    {s.industry || s.project?.domain}
+                  </span>
+                  <span className="tech-chip">{s.stage || "Early stage"}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-slate-500 mt-8">
+            No founders have enabled investor visibility yet.
+          </p>
+        )}
       </section>
       {open && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm overflow-y-auto p-4 md:p-8">
