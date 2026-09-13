@@ -5,12 +5,12 @@ const input = z.object({
   reviewee_id: z.string().uuid(),
   project_id: z.string().uuid(),
   rating: z.number().int().min(1).max(5),
-  comment: z.string().trim().min(10).max(2000).optional(),
+  comment: z.string().trim().min(10).max(2000),
 });
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser();
-    const p = input.parse(await r.json());
+    const { supabase, user } = await requireUser(),
+      p = input.parse(await r.json());
     if (p.reviewee_id === user.id)
       return NextResponse.json(
         { error: "You cannot review yourself." },
@@ -26,16 +26,22 @@ export async function POST(r: Request) {
         { error: "Reviews open after the project is completed." },
         { status: 400 },
       );
-    const { data: connection } = await supabase
+    const { data: connections } = await supabase
       .from("connections")
-      .select("id")
+      .select("requester_id,recipient_id")
       .eq("project_id", p.project_id)
-      .eq("status", "ACCEPTED")
-      .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .maybeSingle();
-    if (!connection && project.founder_id !== user.id)
+      .eq("status", "ACCEPTED");
+    const paired = (connections || []).some(
+      (c) =>
+        (c.requester_id === user.id && c.recipient_id === p.reviewee_id) ||
+        (c.recipient_id === user.id && c.requester_id === p.reviewee_id),
+    );
+    if (!paired)
       return NextResponse.json(
-        { error: "Only project collaborators can review." },
+        {
+          error:
+            "Only collaborators on this completed project can review each other.",
+        },
         { status: 403 },
       );
     const { data, error } = await supabase
@@ -43,18 +49,14 @@ export async function POST(r: Request) {
       .insert({ ...p, reviewer_id: user.id })
       .select()
       .single();
-    if (error) throw error;
-    const { data: ratings } = await supabase
-      .from("reviews")
-      .select("rating")
-      .eq("reviewee_id", p.reviewee_id);
-    const avg =
-      (ratings || []).reduce((a, x) => a + x.rating, 0) /
-      (ratings?.length || 1);
-    await supabase
-      .from("profiles")
-      .update({ average_rating: avg })
-      .eq("id", p.reviewee_id);
+    if (error) {
+      if (error.code === "23505")
+        return NextResponse.json(
+          { error: "You already reviewed this collaborator for this project." },
+          { status: 409 },
+        );
+      throw error;
+    }
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

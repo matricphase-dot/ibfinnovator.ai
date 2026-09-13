@@ -8,16 +8,29 @@ const input = z.object({
 });
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser();
-    const p = input.parse(await r.json());
+    const { supabase, user } = await requireUser(),
+      p = input.parse(await r.json());
     if (p.receiver_id === user.id)
       return NextResponse.json(
         { error: "You cannot endorse yourself." },
         { status: 400 },
       );
+    const { data: receiver } = await supabase
+      .from("profiles")
+      .select("skills")
+      .eq("id", p.receiver_id)
+      .single();
+    const canonical = receiver?.skills?.find(
+      (s: string) => s.toLowerCase() === p.skill.toLowerCase(),
+    );
+    if (!canonical)
+      return NextResponse.json(
+        { error: "Select a skill listed on this profile." },
+        { status: 400 },
+      );
     const { data, error } = await supabase
       .from("endorsements")
-      .insert({ ...p, giver_id: user.id })
+      .insert({ ...p, skill: canonical, giver_id: user.id })
       .select()
       .single();
     if (error) {
@@ -28,14 +41,6 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    const { count } = await supabase
-      .from("endorsements")
-      .select("*", { count: "exact", head: true })
-      .eq("receiver_id", p.receiver_id);
-    await supabase
-      .from("profiles")
-      .update({ endorsement_count: count || 0 })
-      .eq("id", p.receiver_id);
     return NextResponse.json(data, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

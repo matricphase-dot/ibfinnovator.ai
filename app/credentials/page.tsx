@@ -1,28 +1,30 @@
 "use client";
 import AppShell from "@/components/AppShell";
-import {
-  Award,
-  ExternalLink,
-  FileCheck2,
-  Loader2,
-  Printer,
-  ShieldCheck,
-} from "lucide-react";
-import Link from "next/link";
+import { Loader2, Star } from "lucide-react";
 import { useEffect, useState } from "react";
+import BadgeGrid from "@/components/BadgeGrid";
+import CertificateCard from "@/components/CertificateCard";
+type Tab = "Badges" | "Certificates" | "Reviews received";
 export default function Credentials() {
-  const [badges, setBadges] = useState<any[]>([]),
-    [certs, setCerts] = useState<any[]>([]),
-    [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>({
+      badges: [],
+      certificates: [],
+      reviews: [],
+    }),
+    [loading, setLoading] = useState(true),
+    [tab, setTab] = useState<Tab>("Badges");
   useEffect(() => {
-    Promise.all([
-      fetch("/api/badges").then((r) => (r.ok ? r.json() : { earned: [] })),
-      fetch("/api/certificates").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([b, c]) => {
-      setBadges(b.earned || []);
-      setCerts(c);
-      setLoading(false);
-    });
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((p) => fetch(`/api/users/${p.id}`).then((r) => r.json()))
+      .then((p) =>
+        setData({
+          badges: p.badges || [],
+          certificates: p.certificates || [],
+          reviews: p.reviews || [],
+        }),
+      )
+      .finally(() => setLoading(false));
   }, []);
   return (
     <AppShell>
@@ -32,112 +34,70 @@ export default function Credentials() {
         </p>
         <h1 className="text-3xl font-black mt-2">Credentials</h1>
         <p className="text-slate-500 mt-2">
-          Badges and certificates earned through real startup contributions.
+          Portable proof earned through real startup contributions.
         </p>
+        <div className="flex gap-2 mt-7">
+          {(["Badges", "Certificates", "Reviews received"] as Tab[]).map(
+            (x) => (
+              <button
+                onClick={() => setTab(x)}
+                className={`pill ${tab === x ? "bg-slate-900" : "bg-white border border-slate-200"}`}
+                key={x}
+              >
+                {x}
+              </button>
+            ),
+          )}
+        </div>
         {loading ? (
-          <div className="py-32 grid place-items-center">
-            <Loader2 className="animate-spin text-cyan-300" />
-          </div>
+          <Loader2 className="animate-spin text-cyan-300 mx-auto mt-28" />
         ) : (
-          <>
-            <h2 className="font-bold text-lg mt-8">Experience badges</h2>
-            {badges.length ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                {badges.map((x) => (
-                  <article
-                    className="project-cyber-card text-center"
-                    key={x.id}
-                  >
-                    <span className="h-14 w-14 mx-auto rounded-2xl bg-cyan-300/10 text-cyan-300 grid place-items-center">
-                      <Award size={27} />
-                    </span>
-                    <h3 className="font-bold mt-4">{x.badge.name}</h3>
-                    <p className="text-xs text-slate-500 mt-2">
-                      {x.project?.title}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-3 line-clamp-3">
-                      {x.evidence}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={<Award />}
-                title="No badges yet"
-                text="Founders can award contribution badges after completed milestones."
-              />
-            )}
-            <h2 className="font-bold text-lg mt-10">Experience certificates</h2>
-            {certs.length ? (
-              <div className="grid md:grid-cols-2 gap-4 mt-4">
-                {certs.map((c) => (
-                  <article
-                    className="bg-white border border-slate-200 rounded-2xl p-5"
-                    key={c.id}
-                  >
-                    <div className="flex">
-                      <span className="h-11 w-11 rounded-xl bg-cyan-300/10 text-cyan-300 grid place-items-center">
-                        <FileCheck2 />
-                      </span>
-                      <div className="ml-3">
-                        <b>{c.role_title}</b>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {c.project?.title}
-                        </p>
+          <div className="mt-6">
+            {tab === "Badges" && <BadgeGrid badges={data.badges} />}{" "}
+            {tab === "Certificates" &&
+              (data.certificates.length ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {data.certificates.map((c: any) => (
+                    <CertificateCard certificate={c} key={c.id} />
+                  ))}
+                </div>
+              ) : (
+                <Empty text="No certificates yet." />
+              ))}
+            {tab === "Reviews received" &&
+              (data.reviews.length ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {data.reviews.map((r: any) => (
+                    <article className="project-cyber-card" key={r.id}>
+                      <div className="flex text-amber-300">
+                        {[1, 2, 3, 4, 5].map((x) => (
+                          <Star
+                            key={x}
+                            size={14}
+                            fill={x <= r.rating ? "currentColor" : "none"}
+                          />
+                        ))}
                       </div>
-                      <ShieldCheck className="ml-auto text-cyan-300" />
-                    </div>
-                    <p className="text-xs text-slate-500 mt-5">
-                      Issued by {c.issuer?.name} ·{" "}
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2 mt-4">
-                      <Link
-                        href={`/verify/${c.verification_code}`}
-                        className="btn btn-secondary !py-2 text-xs"
-                      >
-                        <ExternalLink size={14} />
-                        Verify
-                      </Link>
-                      <button
-                        onClick={() => window.print()}
-                        className="btn btn-secondary !py-2 text-xs"
-                      >
-                        <Printer size={14} />
-                        Print / PDF
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={<FileCheck2 />}
-                title="No certificates yet"
-                text="Certificates appear after founders verify completed project experience."
-              />
-            )}
-          </>
+                      <p className="text-sm text-slate-400 mt-4">{r.comment}</p>
+                      <p className="text-xs text-slate-500 mt-3">
+                        {r.project?.title} · {r.reviewer?.name}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <Empty text="No reviews received yet." />
+              ))}
+          </div>
         )}
       </div>
     </AppShell>
   );
 }
-function Empty({
-  icon,
-  title,
-  text,
-}: {
-  icon: any;
-  title: string;
-  text: string;
-}) {
+function Empty({ text }: { text: string }) {
   return (
-    <div className="mt-4 py-16 border border-dashed border-white/10 rounded-2xl text-center">
-      <span className="mx-auto text-slate-600 inline-block">{icon}</span>
-      <h3 className="font-bold mt-3">{title}</h3>
-      <p className="text-sm text-slate-500 mt-2">{text}</p>
+    <div className="py-16 text-center border border-dashed border-white/10 rounded-2xl text-slate-500">
+      {text}
     </div>
   );
 }

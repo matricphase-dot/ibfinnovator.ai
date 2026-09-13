@@ -20,10 +20,13 @@ import toast from "react-hot-toast";
 import ApplyToProject from "@/components/ApplyToProject";
 import FileUploader from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
+import AwardBadgeModal from "@/components/AwardBadgeModal";
+import IssueCertificateModal from "@/components/IssueCertificateModal";
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<any>(null),
     [me, setMe] = useState<any>(null),
+    [connections, setConnections] = useState<any[]>([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
@@ -37,10 +40,14 @@ export default function Detail() {
       fetch("/api/profile")
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
+      fetch("/api/connections")
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
     ])
-      .then(([project, profile]) => {
+      .then(([project, profile, connectionRows]) => {
         setP(project);
         setMe(profile);
+        setConnections(Array.isArray(connectionRows) ? connectionRows : []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -122,6 +129,9 @@ export default function Detail() {
     );
   const created = new Date(p.created_at);
   const isOwner = me?.id === p.founder_id;
+  const hasAccepted = connections.some(
+    (c) => c.project_id === id && c.status === "ACCEPTED",
+  );
   return (
     <>
       <NavBar />
@@ -260,6 +270,18 @@ export default function Detail() {
                   >
                     Manage from dashboard
                   </Link>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <AwardBadgeModal projectId={id} disabled={!hasAccepted} />
+                    <IssueCertificateModal
+                      projectId={id}
+                      disabled={!hasAccepted}
+                    />
+                  </div>
+                  {!hasAccepted && (
+                    <p className="text-[10px] text-slate-500 mt-2">
+                      No accepted collaborators yet
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
