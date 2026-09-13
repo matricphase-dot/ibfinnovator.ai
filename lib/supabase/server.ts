@@ -1,3 +1,14 @@
-import {createServerClient} from '@supabase/ssr';import {cookies} from 'next/headers';
-export async function createClient(){const store=await cookies();return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{cookies:{getAll(){return store.getAll()},setAll(values){try{values.forEach(({name,value,options})=>store.set(name,value,options))}catch{}}}})}
-export async function requireUser(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('UNAUTHORIZED');return {supabase,user}}
+import {auth} from '@clerk/nextjs/server';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {createClerkSupabaseClient} from './clerk-server';
+import {createLegacySupabaseClient} from './legacy-server';
+export {requireUser} from '@/lib/auth/require-user';
+
+export async function createClient():Promise<SupabaseClient>{
+  const {userId}=await auth();
+  if(userId){
+    const client=await createClerkSupabaseClient();
+    if(client)return client;
+  }
+  return createLegacySupabaseClient();
+}

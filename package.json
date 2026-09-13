@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.2",
     "@prisma/client": "^5.22.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.109.0",
@@ -26,6 +27,7 @@
     "recharts": "^2.15.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "svix": "^1.99.1",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.1"
   },

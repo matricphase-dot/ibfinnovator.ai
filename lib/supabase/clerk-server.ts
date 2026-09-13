@@ -1,0 +1,2 @@
+import {auth} from '@clerk/nextjs/server';import {createClient} from '@supabase/supabase-js';
+export async function createClerkSupabaseClient(){const {getToken}=await auth();const token=await getToken();if(!token)return null;return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{accessToken:async()=>token,auth:{persistSession:false,autoRefreshToken:false}})}
