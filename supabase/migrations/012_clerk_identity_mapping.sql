@@ -1,3 +1,7 @@
+-- Onboarding flag required by the dual-auth profile shape
+alter table public.profiles
+add column if not exists onboarding_completed boolean not null default false;
+
 -- Add Clerk identity mapping without touching the UUID primary key
 alter table public.profiles
 add column if not exists clerk_user_id text;

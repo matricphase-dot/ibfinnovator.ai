@@ -1,10 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClerkSupabaseClient } from "@/lib/supabase/clerk-server";
 import { createLegacySupabaseClient } from "@/lib/supabase/legacy-server";
 import type { AuthenticatedProfile } from "./identity";
 
 export async function requireUser(): Promise<{
-  supabase: any;
+  supabase: SupabaseClient;
   user: AuthenticatedProfile;
 }> {
   const { userId } = await auth();
