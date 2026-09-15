@@ -122,7 +122,87 @@ create index if not exists messages_parent_idx on public.messages(parent_id) whe
 create index if not exists messages_unread_idx on public.messages(read_at) where read_at is null;
 
 -- ---------------------------------------------------------------------------
--- 5. Read receipts.
+-- 5. Chat attachments.
+--
+-- None of the buckets above can serve chat: project-files is readable only by
+-- the uploader, and team-files requires a team room. Chat attachments must be
+-- readable by the people in the conversation, so they get their own bucket with
+-- a folder layout that encodes the audience:
+--     general/<file>            -> any signed-in member (it is the community room)
+--     direct/<project_id>/<file> -> project founder or an accepted connection
+-- ---------------------------------------------------------------------------
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values
+  ('chat-attachments','chat-attachments',false,10485760,array['application/pdf','image/png','image/jpeg','image/webp','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/zip','text/plain'])
+on conflict(id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- Mirrors the authorize() check in app/api/chat/direct/[projectId]/route.ts.
+create or replace function public.can_access_direct_room(p_project_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select exists (
+           select 1 from public.projects p
+            where p.id = p_project_id
+              and p.founder_id = public.current_profile_id()
+         )
+      or exists (
+           select 1 from public.connections c
+            where c.project_id = p_project_id
+              and c.status = 'ACCEPTED'
+              and public.current_profile_id() in (c.requester_id, c.recipient_id)
+         );
+$$;
+
+revoke all on function public.can_access_direct_room(uuid) from public;
+grant execute on function public.can_access_direct_room(uuid) to authenticated;
+
+-- UUID-shaped second path segment, checked before casting so a stray folder
+-- cannot raise "invalid input syntax for type uuid".
+drop policy if exists "members read general chat files" on storage.objects;
+create policy "members read general chat files" on storage.objects for select to authenticated
+using (bucket_id = 'chat-attachments' and (storage.foldername(name))[1] = 'general');
+
+drop policy if exists "participants read direct chat files" on storage.objects;
+create policy "participants read direct chat files" on storage.objects for select to authenticated
+using (
+  bucket_id = 'chat-attachments'
+  and (storage.foldername(name))[1] = 'direct'
+  and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  and public.can_access_direct_room(((storage.foldername(name))[2])::uuid)
+);
+
+drop policy if exists "members upload chat files" on storage.objects;
+create policy "members upload chat files" on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'chat-attachments'
+  and (
+    (storage.foldername(name))[1] = 'general'
+    or (
+      (storage.foldername(name))[1] = 'direct'
+      and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      and public.can_access_direct_room(((storage.foldername(name))[2])::uuid)
+    )
+  )
+);
+
+drop policy if exists "members delete own chat files" on storage.objects;
+create policy "members delete own chat files" on storage.objects for delete to authenticated
+using (
+  bucket_id = 'chat-attachments'
+  and (
+    owner_id = auth.jwt() ->> 'sub'
+    or owner_id = public.current_profile_id()::text
+  )
+);
+
+-- ---------------------------------------------------------------------------
+-- 6. Read receipts.
 --
 -- The UPDATE policy on public.messages (migration 013) is
 --   using (sender_id = current_profile_id() or (room_type='TEAM' and can_access_team_room(room_id)))
@@ -154,11 +234,11 @@ revoke all on function public.mark_messages_read(uuid[]) from anon;
 grant execute on function public.mark_messages_read(uuid[]) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- 6. Verification — expect 5 buckets, 5 new columns, 7 new policies, 1 RPC.
+-- 7. Verification — expect 6 buckets, 5 new columns, 11 new policies, 2 RPCs.
 -- ---------------------------------------------------------------------------
 select
   (select count(*) from storage.buckets
-    where id in ('avatars','resumes','project-files','team-files','service-portfolios')) as buckets_5,
+    where id in ('avatars','resumes','project-files','team-files','service-portfolios','chat-attachments')) as buckets_6,
   (select count(*) from information_schema.columns
     where table_name='messages'
       and column_name in ('attachments','parent_id','read_at','edited_at','deleted_at')) as message_columns_5,
@@ -167,7 +247,11 @@ select
       and policyname in ('avatars are publicly readable','service portfolios are publicly readable',
                          'members read own scoped files','founders read applicant resumes',
                          'members upload own scoped files','members update own scoped files',
-                         'members delete own scoped files')) as new_policies_7,
+                         'members delete own scoped files','members read general chat files',
+                         'participants read direct chat files','members upload chat files',
+                         'members delete own chat files')) as new_policies_11,
   (select count(*) from pg_indexes where tablename='messages' and indexname='messages_parent_idx') as parent_index_1,
   (select count(*) from pg_proc where proname='mark_messages_read'
-     and pg_get_function_identity_arguments(oid)='p_message_ids uuid[]') as read_rpc_1;
+     and pg_get_function_identity_arguments(oid)='p_message_ids uuid[]') as read_rpc_1,
+  (select count(*) from pg_proc where proname='can_access_direct_room'
+     and pg_get_function_identity_arguments(oid)='p_project_id uuid') as room_rpc_1;

@@ -60,6 +60,21 @@ const BUCKETS = {
     public: true,
     scopedToProfile: true,
   },
+  "chat-attachments": {
+    limit: 10 * 1024 * 1024,
+    mime: [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/zip",
+      "text/plain",
+    ],
+    public: false,
+    // Scoped to a conversation folder instead: general/ or direct/<project id>/
+    scopedToProfile: false,
+  },
 } as const;
 
 type BucketName = keyof typeof BUCKETS;

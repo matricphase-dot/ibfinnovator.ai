@@ -10,20 +10,23 @@ import { z } from "zod";
  *   POST /api/messages/<id>/react   { "emoji": "🔥" }  ->  { active, count }
  *
  * The insert/delete runs on the caller's own client, so the "own reactions"
- * policy (migration 014) confines writes to the caller's own rows. The count is
- * a read-only aggregate and prefers the service-role client so it stays exact;
+ * policy (migration 014) confines writes to the caller's own rows. `count` is
+ * the number of users who have that same emoji on the message — what the UI
+ * renders as the badge. It prefers the service-role client so it stays exact;
  * if that key is not configured it falls back to the caller's client.
  */
 
 async function countReactions(
   supabase: any,
   messageId: string,
+  emoji: string,
 ): Promise<number> {
   const readCount = async (client: any) => {
     const { count } = await client
       .from("message_reactions")
       .select("message_id", { count: "exact", head: true })
-      .eq("message_id", messageId);
+      .eq("message_id", messageId)
+      .eq("emoji", emoji);
     return typeof count === "number" ? count : null;
   };
 
@@ -88,14 +91,20 @@ export async function POST(
         .eq("user_id", user.id)
         .eq("emoji", emoji);
       if (error) throw error;
-      return NextResponse.json({ active: false, count: await countReactions(supabase, id) });
+      return NextResponse.json({
+        active: false,
+        count: await countReactions(supabase, id, emoji),
+      });
     }
 
     const { error } = await supabase
       .from("message_reactions")
       .insert({ message_id: id, user_id: user.id, emoji });
     if (error) throw error;
-    return NextResponse.json({ active: true, count: await countReactions(supabase, id) });
+    return NextResponse.json({
+      active: true,
+      count: await countReactions(supabase, id, emoji),
+    });
   } catch (e: any) {
     const unauthorized = e?.message === "UNAUTHORIZED" || e?.message === "PROFILE_NOT_FOUND";
     return NextResponse.json(
