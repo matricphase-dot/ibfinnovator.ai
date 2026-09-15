@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth/require-user";
+import { requireUserOr401 } from "@/lib/auth/require-user-http";
 import { z } from "zod";
 
 /**
@@ -26,7 +26,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid message id." }, { status: 400 });
     }
 
-    const { supabase, user } = await requireUser();
+    const auth = await requireUserOr401();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth.session;
     const { content } = patchSchema.parse(await request.json());
 
     const { data, error } = await supabase
@@ -64,7 +66,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid message id." }, { status: 400 });
     }
 
-    const { supabase, user } = await requireUser();
+    const auth = await requireUserOr401();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth.session;
 
     const { data, error } = await supabase
       .from("messages")

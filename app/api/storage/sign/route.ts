@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth/require-user";
+import { requireUserOr401 } from "@/lib/auth/require-user-http";
 import { z } from "zod";
 
 /**
@@ -25,7 +25,9 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase } = await requireUser();
+    const auth = await requireUserOr401();
+    if (auth.response) return auth.response;
+    const { supabase } = auth.session;
     const { bucket, path } = schema.parse(await request.json());
 
     const { data, error } = await supabase.storage

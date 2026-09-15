@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth/require-user";
+import { requireUserOr401 } from "@/lib/auth/require-user-http";
 
 export const runtime = "nodejs";
 
@@ -91,12 +91,9 @@ const safeName = (name: string) =>
     .slice(0, 120) || "file";
 
 export async function POST(request: NextRequest) {
-  let session;
-  try {
-    session = await requireUser();
-  } catch {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
-  }
+  const auth = await requireUserOr401();
+  if (auth.response) return auth.response;
+  const session = auth.session;
 
   let form: FormData;
   try {

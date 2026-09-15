@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth/require-user";
+import { requireUserOr401 } from "@/lib/auth/require-user-http";
 import { z } from "zod";
 
 /**
@@ -31,7 +31,9 @@ const schema = z
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, user } = await requireUser();
+    const auth = await requireUserOr401();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth.session;
     const body = schema.parse(await request.json());
 
     let ids = body.ids ?? [];

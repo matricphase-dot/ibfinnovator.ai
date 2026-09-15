@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth/require-user";
+import { requireUserOr401 } from "@/lib/auth/require-user-http";
 
 /**
  * Batch reaction summary for a set of messages, so a chat page can render
@@ -12,7 +12,9 @@ import { requireUser } from "@/lib/auth/require-user";
 
 export async function GET(request: NextRequest) {
   try {
-    const { supabase, user } = await requireUser();
+    const auth = await requireUserOr401();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth.session;
 
     const ids = (request.nextUrl.searchParams.get("ids") ?? "")
       .split(",")
