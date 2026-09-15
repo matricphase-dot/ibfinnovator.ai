@@ -26,13 +26,57 @@ const isProtected = (path: string) =>
   protectedPaths.some((p) => path === p || path.startsWith(`${p}/`));
 
 /**
- * Clerk is optional until its keys are present in the environment. When they
- * are missing we fall back to the previous Supabase-only behaviour instead of
- * throwing on every request.
+ * Mirror of Clerk's own publishable-key validation
+ * (@clerk/shared -> parsePublishableKey / isPublishableKey).
+ *
+ * Why this exists: clerkMiddleware throws "Publishable key not valid" for a
+ * malformed key, and that throw happens inside the request handler, so EVERY
+ * route returns 500 — including public pages and the legacy sign-in flow. A
+ * single typo or placeholder value in the Vercel environment would take the
+ * whole site down.
+ *
+ * Checking the format up front means a bad key degrades to legacy auth with a
+ * loud warning instead of a site-wide outage.
  */
-const clerkConfigured = Boolean(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY,
-);
+function isValidClerkPublishableKey(key: string | undefined): boolean {
+  if (!key) return false;
+  if (!key.startsWith("pk_test_") && !key.startsWith("pk_live_")) return false;
+
+  const parts = key.split("_");
+  if (parts.length !== 3) return false;
+
+  const encoded = parts[2];
+  if (!encoded) return false;
+
+  try {
+    // Keys are unpadded base64; pad before decoding.
+    const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
+    const decoded = atob(padded);
+
+    // Clerk's isValidDecodedPublishableKey
+    if (!decoded.endsWith("$")) return false;
+    const withoutTrailing = decoded.slice(0, -1);
+    if (withoutTrailing.includes("$")) return false;
+    return withoutTrailing.includes(".");
+  } catch {
+    return false;
+  }
+}
+
+const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+
+const clerkKeyLooksValid = isValidClerkPublishableKey(clerkPublishableKey);
+const clerkConfigured = Boolean(clerkSecretKey) && clerkKeyLooksValid;
+
+if (clerkSecretKey && clerkPublishableKey && !clerkKeyLooksValid) {
+  console.error(
+    "[middleware] NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is not a valid Clerk key " +
+      "(expected pk_test_... or pk_live_...). Clerk auth is DISABLED and the " +
+      "app is running in legacy Supabase-only mode. Fix the Vercel environment " +
+      "variable and redeploy.",
+  );
+}
 
 /**
  * Legacy Supabase session check. Also refreshes the Supabase auth cookies so
@@ -99,9 +143,26 @@ const dualAuthMiddleware = clerkMiddleware(async (auth, request) => {
   return NextResponse.redirect(redirectUrl);
 });
 
-export default function middleware(request: NextRequest, event: NextFetchEvent) {
+export default async function middleware(
+  request: NextRequest,
+  event: NextFetchEvent,
+) {
   if (!clerkConfigured) return legacyOnlyMiddleware(request);
-  return dualAuthMiddleware(request, event);
+
+  try {
+    return await dualAuthMiddleware(request, event);
+  } catch (error) {
+    // Clerk is reachable but broken (bad secret key, malformed key, Clerk
+    // outage). Keep the site serving in legacy mode rather than 500 every
+    // route. Responses and redirects are returned, not thrown, so a caught
+    // error here always means a genuine Clerk failure.
+    console.error(
+      "[middleware] Clerk middleware failed; falling back to legacy Supabase " +
+        "auth for this request:",
+      error,
+    );
+    return legacyOnlyMiddleware(request);
+  }
 }
 
 export const config = {
