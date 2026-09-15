@@ -15,6 +15,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import FileUploader from "@/components/FileUploader";
+import type { UploadedFile } from "@/lib/upload";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 type Tab = "profile" | "notifications" | "security";
@@ -41,6 +43,28 @@ export default function Settings() {
         if (x) setPrefs({ ...prefs, ...x });
       });
   }, []);
+  const initials =
+    p?.name
+      ?.split(" ")
+      .map((part: string) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "IB";
+
+  async function saveAvatar(files: UploadedFile[]) {
+    const file = files[0];
+    if (!file) return;
+    setP((prev: any) => ({ ...prev, avatar_url: file.url }));
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ avatar_url: file.url }),
+    });
+    response.ok
+      ? toast.success("Profile photo updated")
+      : toast.error("Could not save your photo");
+  }
+
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
@@ -159,6 +183,31 @@ export default function Settings() {
               <p className="text-sm text-slate-500 mt-1">
                 These details are used by matching and public discovery.
               </p>
+
+              <div className="flex flex-wrap items-center gap-4 mt-6">
+                {p?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.avatar_url}
+                    alt="Your profile photo"
+                    className="w-20 h-20 rounded-2xl object-cover border border-slate-200"
+                  />
+                ) : (
+                  <span className="w-20 h-20 rounded-2xl bg-[#101b2c] text-cyan-300 text-xl font-black grid place-items-center">
+                    {initials}
+                  </span>
+                )}
+                <div className="min-w-[240px] flex-1">
+                  <FileUploader
+                    bucket="avatars"
+                    maxFiles={1}
+                    accept="image/png,image/jpeg,image/webp"
+                    label="Upload a profile photo"
+                    hint="PNG, JPEG or WebP up to 2 MB"
+                    onChange={(files) => void saveAvatar(files)}
+                  />
+                </div>
+              </div>
               <label className="block text-sm font-bold mt-6">
                 Display name
                 <input
