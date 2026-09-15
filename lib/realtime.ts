@@ -25,21 +25,3 @@ export function getRealtimeClient(): SupabaseClient | null {
   }
   return client;
 }
-
-/**
- * Pull the storage path out of a Supabase URL so it can be re-signed after the
- * token expires. Handles both public and signed URL shapes.
- */
-export function parseStorageUrl(
-  url: string,
-): { bucket: string; path: string } | null {
-  try {
-    const match = new URL(url).pathname.match(
-      /\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+)$/,
-    );
-    if (!match) return null;
-    return { bucket: decodeURIComponent(match[1]), path: decodeURIComponent(match[2]) };
-  } catch {
-    return null;
-  }
-}

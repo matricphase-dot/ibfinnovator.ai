@@ -3,7 +3,7 @@
 import { Download, FileText, ExternalLink, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { formatBytes, type MessageAttachment } from "@/lib/messages";
-import { parseStorageUrl } from "@/lib/realtime";
+import { resolveStorageUrl } from "@/lib/storage-url";
 
 /**
  * Renders message/comment attachments.
@@ -41,19 +41,9 @@ export default function AttachmentPreview({
     async (file: MessageAttachment) => {
       if (refreshTried.includes(file.url)) return;
       setRefreshTried((prev) => [...prev, file.url]);
-      const parsed = parseStorageUrl(file.url);
-      if (!parsed) return;
-      try {
-        const response = await fetch("/api/storage/sign", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(parsed),
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (data?.url) setRefreshed((prev) => ({ ...prev, [file.url]: data.url }));
-      } catch {
-        // Offline or blocked: leave the original URL in place.
+      const fresh = await resolveStorageUrl(file.url);
+      if (fresh !== file.url) {
+        setRefreshed((prev) => ({ ...prev, [file.url]: fresh }));
       }
     },
     [refreshTried],
