@@ -103,14 +103,24 @@ export function validateFile(file: File, bucket: UploadBucket): void {
   }
 }
 
+export interface UploadOptions {
+  /** Called with 0-100 as the file uploads. */
+  onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
+}
+
 /**
  * Upload one file. Returns `{url, path, …}` where `url` is a public URL for
  * public buckets and a 1-hour signed URL for private ones.
+ *
+ * Uses XMLHttpRequest when a progress callback is supplied (fetch cannot report
+ * upload progress) and fetch otherwise.
  */
 export async function uploadFile(
   bucket: UploadBucket,
   file: File,
   folderKey?: string,
+  options: UploadOptions = {},
 ): Promise<UploadedFile> {
   validateFile(file, bucket);
 
@@ -119,9 +129,50 @@ export async function uploadFile(
   body.append("file", file);
   if (folderKey) body.append("folderKey", folderKey);
 
+  if (options.onProgress && typeof XMLHttpRequest !== "undefined") {
+    return new Promise<UploadedFile>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload");
+      if (options.signal) {
+        options.signal.addEventListener("abort", () => xhr.abort());
+      }
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && options.onProgress) {
+          options.onProgress(Math.round((event.loaded / event.total) * 100));
+        }
+      };
+      xhr.onload = () => {
+        let payload: any = null;
+        try {
+          payload = JSON.parse(xhr.responseText);
+        } catch {
+          payload = null;
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && payload) {
+          options.onProgress?.(100);
+          resolve(payload as UploadedFile);
+          return;
+        }
+        reject({
+          code: payload?.code || "UPLOAD_FAILED",
+          message: payload?.message || payload?.error || "Upload failed.",
+        });
+      };
+      xhr.onerror = () =>
+        reject({ code: "UPLOAD_FAILED", message: "Network error while uploading." });
+      xhr.onabort = () =>
+        reject({ code: "UPLOAD_FAILED", message: "Upload cancelled." });
+      xhr.send(body);
+    });
+  }
+
   let response: Response;
   try {
-    response = await fetch("/api/upload", { method: "POST", body });
+    response = await fetch("/api/upload", {
+      method: "POST",
+      body,
+      signal: options.signal,
+    });
   } catch {
     throw { code: "UPLOAD_FAILED", message: "Network error while uploading." };
   }

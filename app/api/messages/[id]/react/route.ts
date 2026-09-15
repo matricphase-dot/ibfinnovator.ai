@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { ALLOWED_REACTIONS, canonicalReaction } from "@/lib/messages";
 import { z } from "zod";
 
 /**
@@ -13,14 +14,6 @@ import { z } from "zod";
  * a read-only aggregate and prefers the service-role client so it stays exact;
  * if that key is not configured it falls back to the caller's client.
  */
-
-const ALLOWED = ["👍", "❤️", "🔥", "👏", "🚀"] as const;
-const strip = (value: string) => value.replace(/\uFE0F/g, "");
-
-/** Resolve to the canonical allowlisted emoji, or null when not permitted. */
-function canonicalEmoji(input: string): string | null {
-  return ALLOWED.find((e) => strip(e) === strip(input)) ?? null;
-}
 
 async function countReactions(
   supabase: any,
@@ -58,12 +51,12 @@ export async function POST(
       .object({ emoji: z.string().min(1).max(8) })
       .parse(await request.json());
 
-    const emoji = canonicalEmoji(body.emoji);
+    const emoji = canonicalReaction(body.emoji);
     if (!emoji) {
       return NextResponse.json(
         {
           code: "INVALID_EMOJI",
-          message: `Allowed reactions: ${ALLOWED.join(" ")}`,
+          message: `Allowed reactions: ${ALLOWED_REACTIONS.join(" ")}`,
         },
         { status: 400 },
       );
