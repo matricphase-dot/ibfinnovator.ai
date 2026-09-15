@@ -143,10 +143,9 @@ async function ensureShadowAuthUser(
 }
 
 /**
- * Best-effort identity map write. The clerk_identity_map table is not part of
- * the applied schema yet (migrations 001-016), so a failure here must never
- * fail the webhook. profiles.clerk_user_id remains the source of truth used by
- * public.current_profile_id().
+ * Durable Clerk subject -> profile map (migration 017). Idempotent, so it also
+ * backfills rows for users created before the table existed. Errors propagate
+ * so the delivery is marked FAILED and retried by Svix.
  */
 async function upsertIdentityMap(
   clerkId: string,
@@ -159,12 +158,7 @@ async function upsertIdentityMap(
       { clerk_id: clerkId, profile_id: profileId, email },
       { onConflict: "clerk_id" },
     );
-  if (error) {
-    console.warn(
-      "[clerk-webhook] clerk_identity_map write skipped:",
-      error.message,
-    );
-  }
+  if (error) throw error;
 }
 
 async function handleUserChanged(data: ClerkUserPayload) {
@@ -186,8 +180,9 @@ async function handleUserChanged(data: ClerkUserPayload) {
       throw new Error("CONFLICT");
     }
     if (profile.clerk_user_id === data.id) {
-      // Already linked to this Clerk user: nothing to do.
-      return { profileId: profile.id as string, email, linked: false };
+      // Already linked to this Clerk user. No profile write is needed, but the
+      // caller still upserts the identity map so a missing row self-heals.
+      return { profileId: profile.id as string, email };
     }
 
     const patch: Record<string, unknown> = {
@@ -202,7 +197,7 @@ async function handleUserChanged(data: ClerkUserPayload) {
       .eq("id", profile.id);
     if (error) throw error;
 
-    return { profileId: profile.id as string, email, linked: true };
+    return { profileId: profile.id as string, email };
   }
 
   const shadowId = await ensureShadowAuthUser(email, data.id);
@@ -213,7 +208,7 @@ async function handleUserChanged(data: ClerkUserPayload) {
   );
   if (error) throw error;
 
-  return { profileId: shadowId, email, linked: true };
+  return { profileId: shadowId, email };
 }
 
 async function handleUserDeleted(clerkId: string) {
@@ -277,13 +272,11 @@ export async function POST(request: NextRequest) {
   try {
     if (event.type === "user.created" || event.type === "user.updated") {
       const result = await handleUserChanged(event.data as ClerkUserPayload);
-      if (result.linked) {
-        await upsertIdentityMap(
-          (event.data as ClerkUserPayload).id,
-          result.profileId,
-          result.email,
-        );
-      }
+      await upsertIdentityMap(
+        (event.data as ClerkUserPayload).id,
+        result.profileId,
+        result.email,
+      );
     } else if (event.type === "user.deleted") {
       if (payloadId) await handleUserDeleted(payloadId);
     }
