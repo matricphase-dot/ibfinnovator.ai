@@ -1,6 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import { isValidClerkPublishableKey } from "./lib/clerk-keys";
 
 const protectedPaths = [
   "/dashboard",
@@ -38,30 +39,6 @@ const isProtected = (path: string) =>
  * Checking the format up front means a bad key degrades to legacy auth with a
  * loud warning instead of a site-wide outage.
  */
-function isValidClerkPublishableKey(key: string | undefined): boolean {
-  if (!key) return false;
-  if (!key.startsWith("pk_test_") && !key.startsWith("pk_live_")) return false;
-
-  const parts = key.split("_");
-  if (parts.length !== 3) return false;
-
-  const encoded = parts[2];
-  if (!encoded) return false;
-
-  try {
-    // Keys are unpadded base64; pad before decoding.
-    const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
-    const decoded = atob(padded);
-
-    // Clerk's isValidDecodedPublishableKey
-    if (!decoded.endsWith("$")) return false;
-    const withoutTrailing = decoded.slice(0, -1);
-    if (withoutTrailing.includes("$")) return false;
-    return withoutTrailing.includes(".");
-  } catch {
-    return false;
-  }
-}
 
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
