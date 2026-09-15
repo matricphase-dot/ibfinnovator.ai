@@ -1,8 +1,9 @@
 "use client";
 
 import { Download, FileText, ExternalLink, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatBytes, type MessageAttachment } from "@/lib/messages";
+import { parseStorageUrl } from "@/lib/realtime";
 
 /**
  * Renders message/comment attachments.
@@ -32,6 +33,33 @@ export default function AttachmentPreview({
   className = "",
 }: AttachmentPreviewProps) {
   const [lightbox, setLightbox] = useState<MessageAttachment | null>(null);
+  // Signed URLs expire after an hour; re-sign on demand so old attachments keep working.
+  const [refreshed, setRefreshed] = useState<Record<string, string>>({});
+  const [refreshTried, setRefreshTried] = useState<string[]>([]);
+
+  const heal = useCallback(
+    async (file: MessageAttachment) => {
+      if (refreshTried.includes(file.url)) return;
+      setRefreshTried((prev) => [...prev, file.url]);
+      const parsed = parseStorageUrl(file.url);
+      if (!parsed) return;
+      try {
+        const response = await fetch("/api/storage/sign", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(parsed),
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data?.url) setRefreshed((prev) => ({ ...prev, [file.url]: data.url }));
+      } catch {
+        // Offline or blocked: leave the original URL in place.
+      }
+    },
+    [refreshTried],
+  );
+
+  const srcFor = (file: MessageAttachment) => refreshed[file.url] ?? file.url;
 
   useEffect(() => {
     if (!lightbox) return;
@@ -60,14 +88,15 @@ export default function AttachmentPreview({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={file.url}
+                  src={srcFor(file)}
                   alt={file.name}
                   loading="lazy"
+                  onError={() => void heal(file)}
                   className="w-36 h-36 object-cover"
                 />
               </button>
               <a
-                href={file.url}
+                href={srcFor(file)}
                 download={file.name}
                 target="_blank"
                 rel="noreferrer noopener"
@@ -105,7 +134,7 @@ export default function AttachmentPreview({
             </p>
           </div>
           <a
-            href={file.url}
+            href={srcFor(file)}
             target="_blank"
             rel="noreferrer noopener"
             aria-label={`Open ${file.name} in a new tab`}
@@ -114,7 +143,7 @@ export default function AttachmentPreview({
             <ExternalLink size={15} />
           </a>
           <a
-            href={file.url}
+            href={srcFor(file)}
             download={file.name}
             target="_blank"
             rel="noreferrer noopener"
@@ -147,8 +176,9 @@ export default function AttachmentPreview({
           <div className="relative max-w-4xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={lightbox.url}
+              src={srcFor(lightbox)}
               alt={lightbox.name}
+              onError={() => void heal(lightbox)}
               className="max-h-[85vh] max-w-full rounded-2xl object-contain"
             />
             <p className="text-center text-xs text-slate-400 mt-3">{lightbox.name}</p>

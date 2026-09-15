@@ -1,5 +1,3 @@
-import { createBrowserClient } from "@supabase/ssr";
-
 /**
  * Client-side upload helper.
  *
@@ -14,7 +12,8 @@ export type UploadBucket =
   | "resumes"
   | "project-files"
   | "team-files"
-  | "service-portfolios";
+  | "service-portfolios"
+  | "chat-attachments";
 
 export interface UploadedFile {
   url: string;
@@ -79,6 +78,20 @@ export const BUCKET_RULES: Record<
     mime: ["image/png", "image/jpeg", "image/webp", "application/pdf"],
     maxFiles: 10,
     label: "Image or PDF up to 10 MB",
+  },
+  "chat-attachments": {
+    maxBytes: 10 * 1024 * 1024,
+    mime: [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/zip",
+      "text/plain",
+    ],
+    maxFiles: 5,
+    label: "PDF, image, Word, ZIP or text up to 10 MB",
   },
 };
 
@@ -195,16 +208,4 @@ export function isUploadError(value: unknown): value is UploadError {
     "message" in value &&
     typeof (value as UploadError).message === "string"
   );
-}
-
-/**
- * Kept for compatibility with earlier code that expected a browser Supabase
- * client. Storage writes now go through `/api/upload`, so this is only a plain
- * anon-key client for realtime channels.
- */
-export function getBrowserSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return null;
-  return createBrowserClient(url, anonKey);
 }
