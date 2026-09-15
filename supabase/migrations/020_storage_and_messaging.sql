@@ -122,7 +122,39 @@ create index if not exists messages_parent_idx on public.messages(parent_id) whe
 create index if not exists messages_unread_idx on public.messages(read_at) where read_at is null;
 
 -- ---------------------------------------------------------------------------
--- 5. Verification — expect 5 buckets, 5 new columns, 5 new policies.
+-- 5. Read receipts.
+--
+-- The UPDATE policy on public.messages (migration 013) is
+--   using (sender_id = current_profile_id() or (room_type='TEAM' and can_access_team_room(room_id)))
+-- so the *recipient* can never update a row to set read_at. RLS is row-level,
+-- not column-level, so simply letting recipients UPDATE would also let them
+-- rewrite the message body. Instead this SECURITY DEFINER function updates
+-- exactly one column, only on rows addressed to the caller.
+-- ---------------------------------------------------------------------------
+create or replace function public.mark_messages_read(p_message_ids uuid[])
+returns int
+language sql
+security definer
+set search_path = public, auth
+as $$
+  with updated as (
+    update public.messages
+       set read_at = now()
+     where id = any(p_message_ids)
+       and recipient_id = public.current_profile_id()
+       and read_at is null
+    returning 1
+  )
+  select count(*)::int from updated;
+$$;
+
+-- Same ACL shape as finalize_onboarding in 019: authenticated only, never anon.
+revoke all on function public.mark_messages_read(uuid[]) from public;
+revoke all on function public.mark_messages_read(uuid[]) from anon;
+grant execute on function public.mark_messages_read(uuid[]) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 6. Verification — expect 5 buckets, 5 new columns, 7 new policies, 1 RPC.
 -- ---------------------------------------------------------------------------
 select
   (select count(*) from storage.buckets
@@ -136,4 +168,6 @@ select
                          'members read own scoped files','founders read applicant resumes',
                          'members upload own scoped files','members update own scoped files',
                          'members delete own scoped files')) as new_policies_7,
-  (select count(*) from pg_indexes where tablename='messages' and indexname='messages_parent_idx') as parent_index_1;
+  (select count(*) from pg_indexes where tablename='messages' and indexname='messages_parent_idx') as parent_index_1,
+  (select count(*) from pg_proc where proname='mark_messages_read'
+     and pg_get_function_identity_arguments(oid)='p_message_ids uuid[]') as read_rpc_1;
