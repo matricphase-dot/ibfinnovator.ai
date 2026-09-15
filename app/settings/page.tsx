@@ -1,6 +1,8 @@
 "use client";
 import AppShell from "@/components/AppShell";
+import Link from "next/link";
 import {
+  ArrowRight,
   Bell,
   Check,
   Eye,
@@ -9,6 +11,7 @@ import {
   LogOut,
   Save,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
@@ -120,6 +123,20 @@ export default function Settings() {
           ACCOUNT CONTROL
         </p>
         <h1 className="text-3xl font-black mt-2">Settings</h1>
+        {p?.onboarding_completed === false && (
+          <Link
+            href="/auth/complete-onboarding"
+            className="flex flex-wrap items-center gap-3 mt-6 rounded-2xl border border-cyan-300/30 bg-cyan-300/[.07] px-5 py-4"
+          >
+            <Sparkles size={18} className="text-cyan-300" />
+            <span className="text-sm font-bold text-cyan-100">
+              Finish your onboarding to unlock full matching
+            </span>
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-black text-cyan-300">
+              Continue <ArrowRight size={14} />
+            </span>
+          </Link>
+        )}
         <div className="grid md:grid-cols-[190px_1fr] gap-6 mt-8">
           <aside className="space-y-1">
             {tabs.map(([id, I, label]) => (

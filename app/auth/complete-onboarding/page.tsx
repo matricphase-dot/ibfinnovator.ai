@@ -1,20 +1,56 @@
-// TODO(batch 4): rebuild 5-step onboarding here.
-// Old field capture is in git history at commit 2ae0a27 (app/auth/signup/page.tsx).
-// See docs/CLERK_MIGRATION.md for the plan.
+import { redirect } from "next/navigation";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import OnboardingWizard from "@/components/OnboardingWizard";
+import { requireUser } from "@/lib/auth/require-user";
+import { isClerkPublishableKeyConfigured } from "@/lib/clerk-keys";
 
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+// The role and onboarding state must be read per request.
+export const dynamic = "force-dynamic";
 
-export default function CompleteOnboarding() {
-  const router = useRouter();
-  useEffect(() => {
-    // Placeholder — will be replaced in a later batch with the full wizard
-    router.replace("/dashboard");
-  }, [router]);
+export default async function CompleteOnboardingPage() {
+  let role: string | null = null;
+  let name = "";
+  let completed = false;
+
+  // 1. Preferred source: Clerk publicMetadata (set by /api/auth/set-role).
+  if (isClerkPublishableKeyConfigured()) {
+    try {
+      const { userId } = await auth();
+      if (userId) {
+        const client = await clerkClient();
+        const user = await client.users.getUser(userId);
+        const metadataRole = user.publicMetadata?.role;
+        if (typeof metadataRole === "string") role = metadataRole;
+        name =
+          [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+          user.username ||
+          "";
+      }
+    } catch (error) {
+      // Clerk unreachable — fall through to the profile row below.
+      console.error("[complete-onboarding] Clerk lookup failed:", error);
+    }
+  }
+
+  // 2. Profile row: authoritative for onboarding_completed, and the fallback
+  //    source of role for legacy Supabase sessions.
+  try {
+    const { user } = await requireUser();
+    if (!role) role = user.role;
+    if (!name) name = user.name || "";
+    completed = user.onboarding_completed;
+  } catch {
+    if (!role) redirect("/auth/signin");
+  }
+
+  if (!role) redirect("/auth/choose-role");
+  if (completed) redirect("/dashboard");
+
   return (
-    <div className="min-h-screen flex items-center justify-center text-slate-400">
-      Redirecting…
-    </div>
+    <OnboardingWizard
+      mode="resume"
+      role={role === "FOUNDER" ? "FOUNDER" : "STUDENT"}
+      initialName={name}
+    />
   );
 }
