@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { projectMatch } from "@/lib/matching";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const emptyUrl = z.preprocess(
@@ -74,7 +73,7 @@ const student = z.object({
 });
 export async function POST(req: Request) {
   try {
-    const { user } = await requireUser();
+    const { user, supabase } = await requireUser();
     const body = await req.json();
     const envelope = z
       .object({
@@ -101,7 +100,7 @@ export async function POST(req: Request) {
       if (envelope.role === "FOUNDER") {
         const f = parsed as z.infer<typeof founder>;
         const required = [...new Set(f.roles.flatMap((r) => r.skills))];
-        const { data } = await supabaseAdmin
+        const { data } = await supabase
           .from("profiles")
           .select("id,name,username,bio,skills,interests,availability")
           .eq("role", "STUDENT")
@@ -128,7 +127,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ matches });
       }
       const s = parsed as z.infer<typeof student>;
-      const { data } = await supabaseAdmin
+      const { data } = await supabase
         .from("projects")
         .select(
           "id,title,required_skills,domain,commitment_hours,engagement_type",
@@ -155,7 +154,6 @@ export async function POST(req: Request) {
         .slice(0, 3);
       return NextResponse.json({ matches });
     }
-    const { supabase } = await requireUser();
     const f =
         envelope.role === "FOUNDER"
           ? (parsed as z.infer<typeof founder>)
