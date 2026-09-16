@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
-export async function GET() {
+export async function GET(r: Request) {
+  // ?mine=1 returns the caller's own events — including drafts and past ones —
+  // which is what the "My Events" tab edits. The published/upcoming filters
+  // below stay exactly as they were for everyone else.
+  if (new URL(r.url).searchParams.get("mine") === "1") {
+    try {
+      const { supabase, user } = await requireUser();
+      const { data, error } = await supabase
+        .from("community_events")
+        .select("*,attendees:event_attendees(count)")
+        .eq("host_id", user.id)
+        .order("starts_at", { ascending: false });
+      if (error) throw error;
+      return NextResponse.json(data || []);
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: e.message },
+        { status: e.message === "UNAUTHORIZED" ? 401 : 500 },
+      );
+    }
+  }
+
   const s = await createClient();
   const { data, error } = await s
     .from("community_events")
