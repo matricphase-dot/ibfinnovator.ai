@@ -43,3 +43,14 @@ next-env.d.ts
 
 # Local tool configuration
 .config/
+.gitconfig
+bin/
+.node22/
+
+# Scratch/reference artifacts
+prd.txt
+reference.css
+reference.html
+reference.js
+supabase/migrations/000_combined_post_core.sql
+*.zip

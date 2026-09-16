@@ -16,6 +16,8 @@ const isProtected = createRouteMatcher([
   "/cofounder-matches(.*)",
   "/credentials(.*)",
   "/applications(.*)",
+  "/auth/complete-onboarding(.*)",
+  "/marketplace/inquiries(.*)",
   "/university(.*)",
   "/projects/new(.*)",
 ]);
