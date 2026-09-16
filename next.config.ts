@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://challenges.cloudflare.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.ingest.sentry.io",
-  "img-src 'self' data: blob: https://*.supabase.co https://img.clerk.com https://*.clerk.com",
-  "style-src 'self' 'unsafe-inline'",
-  "font-src 'self' data:",
-  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://clerk.innovators-global.com https://challenges.cloudflare.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://clerk.innovators-global.com https://*.ingest.sentry.io",
+  "img-src 'self' data: blob: https://*.supabase.co https://img.clerk.com https://*.clerk.com https://clerk.innovators-global.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.innovators-global.com https://challenges.cloudflare.com",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

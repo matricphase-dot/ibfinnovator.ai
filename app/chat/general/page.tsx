@@ -138,7 +138,7 @@ export default function Chat() {
                       <p className="text-[10px] text-slate-500 mb-1">
                         Reply to @
                         {m.parent.sender?.username || m.parent.sender?.name}:{" "}
-                        {m.parent.content.slice(0, 60)}
+                        {String(m.parent?.content||'').slice(0,60)}
                       </p>
                     )}
                     <div className="flex items-center">

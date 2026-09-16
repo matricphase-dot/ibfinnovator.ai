@@ -21,6 +21,8 @@ import {
   Award,
   Store,
   CalendarRange,
+  GraduationCap,
+  Inbox,
 } from "lucide-react";
 const links = [
   [LayoutDashboard, "Overview", "/dashboard"],
@@ -30,9 +32,11 @@ const links = [
   [HeartHandshake, "Co-founder mode", "/cofounder-matches"],
   [Award, "Credentials", "/credentials"],
   [Store, "Marketplace", "/marketplace"],
+  [Inbox, "Service inquiries", "/marketplace/inquiries"],
   [CalendarRange, "Community events", "/events"],
+  [GraduationCap, "University portal", "/university"],
   [MessagesSquare, "Messages", "/chat/general"],
-  [Users, "Team rooms", "/team/1"],
+  [Users, "Team rooms", "/team"],
   [Bookmark, "Bookmarks", "/bookmarks"],
   [CalendarDays, "Meetings", "/meetings"],
   [BarChart3, "Analytics", "/analytics"],
@@ -47,7 +51,7 @@ export default function Sidebar() {
   }, []);
   const founder = role === "FOUNDER" || role === "SUPER_ADMIN";
   return (
-    <aside className="hidden lg:flex w-60 bg-[#0d1322] border-r border-white/[.07] min-h-[calc(100vh-64px)] p-4 flex-col sticky top-16 h-[calc(100vh-64px)]">
+    <aside className="hidden lg:flex w-60 bg-[#0d1322] border-r border-white/[.07] min-h-[calc(100vh-64px)] p-4 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto scrollbar-none">
       <div className="px-3 pt-2 pb-4">
         <p className="text-[9px] tracking-[.22em] font-bold text-slate-600">
           COMMAND CENTER

@@ -148,7 +148,7 @@ export default function Team() {
       <div className="p-5 md:p-8 max-w-7xl mx-auto">
         <div className="flex items-center">
           <span className="w-12 h-12 rounded-xl bg-cyan-300 text-slate-950 grid place-items-center font-black">
-            {d.project.title.slice(0, 2).toUpperCase()}
+            {(d.project?.title||'IB').slice(0,2).toUpperCase()}
           </span>
           <div className="ml-3">
             <h1 className="text-xl font-black">{d.project.title}</h1>
@@ -173,7 +173,7 @@ export default function Team() {
             {d.members.map((m: any) => (
               <div className="flex items-center gap-2 mt-3" key={m.user_id}>
                 <span className="h-7 w-7 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center text-[9px]">
-                  {m.profile?.name?.slice(0, 2).toUpperCase()}
+                  {(m.profile?.name||'IB').slice(0,2).toUpperCase()}
                 </span>
                 <span className="text-xs">
                   {m.profile?.name}
@@ -200,7 +200,7 @@ export default function Team() {
                 messages.map((m: any) => (
                   <div className="flex gap-3" key={m.id}>
                     <span className="w-9 h-9 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center text-xs">
-                      {m.sender?.name?.slice(0, 2).toUpperCase()}
+                      {(m.sender?.name||'IB').slice(0,2).toUpperCase()}
                     </span>
                     <div className="flex-1">
                       <div className="flex">
