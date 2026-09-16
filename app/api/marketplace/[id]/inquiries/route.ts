@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUserOr401 } from "@/lib/auth/require-user-http";
 import { z } from "zod";
+import { checkRateLimit, clientKey, rateLimitResponse } from "@/lib/rate-limit";
 
 /**
  * Inquiries for one listing.
@@ -49,6 +50,16 @@ export async function POST(
     }
 
     const payload = messageSchema.parse(await request.json());
+
+    // 20-word messages are the point of this endpoint, so the limit is generous
+    // but finite: a member cannot flood every provider on the marketplace.
+    const limit = await checkRateLimit(supabase, {
+      bucket: "service_inquiries",
+      key: clientKey(request, user.id),
+      limit: 20,
+      windowSeconds: 86400,
+    });
+    if (!limit.allowed) return rateLimitResponse(limit);
 
     const { data: service, error: loadError } = await supabase
       .from("marketplace_services")

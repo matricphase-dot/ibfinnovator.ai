@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { createHash } from "crypto";
 
 /**
  * Partner feed: projects currently open to collaborators.
@@ -42,6 +44,18 @@ export async function GET(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    // Limit per partner, not per IP: one integration looping is the realistic
+    // problem, and it should not exhaust the budget for everyone else. The key
+    // is hashed so the secret itself is never written to the counter table.
+    const partnerKey = createHash("sha256").update(key).digest("hex").slice(0, 32);
+    const limit = await checkRateLimit(supabaseAdmin, {
+      bucket: "university_feed_projects",
+      key: `k:${partnerKey}`,
+      limit: 120,
+      windowSeconds: 3600,
+    });
+    if (!limit.allowed) return rateLimitResponse(limit);
 
     const { data, error } = await supabaseAdmin
       .from("projects")

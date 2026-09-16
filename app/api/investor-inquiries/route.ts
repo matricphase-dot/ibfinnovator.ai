@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, clientKey, rateLimitResponse } from "@/lib/rate-limit";
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(200),
@@ -33,7 +34,12 @@ const schema = z.object({
   geography: z.string().trim().max(120).optional(),
   investment_thesis: z.string().trim().max(1500).optional(),
   specific_ask: z.string().trim().min(20).max(3000),
-  website: z.string().max(0).optional(),
+  // Honeypot. This must ACCEPT a non-empty value: with `.max(0)` the request
+  // failed validation and returned 400 before the swallow below could run, so
+  // the intended "silently pretend it worked" branch was unreachable and every
+  // bot was told its submission had been rejected. A bot that is told it failed
+  // retries; one that gets a 200 does not.
+  website: z.string().max(200).optional(),
 });
 export async function POST(r: Request) {
   try {
@@ -50,6 +56,17 @@ export async function POST(r: Request) {
     const { website, ...row } = p.data;
     if (website) return NextResponse.json({ ok: true });
     const s = await createClient();
+
+    // This endpoint is open to anonymous visitors, so it is limited per IP.
+    // The honeypot above catches naive bots; this catches the ones that read
+    // the form. Five submissions per ten minutes is far above any real use.
+    const limit = await checkRateLimit(s, {
+      bucket: "investor_inquiries",
+      key: clientKey(r),
+      limit: 5,
+      windowSeconds: 600,
+    });
+    if (!limit.allowed) return rateLimitResponse(limit);
     const { data, error } = await s
       .from("investor_inquiries")
       .insert(row)

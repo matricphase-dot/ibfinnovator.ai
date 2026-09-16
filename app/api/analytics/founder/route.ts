@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserOr401 } from "@/lib/auth/require-user-http";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 /**
  * Founder insights — one request for the whole dashboard.
@@ -39,6 +40,16 @@ export async function GET() {
   const { supabase, user } = auth.session;
 
   try {
+    // Several aggregate queries per call, so a refresh loop is worth capping.
+    const limit = await checkRateLimit(supabase, {
+      bucket: "analytics_founder",
+      // No request object on GET; the caller is always keyed by their own id.
+      key: `u:${user.id}`,
+      limit: 60,
+      windowSeconds: 3600,
+    });
+    if (!limit.allowed) return rateLimitResponse(limit);
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
