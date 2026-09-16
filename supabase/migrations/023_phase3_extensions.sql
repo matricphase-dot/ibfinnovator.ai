@@ -1,4 +1,3 @@
--- ============================================================================
 -- 023_phase3_extensions.sql
 -- Phase 3: service inquiries, university partner API keys, investor visibility.
 --
@@ -12,12 +11,8 @@
 -- marketplace/event owner policies.
 --
 -- Nothing in migrations 001-022 is modified. Every statement is idempotent.
--- ============================================================================
 
-
--- ---------------------------------------------------------------------------
 -- 1. profiles: investor visibility (opt-in directory listing)
--- ---------------------------------------------------------------------------
 alter table public.profiles
   add column if not exists investor_visible boolean not null default false;
 
@@ -29,12 +24,9 @@ comment on column public.profiles.investor_visible is
 comment on column public.profiles.investor_pitch is
   'Founder-written summary shown to investors. The 50-word minimum is enforced by the app, not here.';
 
-
--- ---------------------------------------------------------------------------
 -- 2. universities: partner API keys
 --    A partial unique index (rather than a column constraint) keeps the
 --    statement idempotent and still allows the column to be NULL.
--- ---------------------------------------------------------------------------
 alter table public.universities
   add column if not exists api_key text;
 
@@ -51,8 +43,6 @@ update public.universities
 comment on column public.universities.api_key is
   'Bearer key for /api/university/public/*. Readable only through the service role (see section 3).';
 
-
--- ---------------------------------------------------------------------------
 -- 3. universities: keep the key out of every non-service-role read.
 --
 --    `universities` has a public-read policy, and `authenticated` holds
@@ -63,20 +53,16 @@ comment on column public.universities.api_key is
 --    column from a table-wide grant, and `SELECT *` needs every column, so
 --    queries must name the columns they need (see app/api/university/route.ts).
 --    The admin and public API routes read the key through supabaseAdmin.
--- ---------------------------------------------------------------------------
 revoke select on public.universities from authenticated;
 revoke select on public.universities from anon;
 
 grant select (id, name, domain, logo_url, active, created_at)
   on public.universities to authenticated;
 
-
--- ---------------------------------------------------------------------------
 -- 4. universities: SUPER_ADMIN management policy.
 --    Same shape as migration 014's investor_inquiries policies. Row-level
 --    access is what lets an admin toggle `active`; the key column stays
 --    unreachable because of the column privileges above.
--- ---------------------------------------------------------------------------
 drop policy if exists "super admins manage universities" on public.universities;
 create policy "super admins manage universities" on public.universities for all to authenticated
   using (exists (select 1 from public.profiles
@@ -86,13 +72,10 @@ create policy "super admins manage universities" on public.universities for all 
                        where profiles.id = public.current_profile_id()
                          and profiles.role = 'SUPER_ADMIN'));
 
-
--- ---------------------------------------------------------------------------
 -- 5. service_inquiries: a member contacting a service provider.
 --    provider_id is denormalised from marketplace_services so the RLS
 --    predicates stay index-friendly and so a listing can be deleted without
 --    orphaning the conversation record.
--- ---------------------------------------------------------------------------
 create table if not exists public.service_inquiries (
   id          uuid primary key default gen_random_uuid(),
   service_id  uuid not null references public.marketplace_services(id) on delete cascade,
@@ -141,8 +124,6 @@ with check (
   and status in ('CONTACTED', 'CLOSED')
 );
 
-
--- ---------------------------------------------------------------------------
 -- 6. Verification.
 --    Expect: 2 | 1 | 1 | 3 | 1 | f
 --      profiles_investor_columns_2 : investor_visible + investor_pitch
@@ -151,7 +132,6 @@ with check (
 --      service_inquiry_policies_3  : insert / select / update
 --      super_admin_policies_1      : admin management on universities
 --      authenticated_can_read_key  : must be false — this is the leak check
--- ---------------------------------------------------------------------------
 select
   (select count(*) from information_schema.columns
     where table_schema = 'public' and table_name = 'profiles'
