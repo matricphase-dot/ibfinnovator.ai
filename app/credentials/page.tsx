@@ -1,29 +1,60 @@
 "use client";
+
 import AppShell from "@/components/AppShell";
-import {
-  Award,
-  ExternalLink,
-  FileCheck2,
-  Loader2,
-  Printer,
-  ShieldCheck,
-} from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import BadgeGrid, { type EarnedBadge } from "@/components/BadgeGrid";
+import CertificateCard, { type Certificate } from "@/components/CertificateCard";
+import { Award, FileCheck2, Loader2, Star } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+
+/**
+ * Credentials: earned badges, issued certificates and reviews received.
+ *
+ * Badge and certificate GETs accept ?user_id=, so the same components back both
+ * this page and someone else's public profile.
+ */
+
+type Tab = "badges" | "certificates" | "reviews";
+
 export default function Credentials() {
-  const [badges, setBadges] = useState<any[]>([]),
-    [certs, setCerts] = useState<any[]>([]),
-    [loading, setLoading] = useState(true);
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/badges").then((r) => (r.ok ? r.json() : { earned: [] })),
-      fetch("/api/certificates").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([b, c]) => {
-      setBadges(b.earned || []);
-      setCerts(c);
-      setLoading(false);
-    });
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [certs, setCerts] = useState<Certificate[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [tab, setTab] = useState<Tab>("badges");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const [profile, badgeData, certData] = await Promise.all([
+      fetch("/api/profile", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch("/api/badges", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { earned: [] }))
+        .catch(() => ({ earned: [] })),
+      fetch("/api/certificates", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+    ]);
+    setBadges(badgeData?.earned ?? []);
+    setCerts(Array.isArray(certData) ? certData : []);
+    if (profile?.id) {
+      const users = await fetch(`/api/users/${profile.id}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
+      setReviews(users?.reviews ?? []);
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const tabs: [Tab, any, string, number][] = [
+    ["badges", Award, "Badges", badges.length],
+    ["certificates", FileCheck2, "Certificates", certs.length],
+    ["reviews", Star, "Reviews received", reviews.length],
+  ];
+
   return (
     <AppShell>
       <div className="max-w-6xl mx-auto p-5 md:p-8">
@@ -34,89 +65,107 @@ export default function Credentials() {
         <p className="text-slate-500 mt-2">
           Badges and certificates earned through real startup contributions.
         </p>
+
         {loading ? (
           <div className="py-32 grid place-items-center">
             <Loader2 className="animate-spin text-cyan-300" />
           </div>
         ) : (
           <>
-            <h2 className="font-bold text-lg mt-8">Experience badges</h2>
-            {badges.length ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                {badges.map((x) => (
-                  <article
-                    className="project-cyber-card text-center"
-                    key={x.id}
-                  >
-                    <span className="h-14 w-14 mx-auto rounded-2xl bg-cyan-300/10 text-cyan-300 grid place-items-center">
-                      <Award size={27} />
-                    </span>
-                    <h3 className="font-bold mt-4">{x.badge.name}</h3>
-                    <p className="text-xs text-slate-500 mt-2">
-                      {x.project?.title}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-3 line-clamp-3">
-                      {x.evidence}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={<Award />}
-                title="No badges yet"
-                text="Founders can award contribution badges after completed milestones."
-              />
+            <div className="flex flex-wrap gap-2 mt-8" role="tablist">
+              {tabs.map(([id, Icon, label, count]) => (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-selected={tab === id}
+                  onClick={() => setTab(id)}
+                  className={`btn ${tab === id ? "btn-primary" : "btn-secondary"} !py-2 text-xs`}
+                >
+                  <Icon size={14} />
+                  {label}
+                  <span className="opacity-70">· {count}</span>
+                </button>
+              ))}
+            </div>
+
+            {tab === "badges" && (
+              <section className="mt-6">
+                <BadgeGrid badges={badges} />
+                {badges.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-4">
+                    Badges are awarded by project founders and cannot be edited.
+                    Only certificates carry a public verification link.
+                  </p>
+                )}
+              </section>
             )}
-            <h2 className="font-bold text-lg mt-10">Experience certificates</h2>
-            {certs.length ? (
-              <div className="grid md:grid-cols-2 gap-4 mt-4">
-                {certs.map((c) => (
-                  <article
-                    className="bg-white border border-slate-200 rounded-2xl p-5"
-                    key={c.id}
-                  >
-                    <div className="flex">
-                      <span className="h-11 w-11 rounded-xl bg-cyan-300/10 text-cyan-300 grid place-items-center">
-                        <FileCheck2 />
-                      </span>
-                      <div className="ml-3">
-                        <b>{c.role_title}</b>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {c.project?.title}
-                        </p>
-                      </div>
-                      <ShieldCheck className="ml-auto text-cyan-300" />
-                    </div>
-                    <p className="text-xs text-slate-500 mt-5">
-                      Issued by {c.issuer?.name} ·{" "}
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2 mt-4">
-                      <Link
-                        href={`/verify/${c.verification_code}`}
-                        className="btn btn-secondary !py-2 text-xs"
+
+            {tab === "certificates" && (
+              <section className="mt-6">
+                {certs.length ? (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {certs.map((cert) => (
+                      <CertificateCard cert={cert} key={cert.id} />
+                    ))}
+                  </div>
+                ) : (
+                  <Empty
+                    icon={<FileCheck2 />}
+                    title="No certificates yet"
+                    text="Certificates appear after founders verify completed project experience."
+                  />
+                )}
+              </section>
+            )}
+
+            {tab === "reviews" && (
+              <section className="mt-6">
+                {reviews.length ? (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <article
+                        className="bg-white border border-slate-200 rounded-2xl p-5"
+                        key={review.id}
                       >
-                        <ExternalLink size={14} />
-                        Verify
-                      </Link>
-                      <button
-                        onClick={() => window.print()}
-                        className="btn btn-secondary !py-2 text-xs"
-                      >
-                        <Printer size={14} />
-                        Print / PDF
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={<FileCheck2 />}
-                title="No certificates yet"
-                text="Certificates appear after founders verify completed project experience."
-              />
+                        <div className="flex items-start">
+                          <span className="h-10 w-10 shrink-0 rounded-xl bg-amber-300/10 text-amber-500 grid place-items-center font-black">
+                            {review.reviewer?.name?.slice(0, 2).toUpperCase() || "IB"}
+                          </span>
+                          <div className="ml-3 min-w-0">
+                            <b className="text-sm">
+                              {review.reviewer?.name || "IBF member"}
+                            </b>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {review.project?.title ?? "Project"} ·{" "}
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className="ml-auto flex text-amber-400 shrink-0">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                size={14}
+                                fill={review.rating >= star ? "currentColor" : "none"}
+                              />
+                            ))}
+                          </span>
+                        </div>
+                        {review.comment && (
+                          <p className="text-sm text-slate-600 leading-6 mt-4">
+                            {review.comment}
+                          </p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <Empty
+                    icon={<Star />}
+                    title="No reviews yet"
+                    text="Reviews from collaborators appear once you finish a project together."
+                  />
+                )}
+              </section>
             )}
           </>
         )}
@@ -124,6 +173,7 @@ export default function Credentials() {
     </AppShell>
   );
 }
+
 function Empty({
   icon,
   title,

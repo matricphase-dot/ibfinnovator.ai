@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
 const requestOptions = [
   ["PITCH_DECK", "Pitch deck"],
   ["DATA_ROOM", "Data room access"],
@@ -38,6 +39,15 @@ export default function Page() {
     [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState(false);
+  const [startups, setStartups] = useState<any[]>([]);
+  const [startupsLoaded, setStartupsLoaded] = useState(false);
+  useEffect(() => {
+    fetch("/api/investors", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => setStartups(Array.isArray(list) ? list : []))
+      .catch(() => setStartups([]))
+      .finally(() => setStartupsLoaded(true));
+  }, []);
   function toggle(v: string, list: string[], set: (v: string[]) => void) {
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   }
@@ -157,6 +167,65 @@ export default function Page() {
             </div>
           ))}
         </div>
+      </section>
+      <section className="max-w-6xl mx-auto px-6 pb-20">
+        <p className="text-center text-xs font-black tracking-widest text-violet-600">
+          INVESTOR DIRECTORY
+        </p>
+        <h2 className="text-3xl md:text-4xl font-black tracking-tight text-center mt-4">
+          Startups open to investor conversations
+        </h2>
+        <p className="text-center text-slate-500 mt-3 max-w-2xl mx-auto">
+          Founders who chose to be listed. Every card is written by the founder.
+        </p>
+
+        {!startupsLoaded ? (
+          <Loader2 className="animate-spin text-cyan-300 mx-auto mt-14" />
+        ) : startups.length === 0 ? (
+          <p className="text-center text-sm text-slate-500 mt-12">
+            No founder has opened their profile to investors yet. Founders can opt in
+            from Settings → Investor visibility.
+          </p>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
+            {startups.map((s) => (
+              <article
+                className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col"
+                key={s.id}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="h-11 w-11 rounded-xl bg-cyan-300/10 text-cyan-300 grid place-items-center text-xs font-bold">
+                    {s.name?.slice(0, 2).toUpperCase() || "IB"}
+                  </span>
+                  <div className="min-w-0">
+                    <b className="block truncate">{s.name}</b>
+                    <p className="text-xs text-slate-500 truncate">
+                      {[s.company, s.industry].filter(Boolean).join(" · ") || "Founder"}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600 leading-6 mt-4 line-clamp-6">
+                  {s.investor_pitch}
+                </p>
+                {s.open_projects?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-4">
+                    {s.open_projects.slice(0, 3).map((project: any) => (
+                      <span className="tech-chip" key={project.title}>
+                        {project.title} · {project.stage}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <Link
+                  href={`/profile/${s.id}`}
+                  className="btn btn-secondary !py-2 text-xs mt-5"
+                >
+                  View profile
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       {open && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm overflow-y-auto p-4 md:p-8">

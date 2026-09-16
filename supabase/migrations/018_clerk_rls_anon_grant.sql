@@ -1,0 +1,30 @@
+-- ==========================================================================
+-- Migration 018 - grant EXECUTE on current_profile_id() to anon
+-- ==========================================================================
+-- Migration 012 granted EXECUTE on public.current_profile_id() to
+-- `authenticated` only. That is too narrow, because RLS policies are evaluated
+-- for EVERY role that touches the table, and a policy declared `for all`
+-- (or `for select`) applies to anon as well.
+--
+-- Concretely, for a logged-out visitor (role `anon`):
+--   * "marketplace public read" allows the row, but the sibling policy
+--     "provider manages services" (for all) is ALSO evaluated and calls
+--     public.current_profile_id() -> "permission denied for function
+--     current_profile_id". Postgres returns an error, not an empty set, so the
+--     whole query fails and the public page 500s.
+--   * Same for "host manages events" on public.community_events, and for
+--     "general and party messages read" on public.messages (the general chat
+--     route is reachable while logged out).
+--
+-- Before this migration, policies used auth.uid(), which anon is permitted to
+-- execute and which resolves to NULL without a JWT. Granting EXECUTE here
+-- restores exactly that behaviour: for anon there is no `sub` claim, so
+-- current_profile_id() returns NULL, the policy predicate evaluates to NULL
+-- (not TRUE), and the row is filtered out instead of raising an error.
+--
+-- This is safe: current_profile_id() is SECURITY DEFINER, reads only the
+-- caller's own JWT claims, and returns NULL when no subject is present. It
+-- reveals nothing that auth.uid() did not already reveal to anon.
+-- ==========================================================================
+
+grant execute on function public.current_profile_id() to anon;

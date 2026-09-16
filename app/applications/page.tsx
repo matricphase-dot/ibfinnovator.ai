@@ -1,9 +1,10 @@
 "use client";
 import AppShell from "@/components/AppShell";
-import { Check, FileText, Loader2, X } from "lucide-react";
+import { Check, FileText, Loader2, Paperclip, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { resolveStorageUrl } from "@/lib/storage-url";
 export default function Applications() {
   const [items, setItems] = useState<any[]>([]),
     [me, setMe] = useState<any>(null),
@@ -31,6 +32,13 @@ export default function Applications() {
       : toast.error("Could not update application");
   }
   const founder = me?.role === "FOUNDER" || me?.role === "SUPER_ADMIN";
+
+  // Stored resume URLs are signed and expire, so fetch a fresh one on click.
+  async function openResume(url: string) {
+    const tab = typeof window !== "undefined" ? window.open("", "_blank") : null;
+    const fresh = await resolveStorageUrl(url);
+    if (tab) tab.location.href = fresh;
+  }
   return (
     <AppShell>
       <div className="max-w-5xl mx-auto p-5 md:p-8">
@@ -84,13 +92,24 @@ export default function Applications() {
                     ))}
                   </div>
                 )}
-                <div className="flex mt-5 pt-4 border-t border-white/[.07]">
+                <div className="flex items-center mt-5 pt-4 border-t border-white/[.07]">
                   <Link
                     href={`/projects/${a.project_id}`}
                     className="text-xs font-bold text-cyan-300"
                   >
                     View project
                   </Link>
+                  {a.resume_url && (
+                    <button
+                      type="button"
+                      onClick={() => void openResume(a.resume_url)}
+                      aria-label={`View ${founder ? `${a.student?.name || "applicant"}'s` : "your"} resume`}
+                      className="ml-4 inline-flex items-center gap-1 text-xs font-bold text-cyan-300"
+                    >
+                      <Paperclip size={13} />
+                      View Resume
+                    </button>
+                  )}
                   {founder && a.status === "PENDING" && (
                     <div className="ml-auto flex gap-2">
                       <button

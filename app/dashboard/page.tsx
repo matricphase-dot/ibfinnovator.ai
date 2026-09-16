@@ -9,6 +9,7 @@ import {
   Loader2,
   MessageSquare,
   Plus,
+  Sparkles,
   Star,
   Users,
 } from "lucide-react";
@@ -112,6 +113,20 @@ export default function Dashboard() {
   return (
     <AppShell>
       <div className="p-5 md:p-8 max-w-7xl mx-auto">
+        {p.onboarding_completed === false && (
+          <Link
+            href="/auth/complete-onboarding"
+            className="flex flex-wrap items-center gap-3 mb-6 rounded-2xl border border-cyan-300/30 bg-cyan-300/[.07] px-5 py-4"
+          >
+            <Sparkles size={18} className="text-cyan-300" />
+            <span className="text-sm font-bold text-cyan-100">
+              Finish your onboarding to unlock full matching
+            </span>
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-black text-cyan-300">
+              Continue <ArrowRight size={14} />
+            </span>
+          </Link>
+        )}
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <p className="text-sm text-slate-500">

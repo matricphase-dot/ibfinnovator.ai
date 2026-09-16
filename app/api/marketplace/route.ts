@@ -8,7 +8,27 @@ const schema = z.object({
   pricing_note: z.string().max(200).optional(),
   availability: z.string().max(120).optional(),
 });
-export async function GET() {
+export async function GET(r: Request) {
+  // ?mine=1 returns the caller's own listings, including PAUSED ones, which the
+  // public browse query filters out. This is what the "My Listings" tab reads.
+  if (new URL(r.url).searchParams.get("mine") === "1") {
+    try {
+      const { supabase, user } = await requireUser();
+      const { data, error } = await supabase
+        .from("marketplace_services")
+        .select("*")
+        .eq("provider_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return NextResponse.json(data || []);
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: e.message },
+        { status: e.message === "UNAUTHORIZED" ? 401 : 500 },
+      );
+    }
+  }
+
   const s = await createClient();
   const { data, error } = await s
     .from("marketplace_services")

@@ -1,6 +1,8 @@
 "use client";
 import AppShell from "@/components/AppShell";
+import Link from "next/link";
 import {
+  ArrowRight,
   Bell,
   Check,
   Eye,
@@ -9,9 +11,12 @@ import {
   LogOut,
   Save,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import FileUploader from "@/components/FileUploader";
+import type { UploadedFile } from "@/lib/upload";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 type Tab = "profile" | "notifications" | "security";
@@ -20,6 +25,7 @@ export default function Settings() {
     [tab, setTab] = useState<Tab>("profile"),
     [saving, setSaving] = useState(false),
     [show, setShow] = useState(false),
+    [investor, setInvestor] = useState({ visible: false, pitch: "" }),
     [prefs, setPrefs] = useState({
       connection: true,
       messages: true,
@@ -38,6 +44,37 @@ export default function Settings() {
         if (x) setPrefs({ ...prefs, ...x });
       });
   }, []);
+  // Seed the investor controls once the profile arrives.
+  useEffect(() => {
+    if (!p?.id) return;
+    setInvestor({
+      visible: Boolean(p.investor_visible),
+      pitch: p.investor_pitch ?? "",
+    });
+  }, [p?.id]);
+  const investorWords = investor.pitch.trim().split(/\s+/).filter(Boolean).length;
+  const initials =
+    p?.name
+      ?.split(" ")
+      .map((part: string) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "IB";
+
+  async function saveAvatar(files: UploadedFile[]) {
+    const file = files[0];
+    if (!file) return;
+    setP((prev: any) => ({ ...prev, avatar_url: file.url }));
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ avatar_url: file.url }),
+    });
+    response.ok
+      ? toast.success("Profile photo updated")
+      : toast.error("Could not save your photo");
+  }
+
   async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
@@ -65,6 +102,35 @@ export default function Settings() {
       ? toast.success("Profile settings saved")
       : toast.error("Could not save settings");
   }
+  async function saveInvestor() {
+    if (investor.visible && investorWords < 50) {
+      toast.error("Write at least 50 words before making your pitch visible.");
+      return;
+    }
+    setSaving(true);
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        investor_visible: investor.visible,
+        investor_pitch: investor.pitch.trim() || null,
+      }),
+    });
+    setSaving(false);
+    if (response.ok) {
+      const saved = await response.json();
+      setP((prev: any) => ({ ...prev, ...saved }));
+      toast.success("Investor settings saved");
+    } else {
+      const payload = await response.json().catch(() => ({}));
+      toast.error(
+        typeof payload.error === "string"
+          ? payload.error
+          : "Could not save investor settings",
+      );
+    }
+  }
+
   async function saveNotifications() {
     setSaving(true);
     const s = createClient();
@@ -120,6 +186,20 @@ export default function Settings() {
           ACCOUNT CONTROL
         </p>
         <h1 className="text-3xl font-black mt-2">Settings</h1>
+        {p?.onboarding_completed === false && (
+          <Link
+            href="/auth/complete-onboarding"
+            className="flex flex-wrap items-center gap-3 mt-6 rounded-2xl border border-cyan-300/30 bg-cyan-300/[.07] px-5 py-4"
+          >
+            <Sparkles size={18} className="text-cyan-300" />
+            <span className="text-sm font-bold text-cyan-100">
+              Finish your onboarding to unlock full matching
+            </span>
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-black text-cyan-300">
+              Continue <ArrowRight size={14} />
+            </span>
+          </Link>
+        )}
         <div className="grid md:grid-cols-[190px_1fr] gap-6 mt-8">
           <aside className="space-y-1">
             {tabs.map(([id, I, label]) => (
@@ -142,6 +222,31 @@ export default function Settings() {
               <p className="text-sm text-slate-500 mt-1">
                 These details are used by matching and public discovery.
               </p>
+
+              <div className="flex flex-wrap items-center gap-4 mt-6">
+                {p?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.avatar_url}
+                    alt="Your profile photo"
+                    className="w-20 h-20 rounded-2xl object-cover border border-slate-200"
+                  />
+                ) : (
+                  <span className="w-20 h-20 rounded-2xl bg-[#101b2c] text-cyan-300 text-xl font-black grid place-items-center">
+                    {initials}
+                  </span>
+                )}
+                <div className="min-w-[240px] flex-1">
+                  <FileUploader
+                    bucket="avatars"
+                    maxFiles={1}
+                    accept="image/png,image/jpeg,image/webp"
+                    label="Upload a profile photo"
+                    hint="PNG, JPEG or WebP up to 2 MB"
+                    onChange={(files) => void saveAvatar(files)}
+                  />
+                </div>
+              </div>
               <label className="block text-sm font-bold mt-6">
                 Display name
                 <input
@@ -199,6 +304,61 @@ export default function Settings() {
                 </button>
               </div>
             </form>
+          )}
+          {tab === "profile" && p?.role === "FOUNDER" && (
+            <section className="bg-white border border-slate-200 rounded-2xl p-6 mt-5">
+              <h2 className="font-bold text-lg">Investor visibility</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Opt in to the investor directory. Investors see your name, company,
+                industry, pitch and open projects — never your email.
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setInvestor((prev) => ({ ...prev, visible: !prev.visible }))
+                }
+                aria-pressed={investor.visible}
+                className={`mt-5 pill border ${
+                  investor.visible
+                    ? "bg-cyan-300 text-slate-950 border-cyan-300"
+                    : "bg-white/5 text-slate-400 border-white/10"
+                }`}
+              >
+                {investor.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+                {investor.visible ? "Visible to investors" : "Hidden from investors"}
+              </button>
+
+              <label className="block text-sm font-bold mt-5">
+                Your pitch
+                <textarea
+                  value={investor.pitch}
+                  onChange={(event) =>
+                    setInvestor((prev) => ({ ...prev, pitch: event.target.value }))
+                  }
+                  className="field mt-2 font-normal min-h-40"
+                  placeholder="What you are building, the market, traction so far, and what you want from an investor."
+                  maxLength={4000}
+                />
+              </label>
+              <p
+                className={`text-[11px] mt-2 ${
+                  investorWords >= 50 ? "text-cyan-300" : "text-slate-500"
+                }`}
+              >
+                {investorWords} / 50 words minimum
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void saveInvestor()}
+                disabled={saving}
+                className="btn btn-primary mt-5 disabled:opacity-60"
+              >
+                <Save size={16} />
+                {saving ? "Saving…" : "Save investor settings"}
+              </button>
+            </section>
           )}
           {tab === "notifications" && (
             <section className="bg-white border border-slate-200 rounded-2xl p-6">

@@ -1,6 +1,11 @@
 "use client";
 import AppShell from "@/components/AppShell";
-import { Loader2, Plus, Send, Users } from "lucide-react";
+import AttachmentPreview from "@/components/AttachmentPreview";
+import FileUploader from "@/components/FileUploader";
+import MessageActions from "@/components/MessageActions";
+import { ALLOWED_REACTIONS } from "@/lib/messages";
+import type { UploadedFile } from "@/lib/upload";
+import { Loader2, Paperclip, Plus, Send, Users, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -10,7 +15,10 @@ export default function Team() {
     [loading, setLoading] = useState(true),
     [channel, setChannel] = useState("General"),
     [text, setText] = useState(""),
-    [task, setTask] = useState("");
+    [task, setTask] = useState(""),
+    [me, setMe] = useState<any>(null),
+    [pending, setPending] = useState<UploadedFile[]>([]),
+    [attachOpen, setAttachOpen] = useState(false);
   async function load() {
     const r = await fetch(`/api/team/${projectId}`, { cache: "no-store" }),
       x = await r.json();
@@ -19,23 +27,29 @@ export default function Team() {
   }
   useEffect(() => {
     load();
+    fetch("/api/profile", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data?.id && setMe(data))
+      .catch(() => {});
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
   }, [projectId]);
   async function message() {
-    if (!text.trim()) return;
+    if (!text.trim() && !pending.length) return;
     const r = await fetch("/api/team/messages", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         room_id: d.room.id,
         channel,
-        content: text,
-        attachments: [],
+        content: text.trim(),
+        attachments: pending.map((file) => file.url),
       }),
     });
     if (r.ok) {
       setText("");
+      setPending([]);
+      setAttachOpen(false);
       load();
     } else toast.error("Could not send message");
   }
@@ -153,18 +167,43 @@ export default function Team() {
                         </button>
                       </div>
                       <p className="text-sm text-slate-400 mt-1">{m.content}</p>
-                      <div className="flex gap-1 mt-2">
-                        {["👍", "❤️", "🚀"].map((e) => (
-                          <button
-                            key={e}
-                            onClick={() => react(m.id, e)}
-                            className="px-2 py-1 rounded-full bg-white/[.04] text-[10px]"
-                          >
-                            {e}{" "}
-                            {m.reactions?.filter((r: any) => r.emoji === e)
-                              .length || ""}
-                          </button>
-                        ))}
+                      {m.attachments?.length > 0 && (
+                        <AttachmentPreview files={m.attachments} className="mt-2" />
+                      )}
+                      <div className="flex items-center gap-1 mt-2">
+                        {ALLOWED_REACTIONS.filter(
+                          (e) => m.reactions?.some((r: any) => r.emoji === e),
+                        ).map((e) => {
+                          const list = m.reactions.filter((r: any) => r.emoji === e);
+                          const isMine = !!me?.id && list.some((r: any) => r.user_id === me.id);
+                          return (
+                            <button
+                              key={e}
+                              onClick={() => react(m.id, e)}
+                              aria-label={`${list.length} ${e} reaction${isMine ? ", including yours" : ""}`}
+                              className={`pill border text-[10px] ${
+                                isMine
+                                  ? "border-[#00f5d4]/60 bg-[#00f5d4]/10 text-cyan-200"
+                                  : "border-white/10 bg-white/[.04] text-slate-300"
+                              }`}
+                            >
+                              <span aria-hidden="true">{e}</span>
+                              {list.length}
+                            </button>
+                          );
+                        })}
+                        <MessageActions
+                          isOwn={!!me?.id && m.sender_id === me.id}
+                          reacted={
+                            me?.id
+                              ? (m.reactions ?? [])
+                                  .filter((r: any) => r.user_id === me.id)
+                                  .map((r: any) => r.emoji)
+                              : []
+                          }
+                          className="ml-1"
+                          onReact={(emoji) => react(m.id, emoji)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -175,17 +214,59 @@ export default function Team() {
                 </p>
               )}
             </div>
-            <div className="m-4 flex gap-2">
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && message()}
-                className="field"
-                placeholder={`Message #${channel}`}
-              />
-              <button onClick={message} className="btn btn-primary">
-                <Send size={16} />
-              </button>
+            <div className="m-4">
+              {pending.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {pending.map((file, index) => (
+                    <span
+                      key={file.path}
+                      className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[.04] px-2.5 py-1.5 text-[11px] text-slate-300"
+                    >
+                      {file.name}
+                      <button
+                        type="button"
+                        onClick={() => setPending((prev) => prev.filter((_, i) => i !== index))}
+                        aria-label={`Remove ${file.name}`}
+                        className="text-slate-400 hover:text-rose-400"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {attachOpen && (
+                <div className="mb-3">
+                  <FileUploader
+                    bucket="team-files"
+                    folderKey={d.room.id}
+                    maxFiles={5}
+                    label="Attach files to this channel"
+                    onChange={setPending}
+                  />
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAttachOpen((open) => !open)}
+                  aria-label={attachOpen ? "Close attachments" : "Attach files"}
+                  aria-expanded={attachOpen}
+                  className={`btn btn-secondary !px-3 ${attachOpen ? "!text-cyan-300" : ""}`}
+                >
+                  <Paperclip size={16} />
+                </button>
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && message()}
+                  className="field"
+                  placeholder={`Message #${channel}`}
+                />
+                <button onClick={message} className="btn btn-primary">
+                  <Send size={16} />
+                </button>
+              </div>
             </div>
           </section>
           <aside className="bg-white border border-slate-200 rounded-2xl p-4">

@@ -71,8 +71,15 @@ export async function POST(
         { error: "An accepted connection is required." },
         { status: 403 },
       );
-    const { content } = z
-      .object({ content: z.string().trim().min(1).max(5000) })
+    const { content, attachments, parent_id } = z
+      .object({
+        content: z.string().trim().max(5000).default(""),
+        attachments: z.array(z.string().url()).max(10).default([]),
+        parent_id: z.string().uuid().nullish(),
+      })
+      .refine((v) => v.content.length > 0 || v.attachments.length > 0, {
+        message: "A message needs text or an attachment.",
+      })
       .parse(await r.json());
     const { data, error } = await supabase
       .from("messages")
@@ -82,6 +89,8 @@ export async function POST(
         recipient_id: access.other,
         room_type: "DIRECT",
         content,
+        attachments,
+        parent_id: parent_id || null,
       })
       .select("*,sender:profiles!sender_id(id,name,avatar_url)")
       .single();
