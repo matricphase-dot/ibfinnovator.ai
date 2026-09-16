@@ -62,7 +62,12 @@ export default function Notifications() {
                   </p>
                 </div>
                 {!n.is_read && (
-                  <i className="ml-auto mt-2 h-2 w-2 rounded-full bg-cyan-300" />
+                  // "Unread" is stated, not implied by colour alone: the dot is
+                  // decorative and the text carries the meaning.
+                  <span className="ml-auto mt-2 flex shrink-0 items-center gap-1.5 text-[10px] font-bold text-cyan-300">
+                    <i aria-hidden="true" className="h-2 w-2 rounded-full bg-cyan-300" />
+                    Unread
+                  </span>
                 )}
               </Link>
             ))}

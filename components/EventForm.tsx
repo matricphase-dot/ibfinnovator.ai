@@ -2,6 +2,7 @@
 
 import { CalendarPlus, Loader2, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 import toast from "react-hot-toast";
 
 /**
@@ -66,6 +67,8 @@ export default function EventForm({
     setEndsAt(toLocalInput(source.ends_at));
     setCapacity(source.capacity ? String(source.capacity) : "");
   }, [open, initial]);
+
+  const dialogRef = useModalA11y<HTMLFormElement>(open, onClose);
 
   if (!open) return null;
 
@@ -142,8 +145,11 @@ export default function EventForm({
   return (
     <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm grid place-items-center p-4">
       <form
-        onSubmit={submit}
-        className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6 text-left max-h-[90vh] overflow-auto"
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6 text-left max-h-[90vh] overflow-auto"
       >
         <div className="flex">
           <div>

@@ -2,6 +2,7 @@
 
 import { Check, Copy, FileCheck2, Loader2, X } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 import toast from "react-hot-toast";
 import CollaboratorSelect from "@/components/CollaboratorSelect";
 
@@ -89,6 +90,8 @@ export default function IssueCertificateModal({
     }
   }
 
+  const dialogRef = useModalA11y(open, close);
+
   return (
     <>
       <button
@@ -104,7 +107,12 @@ export default function IssueCertificateModal({
 
       {open && (
         <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm grid place-items-center p-4">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6 text-left max-h-[90vh] overflow-auto">
+          <div
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-2xl p-6 text-left max-h-[90vh] overflow-auto">
             <div className="flex">
               <div>
                 <p className="text-[9px] tracking-widest text-cyan-300 font-bold">

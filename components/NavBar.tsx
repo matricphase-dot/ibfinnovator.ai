@@ -5,10 +5,20 @@ import { useEffect, useState } from "react";
 export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [unread, setUnread] = useState(0);
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then(setProfile)
+      .catch(() => null);
+    // The bell used to show a permanent dot with no meaning. A real count is
+    // both more useful and more accessible: numbers can be read, announced and
+    // printed, whereas "the dot is a colour" cannot.
+    fetch("/api/notifications")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((rows) => {
+        if (Array.isArray(rows)) setUnread(rows.filter((n: any) => !n.is_read).length);
+      })
       .catch(() => null);
   }, []);
   const name = profile?.name || "IBF Member",
@@ -58,12 +68,28 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
             <>
               <Link
                 href="/notifications"
-                aria-label="Notifications"
+                aria-label={
+                  unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+                }
                 className="relative p-2 text-slate-400 hover:text-cyan-300"
               >
                 <Bell size={20} />
-                <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-300 border-2 border-[#0d1422]" />
+                {unread > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-cyan-300 text-slate-950 text-[10px] font-black grid place-items-center border border-[#0d1422]"
+                  >
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
               </Link>
+              {/* Announced politely when the count changes; hidden visually
+                  because the badge above already shows the number. */}
+              <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {unread > 0
+                  ? `${unread} unread notification${unread === 1 ? "" : "s"}`
+                  : "No unread notifications"}
+              </span>
               <div className="h-7 w-px bg-white/10" />
               <Link href="/settings" className="flex items-center gap-3 group">
                 <div className="w-9 h-9 rounded-full bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center font-bold text-sm">
