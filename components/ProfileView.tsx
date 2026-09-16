@@ -9,7 +9,11 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import BadgeGrid, { type EarnedBadge } from "@/components/BadgeGrid";
+import CertificateCard, { type Certificate } from "@/components/CertificateCard";
+import EndorseSkillButton from "@/components/EndorseSkillButton";
+import LeaveReviewModal from "@/components/LeaveReviewModal";
 export default function ProfileView({
   userId,
   own = false,
@@ -18,13 +22,54 @@ export default function ProfileView({
   own?: boolean;
 }) {
   const [p, setP] = useState<any>(null),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [me, setMe] = useState<any>(null),
+    [badges, setBadges] = useState<EarnedBadge[]>([]),
+    [certificates, setCertificates] = useState<Certificate[]>([]),
+    [reviewable, setReviewable] = useState(0),
+    [endorsements, setEndorsements] = useState<any[]>([]);
+
   useEffect(() => {
     fetch(own ? "/api/profile" : `/api/users/${userId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then(setP)
       .finally(() => setLoading(false));
   }, [userId, own]);
+
+  // Everything below is keyed on the profile id, so it works the same for your
+  // own profile and someone else's once `p` has loaded.
+  const loadExtras = useCallback(async (profileId: string) => {
+    const [users, badgeData, certData, meData] = await Promise.all([
+      fetch(`/api/users/${profileId}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch(`/api/badges?user_id=${profileId}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { earned: [] }))
+        .catch(() => ({ earned: [] })),
+      fetch(`/api/certificates?user_id=${profileId}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetch("/api/profile", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ]);
+    setEndorsements(users?.endorsements ?? []);
+    setBadges(badgeData?.earned ?? []);
+    setCertificates(Array.isArray(certData) ? certData : []);
+    setMe(meData);
+
+    // Only show "Leave a review" when a shared COMPLETED project exists.
+    if (meData?.id && meData.id !== profileId) {
+      fetch(`/api/reviews/eligibility?reviewee_id=${profileId}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { projects: [] }))
+        .then((data) => setReviewable((data?.projects ?? []).length))
+        .catch(() => setReviewable(0));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (p?.id) void loadExtras(p.id);
+  }, [p?.id, loadExtras]);
   if (loading)
     return (
       <AppShell>
@@ -89,15 +134,51 @@ export default function ProfileView({
               <h2 className="font-extrabold mt-8">Skills</h2>
               <div className="flex flex-wrap gap-2 mt-3">
                 {p.skills?.length ? (
-                  p.skills.map((x: string) => (
-                    <span className="pill bg-violet-50 text-violet-700" key={x}>
-                      {x}
-                    </span>
-                  ))
+                  p.skills.map((x: string) => {
+                    const forSkill = endorsements.filter(
+                      (e: any) => e.skill?.toLowerCase() === x.toLowerCase(),
+                    );
+                    const alreadyEndorsed =
+                      !!me?.id && forSkill.some((e: any) => e.giver?.id === me.id);
+                    if (own || !me?.id) {
+                      return (
+                        <span className="pill bg-violet-50 text-violet-700" key={x}>
+                          {x}
+                          {forSkill.length > 0 && (
+                            <span className="opacity-70">· {forSkill.length}</span>
+                          )}
+                        </span>
+                      );
+                    }
+                    return (
+                      <EndorseSkillButton
+                        key={x}
+                        receiverId={p.id}
+                        skill={x}
+                        count={forSkill.length}
+                        endorsed={alreadyEndorsed}
+                        onEndorsed={() => void loadExtras(p.id)}
+                      />
+                    );
+                  })
                 ) : (
                   <p className="text-sm text-slate-500">No skills added yet.</p>
                 )}
               </div>
+
+              <h2 className="font-extrabold mt-8">Badges</h2>
+              <BadgeGrid badges={badges} className="mt-3" />
+
+              {certificates.length > 0 && (
+                <>
+                  <h2 className="font-extrabold mt-8">Certificates</h2>
+                  <div className="grid md:grid-cols-2 gap-4 mt-3">
+                    {certificates.map((cert) => (
+                      <CertificateCard cert={cert} key={cert.id} />
+                    ))}
+                  </div>
+                </>
+              )}
               <h2 className="font-extrabold mt-8">Interests</h2>
               <div className="flex flex-wrap gap-2 mt-3">
                 {p.interests?.map((x: string) => (
@@ -148,15 +229,22 @@ export default function ProfileView({
                 <p className="text-xs text-slate-500 mt-1">
                   from {p.reviews?.length || 0} reviews
                 </p>
+                {!own && me?.id && reviewable > 0 && (
+                  <div className="mt-4">
+                    <LeaveReviewModal
+                      revieweeId={p.id}
+                      revieweeName={p.name}
+                      onSubmitted={() => void loadExtras(p.id)}
+                    />
+                  </div>
+                )}
                 <hr className="my-5 border-slate-100" />
                 <b className="text-sm">
-                  {p.endorsement_count || p.endorsements?.length || 0} skill
+                  {p.endorsement_count || endorsements.length || 0} skill
                   endorsements
                 </b>
                 <div className="flex flex-wrap gap-1 mt-3">
-                  {Array.from(
-                    new Set((p.endorsements || []).map((x: any) => x.skill)),
-                  )
+                  {Array.from(new Set(endorsements.map((x: any) => x.skill)))
                     .slice(0, 6)
                     .map((x: any) => (
                       <span className="tech-chip" key={x}>

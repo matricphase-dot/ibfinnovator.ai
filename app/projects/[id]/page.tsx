@@ -17,14 +17,17 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import ApplyToProject from '@/components/ApplyToProject';
+import ApplyToProject from '@/components/ApplyToProject'
+import AwardBadgeModal from '@/components/AwardBadgeModal'
+import IssueCertificateModal from '@/components/IssueCertificateModal';
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<any>(null),
     [me, setMe] = useState<any>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState("");
+    [busy, setBusy] = useState(""),
+    [collaborators, setCollaborators] = useState(0);
   useEffect(() => {
     Promise.all([
       fetch(`/api/projects/${id}`).then(async (r) => {
@@ -108,6 +111,13 @@ export default function Detail() {
     );
   const created = new Date(p.created_at);
   const isOwner = me?.id === p.founder_id;
+  useEffect(() => {
+    if (!isOwner) return;
+    fetch(`/api/projects/${id}/collaborators`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { collaborators: [] }))
+      .then((data) => setCollaborators((data?.collaborators ?? []).length))
+      .catch(() => setCollaborators(0));
+  }, [id, isOwner]);
   return (
     <>
       <NavBar />
@@ -221,13 +231,30 @@ export default function Detail() {
                 </p>
               </div>
               {isOwner ? (
-                <div className="p-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[.05] text-center">
-                  <p className="text-xs text-cyan-300 font-bold">
+                <div className="p-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[.05]">
+                  <p className="text-xs text-cyan-300 font-bold text-center">
                     THIS IS YOUR PROJECT
                   </p>
+                  <div className="space-y-2 mt-3">
+                    <AwardBadgeModal
+                      projectId={id}
+                      projectTitle={p.title}
+                      disabled={collaborators === 0}
+                    />
+                    <IssueCertificateModal
+                      projectId={id}
+                      projectTitle={p.title}
+                      disabled={collaborators === 0}
+                    />
+                  </div>
+                  {collaborators === 0 && (
+                    <p className="text-[11px] text-slate-400 mt-2 text-center">
+                      Accept a collaborator to award credentials.
+                    </p>
+                  )}
                   <Link
                     href="/dashboard"
-                    className="btn btn-primary w-full mt-3"
+                    className="btn btn-secondary w-full mt-3"
                   >
                     Manage from dashboard
                   </Link>
