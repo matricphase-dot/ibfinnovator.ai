@@ -22,7 +22,7 @@ export async function GET() {
     const { data: owned, error: e1 } = await supabase
       .from("meetings")
       .select(
-        "*,project:projects(id,title),attendees:meeting_attendees(user_id,status,profile:profiles!user_id(id,name,avatar_url))",
+        "*,project:projects(id,title),attendees:meeting_attendees(user_id,status,profile:profiles!user_id(id,name,username,avatar_url))",
       )
       .eq("organizer_id", user.id)
       .order("starts_at");

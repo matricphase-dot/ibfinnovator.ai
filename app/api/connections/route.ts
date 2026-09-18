@@ -9,16 +9,23 @@ const input = z.object({
   project_id: z.string().uuid().nullable().optional(),
   type: z.enum(["PROJECT", "COFOUNDER"]).default("PROJECT"),
 });
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { supabase, user } = await requireUser();
-    const { data, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get("project_id");
+    const status = searchParams.get("status");
+    let query = supabase
       .from("connections")
       .select(
-        "*,requester:profiles!requester_id(id,name,avatar_url),recipient:profiles!recipient_id(id,name,avatar_url),project:projects(id,title)",
+        "*,requester:profiles!requester_id(id,name,username,avatar_url),recipient:profiles!recipient_id(id,name,username,avatar_url),project:projects(id,title)",
       )
-      .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .order("created_at", { ascending: false });
+      .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
+    if (projectId) query = query.eq("project_id", projectId);
+    if (status) query = query.eq("status", status);
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
     if (error) throw error;
     return NextResponse.json(data);
   } catch (e: any) {
