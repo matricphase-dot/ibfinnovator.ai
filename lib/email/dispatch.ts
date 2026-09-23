@@ -1,6 +1,7 @@
 import "server-only";
 import type { ReactNode } from "react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sanitizeEmailSubject } from "@/lib/security/email";
 import { sendEmail } from "./client";
 type Dispatch = {
   profileId?: string;
@@ -12,6 +13,8 @@ type Dispatch = {
   notificationId?: string;
 };
 export function dispatchEmail(input: Dispatch): void {
+  // Sanitize at enqueue time so logs/audit never carry raw CR/LF either.
+  const subject = sanitizeEmailSubject(input.subject);
   void (async () => {
     try {
       let to = input.to,
@@ -27,14 +30,14 @@ export function dispatchEmail(input: Dispatch): void {
       }
       if (!to || !optIn) {
         console.info("[email:dispatch-skipped]", {
-          subject: input.subject,
+          subject,
           reason: !to ? "no recipient" : "opted out",
         });
         return;
       }
       const result = await sendEmail({
         to,
-        subject: input.subject,
+        subject,
         react: input.react,
         html: input.html,
         text: input.text,
