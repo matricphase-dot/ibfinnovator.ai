@@ -1,7 +1,9 @@
 "use client";
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
-export default function GlobalError({
+// ROOT FIX: segment boundary (was: only root fallback, full remount + lost nav).
+// Named Error (was GlobalError) so Next.js treats it as the app segment boundary.
+export default function Error({
   error,
   reset,
 }: {
@@ -9,7 +11,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    Sentry.captureException(error, {
+      tags: { segment: "app" },
+      extra: { digest: error.digest },
+    });
   }, [error]);
   return (
     <main className="min-h-[70vh] grid place-items-center p-6">
