@@ -6,9 +6,14 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
-import { allowedTypes, uploadFile, type UploadBucket } from "@/lib/upload";
+import {
+  allowedTypes,
+  MAX_BY_BUCKET,
+  uploadFile,
+  type UploadBucket,
+} from "@/lib/upload";
 export type UploadedFile = {
   url: string;
   path: string;
@@ -28,34 +33,54 @@ export default function FileUploader({
   bucket,
   folderKey,
   multiple = false,
-  maxMB = 10,
+  maxMB,
   onUploaded,
   label = "Upload files",
 }: Props) {
+  // ROOT FIX M2: single source of truth for limits — prop may only tighten, never widen.
+  const effectiveMaxMB = Math.min(
+    maxMB ?? Number.MAX_SAFE_INTEGER,
+    Math.round(MAX_BY_BUCKET[bucket] / 1024 / 1024),
+  );
   const supabase = useClerkSupabaseClient(),
     input = useRef<HTMLInputElement>(null),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
     [error, setError] = useState(""),
     [previews, setPreviews] = useState<{ file: File; preview?: string }[]>([]);
+  // ROOT FIX: revoke object URLs — previous code leaked memory per selection.
+  useEffect(() => {
+    return () => {
+      for (const p of previews) if (p.preview) URL.revokeObjectURL(p.preview);
+    };
+  }, [previews]);
   async function choose(list: FileList | null) {
     if (!list) return;
     const files = [...list];
     setError("");
+    const folder = folderKey.trim();
+    if (
+      !folder ||
+      folder.includes("/") ||
+      folder.includes("\\") ||
+      folder.includes("..")
+    )
+      return setError("Invalid upload destination");
     for (const f of files) {
-      if (f.size > maxMB * 1024 * 1024)
-        return setError(`Each file must be ${maxMB}MB or smaller`);
+      if (f.size > effectiveMaxMB * 1024 * 1024)
+        return setError(`Each file must be ${effectiveMaxMB}MB or smaller`);
       if (!allowedTypes(bucket).includes(f.type))
         return setError(`Unsupported file: ${f.name}`);
     }
-    setPreviews(
-      files.map((file) => ({
+    setPreviews((old) => {
+      for (const p of old) if (p.preview) URL.revokeObjectURL(p.preview);
+      return files.map((file) => ({
         file,
         preview: file.type.startsWith("image/")
           ? URL.createObjectURL(file)
           : undefined,
-      })),
-    );
+      }));
+    });
     setBusy(true);
     try {
       const results: UploadedFile[] = [];
@@ -100,7 +125,7 @@ export default function FileUploader({
         <UploadCloud className="mx-auto text-cyan-300" />
         <b className="block text-sm mt-2">{label}</b>
         <span className="text-[10px] text-slate-500">
-          Drag and drop or click · max {maxMB}MB
+          Drag and drop or click · max {effectiveMaxMB}MB
         </span>
       </button>
       <input
