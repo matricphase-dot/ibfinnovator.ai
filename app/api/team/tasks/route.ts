@@ -14,6 +14,19 @@ export async function POST(r: Request) {
   try {
     const { supabase, user } = await requireUser();
     const p = create.parse(await r.json());
+
+    // Verify user has access to this team room
+    const { data: canAccess, error: accessErr } = await supabase.rpc(
+      "can_access_team_room",
+      { target_room: p.room_id },
+    );
+    if (accessErr || !canAccess) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have access to this team room" },
+        { status: 403 },
+      );
+    }
+
     const { data, error } = await supabase
       .from("team_tasks")
       .insert({ ...p, created_by: user.id })
@@ -34,6 +47,28 @@ export async function PATCH(r: Request) {
         status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
       })
       .parse(await r.json());
+
+    const { data: task, error: taskErr } = await supabase
+      .from("team_tasks")
+      .select("id, room_id")
+      .eq("id", p.id)
+      .single();
+
+    if (taskErr || !task) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    const { data: canAccess, error: accessErr } = await supabase.rpc(
+      "can_access_team_room",
+      { target_room: task.room_id },
+    );
+    if (accessErr || !canAccess) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have access to this team room" },
+        { status: 403 },
+      );
+    }
+
     const { data, error } = await supabase
       .from("team_tasks")
       .update({ status: p.status, updated_at: new Date().toISOString() })
@@ -46,3 +81,4 @@ export async function PATCH(r: Request) {
     return NextResponse.json({ error: e.message }, { status: 400 });
   }
 }
+
