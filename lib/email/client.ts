@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import * as Sentry from "@sentry/nextjs";
 import type { ReactNode } from "react";
 import {
   sanitizeEmailRecipients,
@@ -62,6 +63,7 @@ export async function sendEmail(input: Input) {
     if (error) throw error;
     return { skipped: false as const, id: data?.id };
   } catch (error) {
+    Sentry.captureException(error, { tags: { area: "email" } });
     console.error("[email:error]", error);
     return { skipped: true as const, error };
   }
