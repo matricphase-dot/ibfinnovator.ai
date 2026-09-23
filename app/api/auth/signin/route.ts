@@ -1,20 +1,32 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+
 const input = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
 });
+
 export async function POST(r: Request) {
   try {
+    const ip = getClientIp(r);
+    const ipLimit = checkRateLimit(`signin:ip:${ip}`, 5, 600);
+    if (!ipLimit.allowed) return rateLimitResponse(ipLimit);
+
     const p = input.safeParse(await r.json());
     if (!p.success)
       return NextResponse.json(
         { error: "Enter a valid email and password." },
         { status: 400 },
       );
+
+    const emailLimit = checkRateLimit(`signin:email:${p.data.email.toLowerCase()}`, 5, 600);
+    if (!emailLimit.allowed) return rateLimitResponse(emailLimit);
+
     const s = await createClient();
     const { data, error } = await s.auth.signInWithPassword(p.data);
+
     if (error)
       return NextResponse.json({ error: error.message }, { status: 401 });
     return NextResponse.json({
