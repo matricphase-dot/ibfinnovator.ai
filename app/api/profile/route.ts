@@ -32,6 +32,9 @@ const update = z.object({
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
+    // Safely update last_seen_at using user's authenticated context without blocking response
+    void Promise.resolve(supabase.rpc("touch_current_profile")).catch(() => {});
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")

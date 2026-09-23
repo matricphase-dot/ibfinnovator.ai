@@ -1,12 +1,10 @@
 import type { MetadataRoute } from "next";
 import { supabasePublic } from "@/lib/supabase/public";
-const base = "https://innovators-global.com";
+
+const base = process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { data } = await supabasePublic
-    .from("projects")
-    .select("id,updated_at")
-    .eq("status", "OPEN");
-  const fixed = [
+  const fixed: MetadataRoute.Sitemap = [
     "",
     "/projects",
     "/investors",
@@ -19,13 +17,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: (i < 2 ? "daily" : "weekly") as "daily" | "weekly",
     priority: i === 0 ? 1 : 0.8,
   }));
-  return [
-    ...fixed,
-    ...(data || []).map((p) => ({
-      url: `${base}/projects/${p.id}`,
-      lastModified: new Date(p.updated_at),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
-  ];
+
+  let projectEntries: MetadataRoute.Sitemap = [];
+
+  if (
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    try {
+      const { data } = await supabasePublic
+        .from("projects")
+        .select("id,updated_at")
+        .eq("status", "OPEN")
+        .limit(5000);
+
+      if (data && Array.isArray(data)) {
+        projectEntries = data.map((p) => ({
+          url: `${base}/projects/${p.id}`,
+          lastModified: new Date(p.updated_at),
+          changeFrequency: "weekly" as const,
+          priority: 0.7,
+        }));
+      }
+    } catch {
+      // In build or offline environments without database connectivity, safely fallback to fixed routes
+      projectEntries = [];
+    }
+  }
+
+  return [...fixed, ...projectEntries];
 }
+
