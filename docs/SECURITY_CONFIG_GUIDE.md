@@ -108,3 +108,66 @@ The Clerk webhook syncs users to your Supabase `profiles` table and shadow accou
 
 ### Variables Safe to Remove
 - `DATABASE_URL` / `DIRECT_URL` (if previously used only for Prisma; Prisma has been decommissioned).
+
+---
+
+## 4. Phase 2: Moderate Severity Hardening (M1–M8) Configuration
+
+This phase eliminates medium-risk injection, state mutation, storage snooping, and privilege escalation vulnerabilities.
+
+### A. M8: Supabase Storage RLS & Database Migration `024`
+1. Open the **Supabase Dashboard** -> **SQL Editor**.
+2. Run the SQL script from `supabase/migrations/024_storage_admin_hardening.sql`:
+   - **Avatar Limits**: Enforces 2MB maximum limit on the `avatars` bucket (`storage.buckets.file_size_limit = 2097152`) matching client/server restrictions.
+   - **Project Files & Resumes**: Restricts `SELECT` queries to owner-only path-based folder checks (`(storage.foldername(name))[1] = public.current_profile_id()::text`). Eliminates direct storage object guessing by other authenticated users.
+   - **Short-Lived Signed URLs**: Reduces signed URL validity from 7 days down to 1 hour (3600s) for least-privilege private file access.
+   - **Admin Audit Log**: Creates `public.admin_audit_log` with RLS enabled (accessible only to service role) for logging Super Admin access attempts.
+
+### B. M6: Clerk Super Admin Setup & Private Metadata
+To prevent privilege escalation through writable `profiles.role` database rows, Super Admin checks now use Clerk `privateMetadata` as the authoritative source of truth.
+1. In the **Clerk Dashboard**, locate the target Super Admin user.
+2. In the user details, navigate to **Metadata** -> **Private Metadata**.
+3. Set the role to:
+   ```json
+   {
+     "role": "SUPER_ADMIN"
+   }
+   ```
+4. Save changes. Any administrative endpoint (such as `/api/university/admin`) verifies this claim on each request and writes an entry to `admin_audit_log`.
+5. API keys generated for university integrations now use 256-bit cryptographically secure pseudorandom numbers prefixed with `ibf_`.
+
+### C. M7: Edge CSRF & Origin Defense
+1. State-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`) on API routes are gated in `middleware.ts`:
+   - Browser requests with `sec-fetch-site: cross-site` are blocked immediately with `403 Forbidden`.
+   - `Origin` and `Referer` headers are validated against the request host and `NEXT_PUBLIC_APP_URL`.
+2. Ensure `NEXT_PUBLIC_APP_URL` is accurately configured in production to match your exact canonical domain (e.g. `https://innovators-global.com`).
+3. Presence tracking cookie uses the `__Host-` prefix in production (`__Host-ibf_seen`) to ensure secure-only, host-bound transmission.
+
+### D. M1: Strict Content Security Policy & Isolation Headers
+In `next.config.ts`:
+- Removed `unsafe-eval` from script directives.
+- Retained minimal required `unsafe-inline` for Clerk authentication components.
+- Added cross-origin isolation headers: `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and `Origin-Agent-Cluster: ?1`.
+- Configured API routes (`/api/:path*`) with `Cache-Control: private, no-store, max-age=0` to prevent sensitive caching.
+
+### E. M2: Magic-Byte Upload Sniffing & MIME Parity
+In `lib/upload.ts` and `components/FileUploader.tsx`:
+- Validates file signatures (magic bytes) for PNG, JPEG, WebP, PDF, ZIP, and DOCX.
+- Cross-validates detected magic bytes against file extensions and allowed bucket types to defeat polyglot and spoofing attacks.
+- Strict path sanitization on upload folders (`folderKey`) prevents directory traversal (`../`).
+- Automatically revokes temporary preview object URLs (`URL.revokeObjectURL`) to prevent browser memory leaks.
+
+### F. M3: Email Header Injection Protection
+In `lib/security/email.ts` and `lib/email/client.ts`:
+- Strips CR/LF characters (`\r`, `\n`) and ASCII control characters from email subjects.
+- Validates recipient email lists through strict zod schemas, preventing SMTP header injection attacks.
+
+### G. M4: Authorization & Probing Defenses on Reactions and Marketplace Inquiries
+- Message reaction endpoints (`/api/team/reactions`, `/api/messages/[id]/react`) enforce that the caller has active read access to the target message before accepting reactions, preventing existence oracles and timing attacks.
+- Marketplace inquiries (`/api/marketplace/[id]/inquiries`) block self-inquiries and inactive service requests at the application level.
+
+### H. M5: Safe HTTPS URLs & Stored XSS Prevention
+- Replaced open `z.string().url()` validators across all user profiles, onboarding, project attachments, and chat endpoints with `safeHttpsUrlSchema()`.
+- Drops `javascript:`, `data:`, `blob:`, and userinfo credential spoofing.
+- Attachment and link preview components sanitize and discard unsafe protocols before DOM rendering.
+
