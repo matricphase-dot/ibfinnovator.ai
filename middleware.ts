@@ -3,6 +3,45 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { sanitizeRedirectUrl } from "@/lib/utils";
 
+function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
+  // ROOT FIX M7: edge-level CSRF gate for state-changing API calls.
+  // Safe methods pass; cross-site fetches and mismatched Origin/Referer fail closed.
+  const method = req.method.toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS")
+    return null;
+  if (!req.nextUrl.pathname.startsWith("/api/")) return null;
+  if (req.headers.get("sec-fetch-site") === "cross-site") {
+    return NextResponse.json(
+      { error: "Cross-site request rejected" },
+      { status: 403 },
+    );
+  }
+  const origin =
+    req.headers.get("origin") ?? req.headers.get("referer") ?? null;
+  if (!origin) return null; // non-browser client (curl/native) — auth+RLS remain the gate
+  try {
+    const originHost = new URL(
+      origin.startsWith("http") ? origin : `https://${origin}`,
+    ).host.toLowerCase();
+    const expected = (req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+      req.headers.get("host") ||
+      ""
+    )
+      .toLowerCase()
+      .split(":")[0];
+    const actual = originHost.split(":")[0];
+    if (expected && actual !== expected) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (!appUrl || actual !== new URL(appUrl).host.toLowerCase().split(":")[0]) {
+        return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
+      }
+    }
+  } catch {
+    return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
+  }
+  return null;
+}
+
 const isProtected = createRouteMatcher([
   "/dashboard(.*)",
   "/matches(.*)",
@@ -24,13 +63,17 @@ const isProtected = createRouteMatcher([
 ]);
 
 function touchPresenceCookie(response: NextResponse, req: NextRequest) {
-  const last = Number(req.cookies.get("ibf_seen")?.value || 0);
+  const isProd = process.env.NODE_ENV === "production";
+  // ROOT FIX (hardening): __Host- prefix in prod binds cookie to host+secure+path.
+  // Dev over http cannot set Secure, so keep the plain name there.
+  const cookieName = isProd ? "__Host-ibf_seen" : "ibf_seen";
+  const last = Number(req.cookies.get(cookieName)?.value || 0);
   const now = Date.now();
   if (now - last < 60000) return response;
 
-  response.cookies.set("ibf_seen", String(now), {
+  response.cookies.set(cookieName, String(now), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProd,
     sameSite: "lax",
     path: "/",
     maxAge: 120,
@@ -39,6 +82,8 @@ function touchPresenceCookie(response: NextResponse, req: NextRequest) {
 }
 
 async function legacy(req: NextRequest) {
+  const csrfRejection = rejectCrossSiteMutation(req);
+  if (csrfRejection) return csrfRejection;
   if (!isProtected(req)) return NextResponse.next();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -86,6 +131,8 @@ async function legacy(req: NextRequest) {
 }
 
 const hybrid = clerkMiddleware(async (clerkAuth, req) => {
+  const csrfRejection = rejectCrossSiteMutation(req);
+  if (csrfRejection) return csrfRejection;
   if (!isProtected(req)) return NextResponse.next();
   const { userId } = await clerkAuth();
   if (userId) {
