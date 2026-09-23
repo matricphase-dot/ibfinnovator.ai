@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+import { safeHttpsUrlSchema } from "@/lib/security/url";
 import { z } from "zod";import {checkRateLimit,rateLimitResponse} from '@/lib/rate-limit';
 const schema = z.object({
   room_id: z.string().uuid(),
   channel: z.string().max(80).default("General"),
   content: z.string().trim().min(1).max(5000),
   parent_id: z.string().uuid().optional(),
-  attachments: z.array(z.string().url()).max(10).default([]),
+  attachments: z.array(safeHttpsUrlSchema()).max(10).default([]),
 });
 export async function POST(r: Request) {
   try {

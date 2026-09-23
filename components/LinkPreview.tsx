@@ -8,7 +8,7 @@ export default function LinkPreview({ text }: { text: string }) {
       <a
         href={url.href}
         target="_blank"
-        rel="noreferrer nofollow"
+        rel="noopener noreferrer nofollow"
         className="mt-3 p-3 rounded-lg border border-white/10 bg-white/[.03] flex items-center gap-3"
       >
         <span className="w-8 h-8 rounded-lg bg-cyan-300/10 text-cyan-300 grid place-items-center">

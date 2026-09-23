@@ -1,17 +1,21 @@
 "use client";
 import { Download, ExternalLink, FileText, X } from "lucide-react";
 import { useState } from "react";
+import { isSafeHttpsUrl } from "@/lib/security/url";
 export default function AttachmentPreview({
   attachments = [],
 }: {
   attachments?: string[];
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
-  if (!attachments.length) return null;
+  // ROOT FIX M5: never render javascript:/data:/blob:attacker URLs stored before
+  // the https-only validation. Filter at render as second layer after zod.
+  const safe = attachments.filter(isSafeHttpsUrl);
+  if (!safe.length) return null;
   return (
     <>
       <div className="flex flex-wrap gap-2 mt-3">
-        {attachments.map((url, i) => {
+        {safe.map((url, i) => {
           const clean = url.split("?")[0],
             image = /\.(png|jpe?g|webp)$/i.test(clean);
           return image ? (
@@ -31,7 +35,7 @@ export default function AttachmentPreview({
             <a
               href={url}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer nofollow"
               className="flex items-center gap-2 p-2 rounded-lg border border-white/10 text-xs"
             >
               <FileText size={16} className="text-cyan-300" />

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+import { safeHttpsUrlSchema } from "@/lib/security/url";
 import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import ApplicationReceivedEmail from "@/lib/email/templates/ApplicationReceivedEmail";
@@ -7,7 +8,7 @@ import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const input = z.object({
   project_id: z.string().uuid(),
   cover_letter: z.string().trim().min(30).max(3000),
-  resume_url: z.string().url().optional(),
+  resume_url: safeHttpsUrlSchema().optional(),
 });
 export async function GET() {
   try {
