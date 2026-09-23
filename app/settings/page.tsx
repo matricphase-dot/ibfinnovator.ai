@@ -34,8 +34,13 @@ export default function Settings() {
     });
   useEffect(() => {
     fetch("/api/profile")
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : null))
       .then((x) => {
+        // ROOT FIX: 401 {error} must not become profile (was: p.name.slice crash).
+        if (!x || x.error || !x.id) {
+          window.location.assign("/auth/signin?next=/settings");
+          return;
+        }
         setP(x);
         if (x?.email_opt_in !== undefined)
           setPrefs((v) => ({ ...v, email: x.email_opt_in }));
@@ -44,7 +49,8 @@ export default function Settings() {
       .auth.getUser()
       .then(({ data }) => {
         const x = data.user?.user_metadata?.notifications;
-        if (x) setPrefs({ ...prefs, ...x });
+        // ROOT FIX: functional update (was: stale prefs closure drops email opt-in).
+        if (x) setPrefs((v) => ({ ...v, ...x }));
       });
   }, []);
   async function saveAvatar(url: string) {

@@ -17,16 +17,31 @@ export default function Chat() {
     [replyTo, setReplyTo] = useState<any>(null),
     [showUpload, setShowUpload] = useState(false),
     bottom = useRef<HTMLDivElement>(null);
+  const loadSeq = useRef(0);
+  const loadAbort = useRef<AbortController | null>(null);
   async function load() {
+    // ROOT FIX: abort + sequence (was: overlapping 5s polls → out-of-order flicker).
+    const seq = ++loadSeq.current;
+    loadAbort.current?.abort();
+    const ctrl = new AbortController();
+    loadAbort.current = ctrl;
     try {
-      const r = await fetch("/api/chat/general", { cache: "no-store" });
+      const r = await fetch("/api/chat/general", {
+        cache: "no-store",
+        signal: ctrl.signal,
+      });
       if (r.ok) {
         const data = await r.json();
-        setMsgs(Array.isArray(data) ? data : []);
+        if (seq === loadSeq.current) setMsgs(Array.isArray(data) ? data : []);
+      } else if (r.status === 401) {
+        window.location.assign("/auth/signin?next=/chat/general");
+        return;
       }
-    } catch {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      // Network failure: keep stale msgs, stop spinner so UI stays usable.
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }
   useEffect(() => {
@@ -34,8 +49,17 @@ export default function Chat() {
       .then((r) => (r.ok ? r.json() : null))
       .then(setMe);
     load();
-    const timer = window.setInterval(load, 5000);
+    // ROOT FIX: realtime is primary; interval is 30s stale-revalidate only when
+    // visible (was: 5s full reload + realtime double-fire → 2x DB load).
+    const timer = window.setInterval(() => {
+      if (!document.hidden) load();
+    }, 30000);
     let channel: any;
+    let debounced: ReturnType<typeof setTimeout> | undefined;
+    const scheduleLoad = () => {
+      clearTimeout(debounced);
+      debounced = setTimeout(load, 300);
+    };
     try {
       channel = supabase
         .channel("general-messages")
@@ -47,18 +71,22 @@ export default function Chat() {
             table: "messages",
             filter: "room_type=eq.GENERAL",
           },
-          load,
+          scheduleLoad,
         )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "message_reactions" },
-          load,
+          scheduleLoad,
         )
         .subscribe();
-    } catch {}
+    } catch {
+      // Realtime unavailable: interval remains as fallback.
+    }
     return () => {
       clearInterval(timer);
-      if (channel) void supabase.removeChannel(channel);
+      clearTimeout(debounced);
+      loadAbort.current?.abort();
+      if (channel) void supabase.removeChannel(channel).catch(() => {});
     };
   }, [supabase]);
   useEffect(() => {
@@ -91,22 +119,33 @@ export default function Chat() {
     setSending(true);
     const value = text;
     setText("");
-    const r = await fetch("/api/chat/general", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        content: value,
-        attachments: files.map((x) => x.url),
-        parent_id: replyTo?.id || null,
-      }),
-    });
-    if (r.ok) {
-      setFiles([]);
-      setReplyTo(null);
-      setShowUpload(false);
-      await load();
-    } else setText(value);
-    setSending(false);
+    try {
+      const r = await fetch("/api/chat/general", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          content: value,
+          attachments: files.map((x) => x.url),
+          parent_id: replyTo?.id || null,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) {
+        setFiles([]);
+        setReplyTo(null);
+        setShowUpload(false);
+        await load();
+      } else {
+        // ROOT FIX: surface first field error (was: silent restore, blind retry).
+        const { default: toast } = await import("react-hot-toast");
+        toast.error(d?.error || d?.fieldErrors ? JSON.stringify(d.fieldErrors || d.error).slice(0, 200) : "Could not send");
+        setText(value);
+      }
+    } catch {
+      setText(value);
+    } finally {
+      setSending(false);
+    }
   }
   return (
     <AppShell>
