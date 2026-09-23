@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+import { apiError, parseBody } from "@/lib/api";
 import { safeHttpsUrlSchema } from "@/lib/security/url";
 import { z } from "zod";import {checkRateLimit,rateLimitResponse} from '@/lib/rate-limit';
 const schema = z.object({
@@ -14,7 +15,9 @@ export async function POST(r: Request) {
     const { supabase, user } = await requireUser();
     const limit = checkRateLimit(`${user.id}:team-messages`, 60, 60);
     if (!limit.allowed) return rateLimitResponse(limit);
-    const p = schema.parse(await r.json());
+    const parsed = await parseBody(r, schema);
+    if ("response" in parsed) return parsed.response;
+    const p = parsed.data;
 
     // Verify user has access to this team room
     const { data: canAccess, error: accessErr } = await supabase.rpc(
@@ -43,20 +46,23 @@ export async function POST(r: Request) {
       .single();
     if (error) throw error;
     return NextResponse.json(data, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  } catch (e) {
+    return apiError(e, "team:messages:POST");
   }
 }
 export async function PATCH(r: Request) {
   try {
     const { supabase, user } = await requireUser();
-    const p = z
-      .object({
+    const parsed = await parseBody(
+      r,
+      z.object({
         id: z.string().uuid(),
         pinned: z.boolean().optional(),
         content: z.string().trim().min(1).max(5000).optional(),
-      })
-      .parse(await r.json());
+      }),
+    );
+    if ("response" in parsed) return parsed.response;
+    const p = parsed.data;
 
     if (p.pinned === undefined && p.content === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
@@ -133,8 +139,8 @@ export async function PATCH(r: Request) {
 
     if (error) throw error;
     return NextResponse.json(data);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  } catch (e) {
+    return apiError(e, "team:messages:PATCH");
   }
 }
 

@@ -1,4 +1,4 @@
-import {NextRequest,NextResponse} from 'next/server';import {createClient,requireUser} from '@/lib/supabase/server';import {z} from 'zod';
+import {NextRequest,NextResponse} from 'next/server';import {createClient,requireUser} from '@/lib/supabase/server';import {apiError,parseBody} from '@/lib/api';import {z} from 'zod';
 const schema=z.object({title:z.string().min(3).max(120),description:z.string().min(20).max(10000),required_skills:z.array(z.string()).min(1).max(20),domain:z.string().max(80).optional(),stage:z.string().max(40).optional(),problem_statement:z.string().optional(),solution_overview:z.string().optional(),engagement_type:z.string().optional(),commitment_hours:z.number().int().min(1).max(80).optional(),duration_weeks:z.number().int().min(1).max(260).optional()});
 export async function GET(req: NextRequest) {
   try {
@@ -34,4 +34,4 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req:NextRequest){try{const {supabase,user}=await requireUser();const p=schema.safeParse(await req.json());if(!p.success)return NextResponse.json({error:p.error.flatten()},{status:400});const {data,error}=await supabase.from('projects').insert({...p.data,founder_id:user.id}).select().single();if(error)return NextResponse.json({error:error.message},{status:403});return NextResponse.json(data,{status:201})}catch{return NextResponse.json({error:'Authentication required'},{status:401})}}
+export async function POST(req:NextRequest){try{const {supabase,user}=await requireUser();const parsed=await parseBody(req,schema);if('response' in parsed)return parsed.response;const {data,error}=await supabase.from('projects').insert({...parsed.data,founder_id:user.id}).select().single();if(error)throw error;return NextResponse.json(data,{status:201})}catch(e){return apiError(e,'projects:POST')}}

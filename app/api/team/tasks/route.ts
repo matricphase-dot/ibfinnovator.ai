@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+import { apiError, parseBody } from "@/lib/api";
 import { z } from "zod";
 const create = z.object({
   room_id: z.string().uuid(),
@@ -13,7 +14,9 @@ const create = z.object({
 export async function POST(r: Request) {
   try {
     const { supabase, user } = await requireUser();
-    const p = create.parse(await r.json());
+    const parsed = await parseBody(r, create);
+    if ("response" in parsed) return parsed.response;
+    const p = parsed.data;
 
     // Verify user has access to this team room
     const { data: canAccess, error: accessErr } = await supabase.rpc(
@@ -34,19 +37,22 @@ export async function POST(r: Request) {
       .single();
     if (error) throw error;
     return NextResponse.json(data, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  } catch (e) {
+    return apiError(e, "team:tasks:POST");
   }
 }
 export async function PATCH(r: Request) {
   try {
     const { supabase } = await requireUser();
-    const p = z
-      .object({
+    const parsed = await parseBody(
+      r,
+      z.object({
         id: z.string().uuid(),
         status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
-      })
-      .parse(await r.json());
+      }),
+    );
+    if ("response" in parsed) return parsed.response;
+    const p = parsed.data;
 
     const { data: task, error: taskErr } = await supabase
       .from("team_tasks")
@@ -77,8 +83,8 @@ export async function PATCH(r: Request) {
       .single();
     if (error) throw error;
     return NextResponse.json(data);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  } catch (e) {
+    return apiError(e, "team:tasks:PATCH");
   }
 }
 
