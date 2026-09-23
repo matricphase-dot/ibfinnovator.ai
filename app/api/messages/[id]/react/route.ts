@@ -14,10 +14,26 @@ export async function POST(
       .parse(await req.json());
     const { data: message } = await supabase
       .from("messages")
-      .select("id")
+      .select("id,sender_id,recipient_id,room_id,room_type")
       .eq("id", id)
       .maybeSingle();
     if (!message)
+      return NextResponse.json(
+        { error: "Message not found or unavailable" },
+        { status: 404 },
+      );
+    // ROOT FIX M4: same read-access gate as team reactions — no oracle.
+    let canRead = false;
+    if (message.sender_id === user.id || message.recipient_id === user.id)
+      canRead = true;
+    else if (message.room_type === "GENERAL") canRead = true;
+    else if (message.room_id) {
+      const { data: access } = await supabase.rpc("can_access_team_room", {
+        target_room: message.room_id,
+      });
+      canRead = access === true;
+    }
+    if (!canRead)
       return NextResponse.json(
         { error: "Message not found or unavailable" },
         { status: 404 },

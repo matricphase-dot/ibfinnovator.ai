@@ -1,23 +1,39 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import {dispatchEmail} from '@/lib/email/dispatch';import WelcomeEmail from '@/lib/email/templates/WelcomeEmail';
+import { dispatchEmail } from "@/lib/email/dispatch";
+import WelcomeEmail from "@/lib/email/templates/WelcomeEmail";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+
 export const runtime = "nodejs";
+export const maxDuration = 30;
+
 async function findShadow(email: string) {
-  for (let page = 1; page <= 100; page++) {
+  // First check profiles table which is indexed
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (profile?.id) return profile.id;
+
+  // Bound search to max 2 pages to prevent sync timeout
+  for (let page = 1; page <= 2; page++) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({
       page,
-      perPage: 1000,
+      perPage: 100,
     });
     if (error) throw error;
     const found = data.users.find(
       (u) => u.email?.trim().toLowerCase() === email,
     );
     if (found) return found.id;
-    if (data.users.length < 1000) break;
+    if (data.users.length < 100) break;
   }
   return null;
 }
+
 async function handleUser(data: any) {
   const verified = (data.email_addresses || []).filter(
     (e: any) => e.verification?.status === "verified",
@@ -90,6 +106,10 @@ async function handleUser(data: any) {
   if (mapError) throw mapError;
 }
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  const limit = checkRateLimit(`webhook:clerk:${ip}`, 30, 60);
+  if (!limit.allowed) return rateLimitResponse(limit);
+
   const secret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
   if (!secret) return new Response("Missing webhook secret", { status: 500 });
   const h = await headers(),
@@ -98,6 +118,7 @@ export async function POST(req: Request) {
     signature = h.get("svix-signature");
   if (!svixId || !timestamp || !signature)
     return new Response("Missing svix headers", { status: 400 });
+
   const raw = await req.text();
   let evt: any;
   try {

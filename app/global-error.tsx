@@ -9,7 +9,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    Sentry.captureException(error, {
+      tags: { segment: "global" },
+      extra: { digest: error?.digest },
+    });
   }, [error]);
   return (
     <html>

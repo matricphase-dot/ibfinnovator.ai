@@ -17,23 +17,39 @@ export default function ApplyToProject({ projectId }: { projectId: string }) {
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
-    const f = new FormData(e.currentTarget),
-      r = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          project_id: projectId,
-          cover_letter: f.get("cover_letter"),
-          resume_url: resume || undefined,
+    try {
+      const f = new FormData(e.currentTarget),
+        r = await fetch("/api/applications", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            project_id: projectId,
+            cover_letter: f.get("cover_letter"),
+            resume_url: resume || undefined,
+          }),
         }),
-      }),
-      d = await r.json();
-    setLoading(false);
-    if (r.ok) {
-      toast.success("Application submitted");
-      setOpen(false);
-    } else toast.error(d.error || "Unable to apply");
+        d = await r.json().catch(() => ({}));
+      if (r.ok) {
+        toast.success("Application submitted");
+        setOpen(false);
+      } else {
+        // ROOT FIX: surface first Zod field error (was: generic blind retry).
+        const msg =
+          d?.error && typeof d.error === "string"
+            ? d.error
+            : d?.fieldErrors
+              ? String(Object.values(d.fieldErrors).flat()[0] || "Invalid input")
+              : "Unable to apply";
+        toast.error(msg.slice(0, 300));
+      }
+    } catch {
+      toast.error("Network error — please retry");
+    } finally {
+      // ROOT FIX: finally (was: stuck Submitting… on offline throw).
+      setLoading(false);
+    }
   }
   return (
     <>

@@ -127,7 +127,11 @@ export default function Detail() {
         </div>
       </>
     );
-  const created = new Date(p.created_at);
+  const createdRaw = p.created_at ? new Date(p.created_at) : null;
+  const createdLabel =
+    createdRaw && !Number.isNaN(createdRaw.getTime())
+      ? createdRaw.toLocaleDateString()
+      : "—";
   const isOwner = me?.id === p.founder_id;
   const hasAccepted = connections.some(
     (c) => c.project_id === id && c.status === "ACCEPTED",
@@ -172,7 +176,7 @@ export default function Detail() {
                 </h1>
                 <p className="text-sm text-slate-500 mt-2">
                   {p.domain || "Startup"} · Published{" "}
-                  {created.toLocaleDateString()}
+                  {createdLabel}
                 </p>
               </div>
             </div>

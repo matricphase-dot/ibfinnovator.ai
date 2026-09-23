@@ -22,10 +22,31 @@ export default function Team() {
     presence = useRef<any>(null),
     typingTimer = useRef<any>(null);
   async function load() {
-    const r = await fetch(`/api/team/${projectId}`, { cache: "no-store" }),
-      x = await r.json();
-    r.ok ? setD(x) : toast.error(x.error);
-    setLoading(false);
+    try {
+      const r = await fetch(`/api/team/${projectId}`, { cache: "no-store" });
+      const x = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        // ROOT FIX: defaults + 404 guard (was: stale room persists, .members crash).
+        if (r.status === 401) {
+          window.location.assign(`/auth/signin?next=/team/${projectId}`);
+          return;
+        }
+        if (r.status === 404) setD(null);
+        toast.error(typeof x?.error === "string" ? x.error : "Unable to load team");
+      } else {
+        setD({
+          project: x.project || null,
+          members: Array.isArray(x.members) ? x.members : [],
+          messages: Array.isArray(x.messages) ? x.messages : [],
+          tasks: Array.isArray(x.tasks) ? x.tasks : [],
+          room: x.room || null,
+        });
+      }
+    } catch {
+      toast.error("Network error — retrying");
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => {
     load();

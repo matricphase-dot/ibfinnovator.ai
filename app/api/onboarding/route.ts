@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
+import { isSafeHttpsUrl } from "@/lib/security/url";
 import { projectMatch } from "@/lib/matching";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 const emptyUrl = z.preprocess(
   (v) => (v === "" || v == null ? undefined : v),
-  z.string().url().optional(),
+  z
+    .string()
+    .trim()
+    .max(2048)
+    .optional()
+    .refine((v) => v === undefined || isSafeHttpsUrl(v), {
+      message: "URL must be a valid https:// address",
+    }),
 );
 const words = (n: number) =>
   z
@@ -68,7 +76,13 @@ const student = z.object({
   interests: z.array(z.string().min(1)).min(1),
   preferred_role: z.string().min(1),
   goals: words(50),
-  portfolio_urls: z.array(z.string().url()).default([]),
+  portfolio_urls: z
+    .array(
+      z.string().trim().max(2048).refine(isSafeHttpsUrl, {
+        message: "URL must be a valid https:// address",
+      }),
+    )
+    .default([]),
   resume_url: emptyUrl,
 });
 export async function POST(req: Request) {

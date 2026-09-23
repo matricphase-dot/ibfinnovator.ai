@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getSupabasePublic } from "@/lib/supabase/public";
 
 export const revalidate = 300;
-
-const emptyStats = {
-  users: 0,
-  projects: 0,
-  matches: 0,
-  activeProjects: 0,
-};
 
 export async function GET() {
   try {
@@ -35,13 +29,21 @@ export async function GET() {
           .gt("created_at", thirtyDaysAgo),
       ]);
 
-    if (
+    const firstError =
       usersResult.error ||
       projectsResult.error ||
       matchesResult.error ||
-      activeProjectsResult.error
-    ) {
-      return NextResponse.json(emptyStats, { status: 200 });
+      activeProjectsResult.error;
+    if (firstError) {
+      // ROOT FIX: outage must be 503 (retryable), never 200-zero which masks
+      // the outage and gets cached for 300s as truth.
+      Sentry.captureException(firstError, { tags: { api: "stats" } });
+      // eslint-disable-next-line no-console
+      console.error("[stats:error]", firstError.message);
+      return NextResponse.json(
+        { error: "Stats temporarily unavailable" },
+        { status: 503, headers: { "retry-after": "60" } },
+      );
     }
 
     // These are real database counts, not marketing placeholders.
@@ -54,7 +56,13 @@ export async function GET() {
       },
       { status: 200 },
     );
-  } catch {
-    return NextResponse.json(emptyStats, { status: 200 });
+  } catch (e) {
+    Sentry.captureException(e, { tags: { api: "stats" } });
+    // eslint-disable-next-line no-console
+    console.error("[stats:error]", e);
+    return NextResponse.json(
+      { error: "Stats temporarily unavailable" },
+      { status: 503, headers: { "retry-after": "60" } },
+    );
   }
 }

@@ -1,23 +1,46 @@
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 import { requireUser } from "@/lib/supabase/server";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+
 export const runtime = "nodejs";
+
 export async function GET(
   _: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params,
-      { supabase } = await requireUser();
+    const { id } = await params;
+    const { supabase, user } = await requireUser();
+
+    // Rate limit CPU-heavy PDF generation: 10 per minute per user
+    const limit = checkRateLimit(`pdf-cert:${user.id}`, 10, 60);
+    if (!limit.allowed) return rateLimitResponse(limit);
+
     const { data: c, error } = await supabase
       .from("certificates")
       .select(
-        "*,project:projects(id,title),issuer:profiles!issued_by(id,name),receiver:profiles!receiver_id(id,name)",
+        "*,project:projects(id,title,founder_id),issuer:profiles!issued_by(id,name),receiver:profiles!receiver_id(id,name)",
       )
       .eq("id", id)
       .single();
-    if (error || !c)
+
+    if (error || !c) {
       return new Response("Certificate not found", { status: 404 });
+    }
+
+    // IDOR Check: Only the receiver, issuer, project founder, or super admin can download
+    const isAuthorized =
+      c.receiver_id === user.id ||
+      c.issued_by === user.id ||
+      c.project?.founder_id === user.id ||
+      user.role === "SUPER_ADMIN";
+
+    if (!isAuthorized) {
+      // Oracle-safe 404 to avoid leaking certificate existence
+      return new Response("Certificate not found", { status: 404 });
+    }
+
     const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com"}/verify/${c.verification_code}`,
       qr = await QRCode.toBuffer(verifyUrl, {
         width: 150,

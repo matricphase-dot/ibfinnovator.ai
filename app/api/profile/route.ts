@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+import {
+  safeHttpsUrlNullableSchema,
+  safeHttpsUrlSchema,
+} from "@/lib/security/url";
 import { z } from "zod";
 
 const usernameSchema = z
@@ -15,11 +19,12 @@ const usernameSchema = z
 const update = z.object({
   name: z.string().min(2).optional(),
   username: usernameSchema.optional(),
-  avatar_url: z.string().url().nullable().optional(),
+  // ROOT FIX M5: https-only — bare z.string().url() accepts javascript:/data:.
+  avatar_url: safeHttpsUrlNullableSchema(),
   bio: z.string().max(2000).nullable().optional(),
   skills: z.array(z.string()).max(30).optional(),
   interests: z.array(z.string()).max(30).optional(),
-  portfolio_urls: z.array(z.string().url()).max(20).optional(),
+  portfolio_urls: z.array(safeHttpsUrlSchema()).max(20).optional(),
   availability: z.string().nullable().optional(),
   engagement_preferences: z.array(z.string()).optional(),
   company: z.string().nullable().optional(),
@@ -32,6 +37,9 @@ const update = z.object({
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
+    // Safely update last_seen_at using user's authenticated context without blocking response
+    void Promise.resolve(supabase.rpc("touch_current_profile")).catch(() => {});
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
