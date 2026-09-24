@@ -23,20 +23,32 @@ export default function DirectChat() {
     bottom = useRef<HTMLDivElement>(null),
     channelRef = useRef<any>(null),
     typingTimer = useRef<any>(null);
+  const loadSeq = useRef(0);
+  const loadAbort = useRef<AbortController | null>(null);
   async function load() {
+    const seq = ++loadSeq.current;
+    loadAbort.current?.abort();
+    const ctrl = new AbortController();
+    loadAbort.current = ctrl;
     try {
       const r = await fetch(`/api/chat/direct/${projectId}`, {
-          cache: "no-store",
-        }),
-        d = await r.json();
+        cache: "no-store",
+        signal: ctrl.signal,
+      });
+      const d = await r.json().catch(() => ({}));
+      if (seq !== loadSeq.current) return;
       if (r.ok) {
         setMsgs(Array.isArray(d.messages) ? d.messages : []);
         setError("");
-      } else setError(d.error || "Unable to load chat");
-    } catch {
-      setError("Unable to reach the chat service.");
+      } else if (r.status === 401) {
+        window.location.assign(`/auth/signin?next=/chat/direct/${projectId}`);
+        return;
+      } else setError(typeof d?.error === "string" ? d.error : "Unable to load chat");
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      if (seq === loadSeq.current) setError("Unable to reach the chat service.");
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }
   useEffect(() => {
@@ -44,8 +56,16 @@ export default function DirectChat() {
       .then((r) => (r.ok ? r.json() : null))
       .then(setMe);
     load();
-    const timer = setInterval(load, 5000);
+    // ROOT FIX: realtime primary, 30s visible-only revalidate (was 5s double-fire).
+    const timer = setInterval(() => {
+      if (!document.hidden) load();
+    }, 30000);
     let channel: any;
+    let debounced: ReturnType<typeof setTimeout> | undefined;
+    const scheduleLoad = () => {
+      clearTimeout(debounced);
+      debounced = setTimeout(load, 300);
+    };
     try {
       channel = supabase
         .channel(`direct-${projectId}`)
@@ -57,12 +77,12 @@ export default function DirectChat() {
             table: "messages",
             filter: `project_id=eq.${projectId}`,
           },
-          load,
+          scheduleLoad,
         )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "message_reactions" },
-          load,
+          scheduleLoad,
         )
         .on("broadcast", { event: "typing" }, ({ payload }: any) => {
           if (payload.profileId !== me?.id) {
@@ -73,11 +93,15 @@ export default function DirectChat() {
         })
         .subscribe();
       channelRef.current = channel;
-    } catch {}
+    } catch {
+      // Realtime unavailable: interval remains as fallback.
+    }
     return () => {
       clearInterval(timer);
+      clearTimeout(debounced);
       clearTimeout(typingTimer.current);
-      if (channel) void supabase.removeChannel(channel);
+      loadAbort.current?.abort();
+      if (channel) void supabase.removeChannel(channel).catch(() => {});
     };
   }, [projectId, supabase, me?.id, me?.name]);
   useEffect(() => {
@@ -165,7 +189,7 @@ export default function DirectChat() {
                     <p className="text-[10px] text-slate-500">
                       Reply to @
                       {m.parent.sender?.username || m.parent.sender?.name}:{" "}
-                      {m.parent.content.slice(0, 60)}
+                      {String(m.parent?.content ?? "").slice(0, 60)}
                     </p>
                   )}
                   <div className="flex items-center">

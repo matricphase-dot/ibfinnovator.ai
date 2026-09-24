@@ -1,6 +1,8 @@
 import "server-only";
 import type { ReactNode } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sanitizeEmailSubject } from "@/lib/security/email";
 import { sendEmail } from "./client";
 type Dispatch = {
   profileId?: string;
@@ -11,8 +13,12 @@ type Dispatch = {
   text?: string;
   notificationId?: string;
 };
-export function dispatchEmail(input: Dispatch): void {
-  void (async () => {
+export function dispatchEmail(input: Dispatch): Promise<void> {
+  // Sanitize at enqueue time so logs/audit never carry raw CR/LF either.
+  const subject = sanitizeEmailSubject(input.subject);
+  // ROOT FIX: return the promise (was void) + always .catch to Sentry so
+  // failures are observed instead of unhandledRejection + silent loss.
+  const task = (async () => {
     try {
       let to = input.to,
         optIn = true;
@@ -27,14 +33,14 @@ export function dispatchEmail(input: Dispatch): void {
       }
       if (!to || !optIn) {
         console.info("[email:dispatch-skipped]", {
-          subject: input.subject,
+          subject,
           reason: !to ? "no recipient" : "opted out",
         });
         return;
       }
       const result = await sendEmail({
         to,
-        subject: input.subject,
+        subject,
         react: input.react,
         html: input.html,
         text: input.text,
@@ -45,7 +51,13 @@ export function dispatchEmail(input: Dispatch): void {
           .update({ delivered_email_at: new Date().toISOString() })
           .eq("id", input.notificationId);
     } catch (error) {
+      Sentry.captureException(error, { tags: { area: "email-dispatch" } });
       console.error("[email:dispatch-error]", error);
     }
   })();
+  task.catch((error) => {
+    Sentry.captureException(error, { tags: { area: "email-dispatch" } });
+    console.error("[email:dispatch-error]", error);
+  });
+  return task;
 }

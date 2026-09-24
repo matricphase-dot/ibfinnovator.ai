@@ -19,6 +19,8 @@ function sanitizeNext(raw: string | null): string {
 }
 
 function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
+  // ROOT FIX M7: edge-level CSRF gate for state-changing API calls.
+  // Safe methods pass; cross-site fetches and mismatched Origin/Referer fail closed.
   const method = req.method.toUpperCase();
   if (method === "GET" || method === "HEAD" || method === "OPTIONS")
     return null;
@@ -31,12 +33,13 @@ function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
   }
   const origin =
     req.headers.get("origin") ?? req.headers.get("referer") ?? null;
-  if (!origin) return null;
+  if (!origin) return null; // non-browser client (curl/native) — auth+RLS remain the gate
   try {
     const originHost = new URL(
       origin.startsWith("http") ? origin : `https://${origin}`,
     ).host.toLowerCase();
-    const expected = (req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    const expected = (
+      req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
       req.headers.get("host") ||
       ""
     )
@@ -84,10 +87,13 @@ function isProtectedPath(pathname: string) {
 
 function touchPresenceCookie(response: NextResponse, req: NextRequest) {
   const isProd = process.env.NODE_ENV === "production";
+  // ROOT FIX (hardening): __Host- prefix in prod binds cookie to host+secure+path.
+  // Dev over http cannot set Secure, so keep the plain name there.
   const cookieName = isProd ? "__Host-ibf_seen" : "ibf_seen";
   const last = Number(req.cookies.get(cookieName)?.value || 0);
   const now = Date.now();
   if (now - last < 60000) return response;
+
   response.cookies.set(cookieName, String(now), {
     httpOnly: true,
     secure: isProd,

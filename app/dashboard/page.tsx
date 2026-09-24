@@ -32,7 +32,8 @@ const mapProject = (x: any, match?: any) => ({
 
 export default function Dashboard() {
   const [d, setD] = useState<any>(null),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [pendingId, setPendingId] = useState<string | null>(null);
   async function load() {
     setLoading(true);
     const urls = [
@@ -51,6 +52,11 @@ export default function Dashboard() {
             .catch(() => null),
         ),
       );
+    // ROOT FIX: expired session must redirect (was: blank 0s + wrong onboarding banner).
+    if (!profile?.id) {
+      window.location.assign("/auth/signin?next=/dashboard");
+      return;
+    }
     setD({
       profile: profile || {},
       projects: projects?.projects || [],
@@ -65,15 +71,27 @@ export default function Dashboard() {
     load();
   }, []);
   async function respond(id: string, status: "ACCEPTED" | "REJECTED") {
-    const r = await fetch(`/api/connections/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (r.ok) {
-      toast.success(`Request ${status.toLowerCase()}`);
-      load();
-    } else toast.error("Could not update request");
+    // ROOT FIX: per-row pending + optimistic guard (was: double Accept → 2nd 404 toast).
+    if (pendingId) return;
+    setPendingId(id);
+    try {
+      const r = await fetch(`/api/connections/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) {
+        toast.success(`Request ${status.toLowerCase()}`);
+        await load();
+      } else {
+        const err = await r.json().catch(() => ({}));
+        toast.error(err?.error || "Could not update request");
+      }
+    } catch {
+      toast.error("Network error — please retry");
+    } finally {
+      setPendingId(null);
+    }
   }
   if (loading)
     return (
@@ -226,6 +244,7 @@ export default function Dashboard() {
                     c={c}
                     userId={p.id}
                     respond={respond}
+                    pendingId={pendingId}
                   />
                 ))}
               </div>
@@ -289,10 +308,12 @@ function ConnectionRow({
   c,
   userId,
   respond,
+  pendingId,
 }: {
   c: any;
   userId: string;
   respond: (id: string, status: "ACCEPTED" | "REJECTED") => void;
+  pendingId: string | null;
 }) {
   const incoming = c.recipient_id === userId,
     person = incoming ? c.requester : c.recipient;
@@ -311,15 +332,17 @@ function ConnectionRow({
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => respond(c.id, "REJECTED")}
-            className="btn btn-secondary !py-2 text-xs"
+            disabled={pendingId === c.id}
+            className="btn btn-secondary !py-2 text-xs disabled:opacity-50"
           >
-            Decline
+            {pendingId === c.id ? "Working…" : "Decline"}
           </button>
           <button
             onClick={() => respond(c.id, "ACCEPTED")}
-            className="btn btn-primary !py-2 text-xs"
+            disabled={pendingId === c.id}
+            className="btn btn-primary !py-2 text-xs disabled:opacity-50"
           >
-            Accept
+            {pendingId === c.id ? "Working…" : "Accept"}
           </button>
         </div>
       ) : (

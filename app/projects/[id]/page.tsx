@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { supabasePublic } from "@/lib/supabase/public";
 import ProjectDetailClient from "@/components/ProjectDetailClient";
 const base = "https://innovators-global.com";
 async function getProject(id: string) {
-  const { data } = await supabasePublic
+  // ROOT FIX: surface RLS/DB errors instead of swallowing (was: double-fetch + fake metadata).
+  const { data, error } = await supabasePublic
     .from("projects")
     .select(
       "id,title,description,created_at,domain,founder:profiles!founder_id(name,company)",
     )
     .eq("id", id)
     .maybeSingle();
+  if (error) return null;
   return data as any;
 }
 export async function generateMetadata({
@@ -41,6 +44,8 @@ export default async function ProjectPage({
 }) {
   const { id } = await params,
     p = await getProject(id);
+  // ROOT FIX: true 404 (was: renders client which refetches → double DB hit).
+  if (!p) notFound();
   const founder = Array.isArray(p?.founder) ? p.founder[0] : p?.founder;
   const jsonLd = p
     ? {

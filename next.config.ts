@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
+
 // ROOT (Supabase-only): no Clerk script/frame sources. OAuth happens on
 // Supabase + provider domains via top-level redirect (no inline gadgets).
 // unsafe-eval removed; isolation headers added; API gets private no-store.
@@ -7,7 +8,7 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io",
-  "img-src 'self' data: blob: https://*.supabase.co",
+  "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "frame-src 'self' https://challenges.cloudflare.com",
@@ -18,7 +19,8 @@ const csp = [
   "frame-ancestors 'none'",
   "upgrade-insecure-requests",
 ].join("; ");
-const securityHeaders = [
+
+const pageSecurityHeaders = [
   { key: "Content-Security-Policy", value: csp },
   {
     key: "Strict-Transport-Security",
@@ -36,14 +38,17 @@ const securityHeaders = [
   { key: "Origin-Agent-Cluster", value: "?1" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
 ];
+
 const apiSecurityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "no-referrer" },
   { key: "Cache-Control", value: "private, no-store, max-age=0" },
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 ];
+
 const nextConfig: NextConfig = {
   images: {
+    // Narrow optimizer abuse surface.
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "*.supabase.co" },
@@ -63,14 +68,16 @@ const nextConfig: NextConfig = {
       { source: "/api/:path*", headers: apiSecurityHeaders },
       {
         source: "/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/).*)",
-        headers: securityHeaders,
+        headers: pageSecurityHeaders,
       },
     ];
   },
 };
+
 const sentryEnabled = Boolean(
   process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_AUTH_TOKEN,
 );
+
 export default sentryEnabled
   ? withSentryConfig(nextConfig, {
       org: process.env.SENTRY_ORG,

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(200),
@@ -37,8 +39,13 @@ const schema = z.object({
 });
 export async function POST(r: Request) {
   try {
+    const ip = getClientIp(r);
+    const limit = checkRateLimit(`investor-inquiries:${ip}`, 3, 3600);
+    if (!limit.allowed) return rateLimitResponse(limit);
+
     const body = await r.json();
     const p = schema.safeParse(body);
+
     if (!p.success)
       return NextResponse.json(
         {

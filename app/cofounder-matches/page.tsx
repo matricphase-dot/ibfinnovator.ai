@@ -24,6 +24,7 @@ export default function Page() {
   const [profile, setProfile] = useState<any>(null),
     [matches, setMatches] = useState<any[]>([]),
     [loading, setLoading] = useState(true),
+    [saving, setSaving] = useState(false),
     [edit, setEdit] = useState(false),
     [values, setValues] = useState<string[]>([]),
     [looking, setLooking] = useState<string[]>([]);
@@ -50,14 +51,18 @@ export default function Page() {
   }
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const body = {
-      vision: f.get("vision"),
-      commitment_level: f.get("commitment_level"),
-      equity_expectation: f.get("equity_expectation"),
-      decision_style: f.get("decision_style"),
-      working_style: { pace: f.get("pace") },
-      values,
+    // ROOT FIX: saving guard (was: double-click → duplicate rows on slow 3G).
+    if (saving) return;
+    setSaving(true);
+    try {
+      const f = new FormData(e.currentTarget);
+      const body = {
+        vision: f.get("vision"),
+        commitment_level: f.get("commitment_level"),
+        equity_expectation: f.get("equity_expectation"),
+        decision_style: f.get("decision_style"),
+        working_style: { pace: f.get("pace") },
+        values,
       looking_for: looking,
       enabled: true,
     };
@@ -66,11 +71,26 @@ export default function Page() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
+    const d = await r.json().catch(() => ({}));
     if (r.ok) {
       toast.success("Co-founder mode enabled");
       setEdit(false);
-      load();
-    } else toast.error("Complete every required field");
+      await load();
+    } else {
+      // ROOT FIX: surface first field error (was: generic blind retry).
+      const msg =
+        typeof d?.error === "string"
+          ? d.error
+          : d?.fieldErrors
+            ? String(Object.values(d.fieldErrors).flat()[0] || "Invalid input")
+            : "Complete every required field";
+      toast.error(msg.slice(0, 300));
+    }
+    } catch {
+      toast.error("Network error — please retry");
+    } finally {
+      setSaving(false);
+    }
   }
   if (loading)
     return (
@@ -199,11 +219,11 @@ export default function Page() {
               />
             </label>
             <button
-              disabled={!values.length || !looking.length}
-              className="btn btn-primary mt-6"
+              disabled={!values.length || !looking.length || saving}
+              className="btn btn-primary mt-6 disabled:opacity-50"
             >
               <Save size={16} />
-              Enable co-founder mode
+              {saving ? "Enabling…" : "Enable co-founder mode"}
             </button>
           </form>
         ) : matches.length ? (

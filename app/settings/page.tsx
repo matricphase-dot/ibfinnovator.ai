@@ -34,6 +34,7 @@ export default function Settings() {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((x) => {
+        // ROOT FIX: 401 {error} must not become profile (was: p.name.slice crash).
         if (!x || x.error || !x.id) {
           window.location.assign("/auth/signin?next=/settings");
           return;
@@ -41,6 +42,13 @@ export default function Settings() {
         setP(x);
         if (x?.email_opt_in !== undefined)
           setPrefs((v) => ({ ...v, email: x.email_opt_in }));
+      });
+    getSupabaseBrowser()
+      .auth.getUser()
+      .then(({ data }) => {
+        const x = data.user?.user_metadata?.notifications;
+        // ROOT FIX: functional update (was: stale prefs closure drops email opt-in).
+        if (x) setPrefs((v) => ({ ...v, ...x }));
       });
   }, []);
   async function saveAvatar(url: string) {

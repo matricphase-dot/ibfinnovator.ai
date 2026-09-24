@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+import { apiError, parseBody, parseQuery } from "@/lib/api";
 import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import ConnectionRequestEmail from "@/lib/email/templates/ConnectionRequestEmail";
@@ -13,8 +14,16 @@ export async function GET(request: Request) {
   try {
     const { supabase, user } = await requireUser();
     const { searchParams } = new URL(request.url);
-    const projectId = searchParams.get("project_id");
-    const status = searchParams.get("status");
+    // ROOT FIX: validate query (was: status=FOO → silent [], before=garbage → 400 leak).
+    const parsed = parseQuery(
+      searchParams,
+      z.object({
+        project_id: z.string().uuid().optional(),
+        status: z.enum(["PENDING", "ACCEPTED", "REJECTED"]).optional(),
+      }),
+    );
+    if ("response" in parsed) return parsed.response;
+    const { project_id: projectId, status } = parsed.data;
     let query = supabase
       .from("connections")
       .select(
@@ -28,8 +37,8 @@ export async function GET(request: Request) {
     });
     if (error) throw error;
     return NextResponse.json(data);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 401 });
+  } catch (e) {
+    return apiError(e, "connections:GET");
   }
 }
 export async function POST(r: Request) {

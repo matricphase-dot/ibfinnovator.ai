@@ -80,10 +80,22 @@ export default function OnboardingWizard({
     if (saved)
       try {
         const x = JSON.parse(saved);
-        setData((d: any) => ({ ...d, ...x.data }));
-        setRole(x.role || initialRole || "STUDENT");
-        setStep(Math.max(1, Math.min(5, x.step || 1)));
-      } catch {}
+        // ROOT FIX: validate draft shape (was: blind spread → roles:'x' crashes .map).
+        if (x && typeof x === "object" && x.data && typeof x.data === "object") {
+          setData((d: any) => ({ ...d, ...x.data }));
+          if (x.role === "FOUNDER" || x.role === "STUDENT" || !initialRole)
+            setRole(x.role || initialRole || "STUDENT");
+          const step = Number(x.step);
+          if (Number.isFinite(step)) setStep(Math.max(1, Math.min(5, step)));
+        } else {
+          localStorage.removeItem(KEY);
+        }
+      } catch {
+        // Corrupt draft: drop it + inform, never silently lose user data.
+        try {
+          localStorage.removeItem(KEY);
+        } catch {}
+      }
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {

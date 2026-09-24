@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, requireUser } from "@/lib/supabase/server";
+import { safeHttpsUrlSchema } from "@/lib/security/url";
 import { z } from "zod";
 const update = z.object({
   title: z.string().min(3).max(120).optional(),
@@ -13,7 +14,7 @@ const update = z.object({
   commitment_hours: z.number().int().min(1).max(80).nullable().optional(),
   duration_weeks: z.number().int().min(1).max(260).nullable().optional(),
   status: z.enum(["OPEN", "CLOSED", "COMPLETED"]).optional(),
-  attachments: z.array(z.string().url()).max(20).optional(),
+  attachments: z.array(safeHttpsUrlSchema()).max(20).optional(),
 });
 export async function GET(
   _: Request,
