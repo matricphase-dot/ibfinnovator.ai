@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { useState } from "react";
 import { CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
@@ -43,88 +44,120 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0f1e] grid place-items-center p-6">
-      <div className="w-full max-w-md">
-        <p className="text-[10px] tracking-[.2em] text-cyan-300 font-bold uppercase">SECURITY</p>
-        <h1 className="text-3xl font-black mt-2 text-white">Create new password</h1>
-        <p className="text-sm text-slate-400 mt-2">
-          Choose a strong, unique password with at least 8 characters to secure your account.
-        </p>
+    <main className="min-h-screen bg-[var(--base)] text-[var(--ink)] flex flex-col justify-between p-6 sm:p-8">
+      <header className="w-full max-w-md mx-auto flex items-center justify-between">
+        <Link
+          href="/"
+          className="font-display text-2xl font-medium tracking-tight hover:opacity-85 transition"
+        >
+          IBF
+        </Link>
+        <span className="font-mono-eyebrow text-[10px]">INNOVATOR BRIDGE FOUNDRY</span>
+      </header>
 
-        {success ? (
-          <div className="bg-[#0d1422] border border-cyan-300/20 rounded-2xl p-6 mt-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-cyan-300/10 text-cyan-300 mx-auto grid place-items-center mb-4">
-              <CheckCircle2 size={24} />
+      <div className="w-full max-w-md mx-auto my-8">
+        <div className="bg-[var(--surface)] border border-[var(--hairline)] rounded-[2px] p-7 sm:p-9 shadow-xs">
+          <p className="font-mono-eyebrow text-[10px] text-[var(--muted)]">ACCOUNT SECURITY</p>
+          <h1 className="editorial-title text-2xl sm:text-3xl mt-2 text-[var(--ink)]">
+            Create new password
+          </h1>
+          <p className="text-sm text-[var(--muted)] mt-1.5 leading-relaxed">
+            Choose a secure password of at least 8 characters for your workspace account.
+          </p>
+
+          {success ? (
+            <div className="mt-6 border-t border-[var(--hairline)] pt-6 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-[var(--base)] border border-[var(--hairline)] text-[var(--accent)] mx-auto flex items-center justify-center">
+                <CheckCircle2 size={24} />
+              </div>
+              <h2 className="font-display text-xl font-medium text-[var(--ink)]">
+                Password updated
+              </h2>
+              <p className="text-sm text-[var(--muted)] leading-relaxed">
+                Your password has been changed successfully. You can now access your workspace.
+              </p>
+              <div className="pt-4 border-t border-[var(--hairline)]">
+                <Link href="/dashboard" className="btn-editorial w-full text-sm">
+                  Go to Dashboard
+                </Link>
+              </div>
             </div>
-            <h2 className="text-lg font-bold text-white">Password Updated!</h2>
-            <p className="text-sm text-slate-400 mt-2">
-              Your password has been changed successfully. You can now access your account.
-            </p>
-            <div className="mt-6">
-              <Link href="/dashboard" className="btn btn-primary w-full">
-                Go to Dashboard
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleReset} className="bg-white border border-slate-200 rounded-2xl p-6 mt-6">
-            <label className="block text-sm font-bold text-slate-900">
-              New Password
-              <div className="relative mt-2">
+          ) : (
+            <form onSubmit={handleReset} className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="new-password" className="block text-xs font-mono font-medium tracking-wide uppercase text-[var(--ink)]">
+                  New Password
+                </label>
+                <div className="relative mt-1.5">
+                  <input
+                    id="new-password"
+                    name="password"
+                    required
+                    minLength={8}
+                    type={show ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="At least 8 characters"
+                    className="field pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow(!show)}
+                    className="absolute right-3.5 top-3.5 text-[var(--muted)] hover:text-[var(--ink)] transition"
+                    aria-label={show ? "Hide password" : "Show password"}
+                  >
+                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="confirm-password" className="block text-xs font-mono font-medium tracking-wide uppercase text-[var(--ink)]">
+                  Confirm New Password
+                </label>
                 <input
-                  name="password"
+                  id="confirm-password"
+                  name="confirm"
                   required
                   minLength={8}
                   type={show ? "text" : "password"}
                   autoComplete="new-password"
-                  placeholder="At least 8 characters"
-                  className="field pr-12 text-slate-900"
+                  placeholder="Re-enter your password"
+                  className="field mt-1.5"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShow(!show)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
-                  aria-label={show ? "Hide password" : "Show password"}
-                >
-                  {show ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
               </div>
-            </label>
 
-            <label className="block text-sm font-bold text-slate-900 mt-4">
-              Confirm New Password
-              <input
-                name="confirm"
-                required
-                minLength={8}
-                type={show ? "text" : "password"}
-                autoComplete="new-password"
-                placeholder="Re-enter your password"
-                className="field mt-2 text-slate-900"
-              />
-            </label>
-
-            {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
-
-            <button
-              disabled={loading}
-              className="btn btn-primary w-full mt-6 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Updating password…
-                </>
-              ) : (
-                <>
-                  <Lock size={16} />
-                  Update password
-                </>
+              {error && (
+                <div
+                  role="alert"
+                  className="p-3 bg-[#FDF1EE] border border-[#F2C5BC] rounded-[2px] text-xs text-[#9C3826] leading-relaxed"
+                >
+                  {error}
+                </div>
               )}
-            </button>
-          </form>
-        )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-editorial w-full mt-6 text-sm font-medium disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin" /> Updating password…
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    <Lock size={15} /> Update password
+                  </span>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
+
+      <footer className="w-full max-w-md mx-auto text-center text-xs text-[var(--muted)] pt-4">
+        © 2026 Innovator Bridge Foundry · Secure authentication via Supabase
+      </footer>
     </main>
   );
 }
