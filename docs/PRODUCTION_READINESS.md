@@ -36,8 +36,8 @@ A passing build is necessary but does not by itself make the platform production
 - [ ] Resend sender domain, SPF, and DKIM verified
 - [ ] Every transactional template delivered and links correctly
 - [ ] Email opt-out prevents delivery
-- [ ] Sentry client/server/edge test exceptions received
-- [ ] Source maps available only to Sentry
+- [x] Sentry client/server/edge test exceptions received
+- [x] Source maps available only to Sentry
 
 ## Quality
 

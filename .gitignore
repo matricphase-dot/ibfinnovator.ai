@@ -54,3 +54,6 @@ reference.html
 reference.js
 supabase/migrations/000_combined_post_core.sql
 *.zip
+
+# Sentry Config File
+.env.sentry-build-plugin
