@@ -211,9 +211,18 @@ export async function POST(req: Request) {
       redirect: "/dashboard",
     });
   } catch (e: any) {
+    if (e instanceof z.ZodError) {
+      const issue = e.errors[0];
+      const path = issue.path.join(" → ");
+      const msg = issue.message;
+      return NextResponse.json(
+        { error: `${path ? `${path}: ` : ""}${msg}` },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
-      { error: e.message || "Onboarding failed" },
-      { status: e.message === "UNAUTHORIZED" ? 401 : 400 },
+      { error: e?.message || "Onboarding failed" },
+      { status: e?.message === "UNAUTHORIZED" ? 401 : 400 },
     );
   }
 }
