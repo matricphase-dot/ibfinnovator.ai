@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.9.2",
     "@sentry/nextjs": "^10.74.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.109.0",
@@ -26,7 +25,6 @@
     "react-hot-toast": "^2.5.1",
     "recharts": "^2.15.0",
     "resend": "^6.28.0",
-    "svix": "^1.99.1",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.1"
   },
@@ -44,4 +42,3 @@
     "node": ">=22.0.0"
   }
 }
-

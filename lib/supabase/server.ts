@@ -1,23 +1,34 @@
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClerkSupabaseClient } from "./clerk-server";
-import { createLegacySupabaseClient } from "./legacy-server";
-import { getSupabasePublic } from "./public";
 export { requireUser } from "@/lib/auth/require-user";
 
-const isClerkConfigured = Boolean(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY,
-);
-
+/**
+ * ROOT (Supabase-only): server Supabase client bound to request cookies.
+ * Auth = Supabase Auth session (email / Google / LinkedIn-OIDC).
+ * No Clerk, no JWT template, no service-role. RLS via auth.uid().
+ */
 export async function createClient(): Promise<SupabaseClient> {
-  if (isClerkConfigured) {
-    const { userId } = await auth();
-    if (userId) {
-      const client = await createClerkSupabaseClient();
-      if (client) return client;
-    }
-    return getSupabasePublic();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "Supabase server client requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    );
   }
-  return createLegacySupabaseClient();
+  const store = await cookies();
+  return createServerClient(url, key, {
+    cookies: {
+      getAll: () => store.getAll(),
+      setAll(values) {
+        try {
+          values.forEach(({ name, value, options }) =>
+            store.set(name, value, options),
+          );
+        } catch {
+          // Called from Server Component (read-only): middleware refreshes instead.
+        }
+      },
+    },
+  });
 }
-

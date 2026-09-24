@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import FileUploader, { type UploadedFile } from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
-import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
+import { useSupabaseBrowser } from "@/lib/supabase/browser";
 export default function Team() {
-  const supabase = useClerkSupabaseClient();
+  const supabase = useSupabaseBrowser();
   const { projectId } = useParams<{ projectId: string }>(),
     [d, setD] = useState<any>(null),
     [loading, setLoading] = useState(true),

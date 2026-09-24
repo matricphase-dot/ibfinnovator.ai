@@ -1,7 +1,22 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { sanitizeRedirectUrl } from "@/lib/utils";
+import { createServerClient } from "@supabase/ssr";
+
+function sanitizeNext(raw: string | null): string {
+  if (!raw || typeof raw !== "string") return "/dashboard";
+  const t = raw.trim();
+  if (
+    !t.startsWith("/") ||
+    t.startsWith("//") ||
+    t.startsWith("/\\") ||
+    t.includes("\\") ||
+    t.includes("://") ||
+    /[\x00-\x1F\x7F]/.test(t) ||
+    /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t)
+  ) {
+    return "/dashboard";
+  }
+  return t;
+}
 
 function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
   // ROOT FIX M7: edge-level CSRF gate for state-changing API calls.
@@ -23,7 +38,8 @@ function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
     const originHost = new URL(
       origin.startsWith("http") ? origin : `https://${origin}`,
     ).host.toLowerCase();
-    const expected = (req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    const expected = (
+      req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
       req.headers.get("host") ||
       ""
     )
@@ -42,25 +58,32 @@ function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
   return null;
 }
 
-const isProtected = createRouteMatcher([
-  "/dashboard(.*)",
-  "/matches(.*)",
-  "/bookmarks(.*)",
+const PROTECTED = [
+  "/dashboard",
+  "/matches",
+  "/bookmarks",
   "/profile",
-  "/settings(.*)",
-  "/chat(.*)",
-  "/team(.*)",
-  "/meetings(.*)",
-  "/analytics(.*)",
-  "/notifications(.*)",
-  "/cofounder-matches(.*)",
-  "/credentials(.*)",
-  "/applications(.*)",
-  "/auth/complete-onboarding(.*)",
-  "/marketplace/inquiries(.*)",
-  "/university(.*)",
-  "/projects/new(.*)",
-]);
+  "/settings",
+  "/chat",
+  "/team",
+  "/meetings",
+  "/analytics",
+  "/notifications",
+  "/cofounder-matches",
+  "/credentials",
+  "/applications",
+  "/auth/complete-onboarding",
+  "/auth/choose-role",
+  "/marketplace/inquiries",
+  "/university",
+  "/projects/new",
+];
+
+function isProtectedPath(pathname: string) {
+  return PROTECTED.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+}
 
 function touchPresenceCookie(response: NextResponse, req: NextRequest) {
   const isProd = process.env.NODE_ENV === "production";
@@ -81,24 +104,18 @@ function touchPresenceCookie(response: NextResponse, req: NextRequest) {
   return response;
 }
 
-async function legacy(req: NextRequest) {
+// ROOT (Supabase-only): no Clerk. Refresh Supabase Auth session, then gate protected pages.
+export default async function middleware(req: NextRequest) {
   const csrfRejection = rejectCrossSiteMutation(req);
   if (csrfRejection) return csrfRejection;
-  if (!isProtected(req)) return NextResponse.next();
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/auth/signin";
-    return NextResponse.redirect(url);
-  }
-
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let response = NextResponse.next({ request: req });
-  const client = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
+  let userId: string | null = null;
+
+  if (url && key) {
+    const client = createServerClient(url, key, {
       cookies: {
         getAll: () => req.cookies.getAll(),
         setAll(items) {
@@ -109,46 +126,27 @@ async function legacy(req: NextRequest) {
           );
         },
       },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  if (user) {
-    return touchPresenceCookie(response, req);
+    });
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+    userId = user?.id ?? null;
   }
 
-  const url = req.nextUrl.clone();
-  url.pathname = "/auth/signin";
-  const safeNext = sanitizeRedirectUrl(
-    `${req.nextUrl.pathname}${req.nextUrl.search}`,
-    "/dashboard",
+  if (!isProtectedPath(req.nextUrl.pathname)) return response;
+  if (userId) return touchPresenceCookie(response, req);
+
+  const redirect = req.nextUrl.clone();
+  redirect.pathname = "/auth/signin";
+  redirect.searchParams.set(
+    "next",
+    sanitizeNext(`${req.nextUrl.pathname}${req.nextUrl.search}`),
   );
-  url.searchParams.set("next", safeNext);
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(redirect);
 }
-
-const hybrid = clerkMiddleware(async (clerkAuth, req) => {
-  const csrfRejection = rejectCrossSiteMutation(req);
-  if (csrfRejection) return csrfRejection;
-  if (!isProtected(req)) return NextResponse.next();
-  const { userId } = await clerkAuth();
-  if (userId) {
-    return touchPresenceCookie(NextResponse.next(), req);
-  }
-  return legacy(req);
-});
-
-export default process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
-process.env.CLERK_SECRET_KEY
-  ? hybrid
-  : legacy;
 
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/).*)",
   ],
 };
-

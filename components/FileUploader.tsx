@@ -7,7 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
+import { useSupabaseBrowser } from "@/lib/supabase/browser";
 import {
   allowedTypes,
   MAX_BY_BUCKET,
@@ -42,7 +42,7 @@ export default function FileUploader({
     maxMB ?? Number.MAX_SAFE_INTEGER,
     Math.round(MAX_BY_BUCKET[bucket] / 1024 / 1024),
   );
-  const supabase = useClerkSupabaseClient(),
+  const supabase = useSupabaseBrowser(),
     input = useRef<HTMLInputElement>(null),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),

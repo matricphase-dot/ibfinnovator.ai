@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import FileUploader, { type UploadedFile } from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
 import MessageActions from "@/components/MessageActions";
-import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
+import { useSupabaseBrowser } from "@/lib/supabase/browser";
 export default function Chat() {
-  const supabase = useClerkSupabaseClient();
+  const supabase = useSupabaseBrowser();
   const [msgs, setMsgs] = useState<any[]>([]),
     [text, setText] = useState(""),
     [loading, setLoading] = useState(true),

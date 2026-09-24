@@ -12,14 +12,11 @@ import {
   UserRound,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useClerk, useUser } from "@clerk/nextjs";
 import toast from "react-hot-toast";
 import FileUploader from "@/components/FileUploader";
+import { getSupabaseBrowser } from "@/lib/supabase/browser";
 type Tab = "profile" | "notifications" | "security" | "investor";
 export default function Settings() {
-  const { signOut } = useClerk();
-  const { user: clerkUser } = useUser();
   const [p, setP] = useState<any>(null),
     [tab, setTab] = useState<Tab>("profile"),
     [saving, setSaving] = useState(false),
@@ -33,6 +30,7 @@ export default function Settings() {
       email: true,
     });
   useEffect(() => {
+    // ROOT (Supabase-only): prefs come from the profiles API (email_opt_in).
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((x) => {
@@ -45,7 +43,7 @@ export default function Settings() {
         if (x?.email_opt_in !== undefined)
           setPrefs((v) => ({ ...v, email: x.email_opt_in }));
       });
-    createClient()
+    getSupabaseBrowser()
       .auth.getUser()
       .then(({ data }) => {
         const x = data.user?.user_metadata?.notifications;
@@ -121,18 +119,27 @@ export default function Settings() {
 
   async function changePassword(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget),
-      a = String(f.get("password")),
-      b = String(f.get("confirm"));
-    if (a.length < 8)
+    const form = e.currentTarget;
+    const f = new FormData(form);
+    const password = String(f.get("password") || "");
+    const confirm = String(f.get("confirm") || "");
+
+    if (password.length < 8) {
       return toast.error("Password must be at least 8 characters");
-    if (a !== b) return toast.error("Passwords do not match");
+    }
+    if (password !== confirm) {
+      return toast.error("Passwords do not match");
+    }
+
     setSaving(true);
-    const { error } = await createClient().auth.updateUser({ password: a });
+    const { error } = await getSupabaseBrowser().auth.updateUser({ password });
     setSaving(false);
-    error
-      ? toast.error(error.message)
-      : (toast.success("Password updated"), e.currentTarget.reset());
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated successfully");
+      form.reset();
+    }
   }
   async function saveInvestor(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -154,11 +161,9 @@ export default function Settings() {
     } else toast.error(d.error || "Could not update visibility");
   }
   async function logout() {
-    if (clerkUser) await signOut({ redirectUrl: "/" });
-    else {
-      await createClient().auth.signOut();
-      location.href = "/";
-    }
+    // ROOT (Supabase-only): single Supabase session.
+    await getSupabaseBrowser().auth.signOut();
+    window.location.assign("/");
   }
 
   async function deleteAccount() {
@@ -170,11 +175,8 @@ export default function Settings() {
       return;
     const r = await fetch("/api/account", { method: "DELETE" });
     if (r.ok) {
-      if (clerkUser) await signOut({ redirectUrl: "/" });
-      else {
-        await createClient().auth.signOut();
-        location.href = "/";
-      }
+      await getSupabaseBrowser().auth.signOut();
+      window.location.assign("/");
     } else toast.error("Account deletion failed");
   }
   const tabs: Array<[Tab, any, string]> = [
