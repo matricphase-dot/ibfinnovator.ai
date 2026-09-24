@@ -140,15 +140,17 @@ on conflict (room_id, user_id) do update set role = excluded.role;
 insert into public.team_members (room_id, user_id, role)
 select tr.id, c.requester_id, 'MEMBER'
 from public.team_rooms tr
+join public.projects p on p.id = tr.project_id
 join public.connections c on c.project_id = tr.project_id and c.status = 'ACCEPTED'
-where c.requester_id <> tr.project_id
+where c.requester_id <> p.founder_id
 on conflict (room_id, user_id) do nothing;
 
 insert into public.team_members (room_id, user_id, role)
 select tr.id, c.recipient_id, 'MEMBER'
 from public.team_rooms tr
+join public.projects p on p.id = tr.project_id
 join public.connections c on c.project_id = tr.project_id and c.status = 'ACCEPTED'
-where c.recipient_id <> tr.project_id
+where c.recipient_id <> p.founder_id
 on conflict (room_id, user_id) do nothing;
 
 create unique index if not exists team_rooms_project_unique_idx on public.team_rooms(project_id);
@@ -696,8 +698,12 @@ create or replace function public.refresh_review_reputation()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
-  perform public.recompute_profile_reputation(coalesce(new.reviewee_id, old.reviewee_id));
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    perform public.recompute_profile_reputation(old.reviewee_id);
+    return old;
+  end if;
+  perform public.recompute_profile_reputation(new.reviewee_id);
+  return new;
 end;
 $$;
 revoke all on function public.refresh_review_reputation() from public, anon, authenticated;
@@ -706,8 +712,12 @@ create or replace function public.refresh_endorsement_reputation()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
-  perform public.recompute_profile_reputation(coalesce(new.receiver_id, old.receiver_id));
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    perform public.recompute_profile_reputation(old.receiver_id);
+    return old;
+  end if;
+  perform public.recompute_profile_reputation(new.receiver_id);
+  return new;
 end;
 $$;
 revoke all on function public.refresh_endorsement_reputation() from public, anon, authenticated;
@@ -1090,6 +1100,19 @@ alter default privileges in schema public grant all on tables to service_role;
 alter default privileges in schema public grant all on sequences to service_role;
 alter default privileges in schema public grant all on routines to service_role;
 
+create or replace function public.get_public_stats()
+returns jsonb language sql security definer set search_path = ''
+as $$
+  select jsonb_build_object(
+    'users', (select count(*) from public.profiles where not suspended),
+    'projects', (select count(*) from public.projects where status = 'OPEN'),
+    'matches', (select count(*) from public.connections where status = 'ACCEPTED'),
+    'activeProjects', (select count(*) from public.projects where status = 'OPEN' and created_at >= now() - interval '30 days')
+  );
+$$;
+revoke all on function public.get_public_stats() from public, anon, authenticated;
+grant execute on function public.get_public_stats() to anon, authenticated;
+
 create or replace function public.schema_contract()
 returns jsonb language sql security definer set search_path = ''
 as $$
@@ -1132,7 +1155,7 @@ as $$
       from (values
         ('current_profile_id'), ('touch_current_profile'), ('finalize_onboarding'),
         ('set_onboarding_role'), ('edit_message'), ('can_access_team_room'),
-        ('delete_own_account'), ('schema_contract')
+        ('delete_own_account'), ('get_public_stats'), ('schema_contract')
       ) as x(function_name)
       where exists (
         select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
