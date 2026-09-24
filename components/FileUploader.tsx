@@ -7,7 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useRef, useState } from "react";
-import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
+import { useSupabaseBrowser } from "@/lib/supabase/browser";
 import { allowedTypes, uploadFile, type UploadBucket } from "@/lib/upload";
 export type UploadedFile = {
   url: string;
@@ -32,7 +32,7 @@ export default function FileUploader({
   onUploaded,
   label = "Upload files",
 }: Props) {
-  const supabase = useClerkSupabaseClient(),
+  const supabase = useSupabaseBrowser(),
     input = useRef<HTMLInputElement>(null),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),

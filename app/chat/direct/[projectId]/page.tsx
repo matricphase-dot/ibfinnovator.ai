@@ -7,9 +7,9 @@ import { useEffect, useRef, useState } from "react";
 import FileUploader, { type UploadedFile } from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
 import MessageActions from "@/components/MessageActions";
-import { useClerkSupabaseClient } from "@/lib/supabase/clerk-client";
+import { useSupabaseBrowser } from "@/lib/supabase/browser";
 export default function DirectChat() {
-  const supabase = useClerkSupabaseClient(),
+  const supabase = useSupabaseBrowser(),
     { projectId } = useParams<{ projectId: string }>(),
     [msgs, setMsgs] = useState<any[]>([]),
     [text, setText] = useState(""),

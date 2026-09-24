@@ -1,62 +1,40 @@
-import { auth } from "@clerk/nextjs/server";
-import { createClerkSupabaseClient } from "@/lib/supabase/clerk-server";
-import { requireLegacyUser } from "@/lib/supabase/legacy-server";
+import { createClient } from "@/lib/supabase/server";
 import type { AuthenticatedProfile } from "./identity";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
 type Result = { supabase: SupabaseClient; user: AuthenticatedProfile };
+
+/**
+ * ROOT (Supabase-only): the single gate for every protected API route / server action.
+ * Session = Supabase Auth (auth.getUser → auth.uid()). Profile row keyed by id = auth uid.
+ * Fail-closed: no session → UNAUTHORIZED; no profile row → PROFILE_NOT_FOUND.
+ */
 export async function requireUser(): Promise<Result> {
-  const { userId } = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-    ? await auth()
-    : { userId: null };
-  if (userId) {
-    const supabase = await createClerkSupabaseClient();
-    if (supabase) {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("id,clerk_user_id,email,name,role,onboarding_completed")
-        .eq("clerk_user_id", userId)
-        .maybeSingle();
-      if (error) throw error;
-      if (profile)
-        return {
-          supabase,
-          user: {
-            id: profile.id,
-            clerkId: userId,
-            supabaseId: null,
-            email: profile.email,
-            name: profile.name,
-            role: profile.role,
-            onboarding_completed: profile.onboarding_completed ?? false,
-            provider: "clerk",
-          },
-        };
-    }
-  }
-  try {
-    const { supabase, user } = await requireLegacyUser();
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("id,email,name,role,onboarding_completed")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (error) throw error;
-    if (!profile) throw new Error("PROFILE_NOT_FOUND");
-    return {
-      supabase,
-      user: {
-        id: profile.id,
-        clerkId: null,
-        supabaseId: user.id,
-        email: profile.email,
-        name: profile.name,
-        role: profile.role,
-        onboarding_completed: profile.onboarding_completed ?? false,
-        provider: "supabase",
-      },
-    };
-  } catch (e) {
-    if (e instanceof Error && e.message === "PROFILE_NOT_FOUND") throw e;
-    throw new Error("UNAUTHORIZED");
-  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: sessionError,
+  } = await supabase.auth.getUser();
+  if (sessionError || !user) throw new Error("UNAUTHORIZED");
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id,email,name,role,onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!profile) throw new Error("PROFILE_NOT_FOUND");
+
+  return {
+    supabase,
+    user: {
+      id: profile.id,
+      email: profile.email,
+      name: profile.name,
+      role: profile.role,
+      onboarding_completed: profile.onboarding_completed ?? false,
+      provider: "supabase",
+    },
+  };
 }
