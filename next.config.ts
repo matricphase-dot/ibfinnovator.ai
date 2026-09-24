@@ -7,7 +7,7 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.sentry.io",
   "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
@@ -85,6 +85,10 @@ export default sentryEnabled
       authToken: process.env.SENTRY_AUTH_TOKEN,
       silent: true,
       sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
-      disableLogger: true,
+      webpack: {
+        treeshake: {
+          removeDebugLogging: true,
+        },
+      },
     })
   : nextConfig;
