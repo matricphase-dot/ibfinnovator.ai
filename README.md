@@ -17,7 +17,7 @@ A full-stack, enterprise-grade founder and emerging-talent collaboration platfor
                        v                                                   v
          +---------------------------+                       +---------------------------+
          |      Supabase Auth        |                       |    Supabase Database      |
-         |  - Email & Password       |                       |  - 34 Production Tables   |
+         |  - Email & Password       |                       |  - 35 Production Tables   |
          |  - Google OAuth (PKCE)    |                       |  - Strict Row Level Sec.  |
          |  - LinkedIn OIDC (PKCE)   |                       |  - Realtime Publications  |
          |  - Direct Session Refresh |                       |  - pgvector Embeddings    |
@@ -87,13 +87,21 @@ SENTRY_PROJECT=
 ```
 
 ### 3. Deploy Database Schema
-1. Open your [Supabase Dashboard](https://supabase.com/dashboard).
-2. Go to **SQL Editor** -> **New query**.
-3. Open [`supabase/PRODUCTION_SETUP_ROOT.sql`](./supabase/PRODUCTION_SETUP_ROOT.sql), copy the entire content, paste it into the editor, and click **Run**.
-4. Verify your database schema:
-   ```bash
-   node scripts/verify-supabase.mjs
-   ```
+
+For a fresh Supabase project, paste the complete contents of [`supabase/PRODUCTION_SETUP_ROOT.sql`](./supabase/PRODUCTION_SETUP_ROOT.sql) into **SQL Editor -> New query** and run it. For an existing project, apply the versioned migration through a preview branch or the Supabase CLI first; the root artifact also contains the same reconciliation phase and is safe to rerun.
+
+Verify the committed contract before deployment:
+
+```bash
+npm run db:check
+npm run typecheck
+```
+
+With a local Supabase stack running, execute the fresh-install and upgrade assertions with:
+
+```bash
+npm run db:test
+```
 
 ### 4. Run Development Server
 ```bash
@@ -159,8 +167,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run dev` | Starts the Next.js local development server |
 | `npm run build` | Compiles the production build and validates all TypeScript types |
 | `npm run start` | Starts the production server |
-| `node scripts/verify-supabase.mjs` | Verifies all 17 tables and 5 storage buckets in your Supabase DB |
-| `node scripts/build-setup-sql.mjs` | Syncs `PRODUCTION_SETUP_ROOT.sql` to `supabase/migrations/` |
+| `node scripts/verify-supabase.mjs` | Verifies the deployed Supabase project and storage buckets |
+| `npm run db:check` | Checks the root SQL, forward migration, generated types, smoke assertions, and every application query against the column grants |
+| `npm run db:test` | Resets a local Supabase stack and runs database smoke tests |
+| `node scripts/build-setup-sql.mjs` | Verifies that the root artifact contains the immutable reconciliation migration |
 
 ---
 

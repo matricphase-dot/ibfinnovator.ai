@@ -34,6 +34,8 @@ const update = z.object({
   investor_pitch: z.string().max(3000).nullable().optional(),
   email_opt_in: z.boolean().optional(),
 });
+const profileSelect =
+  "id,name,username,avatar_url,bio,college,education_year,linkedin_url,github_url,timezone,location,skills,proficiency,interests,portfolio_urls,resume_url,availability,engagement_preferences,role_preferences,preferred_role,company,goals,past_ventures,industry,is_cofounder,working_style,values_profile,average_rating,endorsement_count,verification_status,investor_visible,investor_pitch,email_opt_in,onboarding_completed,last_seen_at,created_at,updated_at";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -42,11 +44,11 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select(profileSelect)
       .eq("id", user.id)
       .single();
     if (error) throw error;
-    return NextResponse.json(data);
+    return NextResponse.json({ ...(data as object), email: user.email });
   } catch (e: any) {
     return NextResponse.json(
       {
@@ -78,7 +80,7 @@ export async function PATCH(r: Request) {
       const { data: taken, error: lookupError } = await supabase
         .from("profiles")
         .select("id")
-        .ilike("username", p.data.username)
+        .eq("username", p.data.username)
         .neq("id", user.id)
         .limit(1)
         .maybeSingle();
@@ -93,7 +95,7 @@ export async function PATCH(r: Request) {
       .from("profiles")
       .update({ ...p.data, updated_at: new Date().toISOString() })
       .eq("id", user.id)
-      .select()
+      .select(profileSelect)
       .single();
     if (error) {
       if (error.code === "23505")
@@ -103,7 +105,7 @@ export async function PATCH(r: Request) {
         );
       throw error;
     }
-    return NextResponse.json(data);
+    return NextResponse.json({ ...(data as object), email: user.email });
   } catch (e: any) {
     return NextResponse.json(
       { error: e.message || "Unable to update profile" },

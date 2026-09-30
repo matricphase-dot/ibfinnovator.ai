@@ -5,6 +5,7 @@ import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import ApplicationReceivedEmail from "@/lib/email/templates/ApplicationReceivedEmail";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { enqueueNotification } from "@/lib/notifications";
 const input = z.object({
   project_id: z.string().uuid(),
   cover_letter: z.string().trim().min(30).max(3000),
@@ -80,7 +81,7 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase.from("notifications").insert({
+    await enqueueNotification({
       user_id: project.founder_id,
       type: "NEW_APPLICATION",
       message: `New application for ${project.title}`,

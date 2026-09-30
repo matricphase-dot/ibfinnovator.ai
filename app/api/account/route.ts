@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
+
+const profileExportSelect =
+  "id,name,username,avatar_url,bio,college,education_year,linkedin_url,github_url,timezone,location,skills,proficiency,interests,portfolio_urls,resume_url,availability,engagement_preferences,role_preferences,preferred_role,company,goals,past_ventures,industry,is_cofounder,working_style,values_profile,average_rating,endorsement_count,verification_status,investor_visible,investor_pitch,email_opt_in,onboarding_completed,last_seen_at,created_at,updated_at";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -31,7 +34,9 @@ export async function GET() {
 
     const entries = await Promise.all(
       tables.map(async (table) => {
-        let q = supabase.from(table).select("*");
+        let q = supabase
+          .from(table)
+          .select(table === "profiles" ? profileExportSelect : "*");
         if (table === "profiles") {
           q = q.eq("id", user.id);
         } else if (table === "projects") {

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:check": "node scripts/check-schema-contract.mjs",
+    "db:test": "node scripts/run-db-smoke.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.74.0",

@@ -6,7 +6,7 @@ export async function GET() {
     const { supabase, user } = await requireUser();
     const { data: membership } = await supabase
       .from("university_members")
-      .select("*,university:universities(*)")
+      .select("*,university:universities(id,name,domain,logo_url,active)")
       .eq("user_id", user.id)
       .maybeSingle();
     if (!membership) {
@@ -48,39 +48,13 @@ export async function GET() {
 }
 export async function POST(r: Request) {
   try {
-    const { supabase, user } = await requireUser(),
+    const { supabase } = await requireUser(),
       { university_id } = z
         .object({ university_id: z.string().uuid() })
         .parse(await r.json());
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("id", user.id)
-      .single();
-    const { data: university } = await supabase
-      .from("universities")
-      .select("domain")
-      .eq("id", university_id)
-      .single();
-    if (
-      !profile?.email
-        ?.toLowerCase()
-        .endsWith(`@${university?.domain?.toLowerCase()}`)
-    )
-      return NextResponse.json(
-        { error: "Use your verified university email address." },
-        { status: 403 },
-      );
-    const { data, error } = await supabase
-      .from("university_members")
-      .upsert({
-        university_id,
-        user_id: user.id,
-        member_role: "STUDENT",
-        verified: true,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc("join_university", {
+      p_university_id: university_id,
+    });
     if (error) throw error;
     return NextResponse.json(data);
   } catch (e: any) {

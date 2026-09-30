@@ -5,6 +5,7 @@ import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import ConnectionRequestEmail from "@/lib/email/templates/ConnectionRequestEmail";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { enqueueNotification } from "@/lib/notifications";
 const input = z.object({
   recipient_id: z.string().uuid(),
   project_id: z.string().uuid().nullable().optional(),
@@ -76,13 +77,16 @@ export async function POST(r: Request) {
           { status: 400 },
         );
     }
-    const { data: existing } = await supabase
+    let existingQuery = supabase
       .from("connections")
       .select("id,status")
       .eq("requester_id", user.id)
-      .eq("recipient_id", p.data.recipient_id)
-      .eq("project_id", p.data.project_id || "")
-      .maybeSingle();
+      .eq("recipient_id", p.data.recipient_id);
+    existingQuery = p.data.project_id
+      ? existingQuery.eq("project_id", p.data.project_id)
+      : existingQuery.is("project_id", null);
+    const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+    if (existingError) throw existingError;
     if (existing)
       return NextResponse.json(
         {
@@ -104,7 +108,7 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase.from("notifications").insert({
+    await enqueueNotification({
       user_id: p.data.recipient_id,
       type: "CONNECTION_REQUEST",
       message: "You have a new connection request",

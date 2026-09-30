@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import BadgeAwardedEmail from "@/lib/email/templates/BadgeAwardedEmail";
+import { enqueueNotification } from "@/lib/notifications";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -75,7 +76,7 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase.from("notifications").insert({
+    await enqueueNotification({
       user_id: p.receiver_id,
       type: "BADGE_AWARDED",
       message: `You earned the ${data.badge.name} badge`,

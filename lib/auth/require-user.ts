@@ -17,23 +17,21 @@ export async function requireUser(): Promise<Result> {
   } = await supabase.auth.getUser();
   if (sessionError || !user) throw new Error("UNAUTHORIZED");
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id,email,name,role,onboarding_completed")
-    .eq("id", user.id)
-    .maybeSingle();
-
+  const { data: profile, error } = await supabase.rpc("current_user_profile");
   if (error) throw error;
-  if (!profile) throw new Error("PROFILE_NOT_FOUND");
+  const p = profile as
+    | { id: string; email: string; name: string; role: AuthenticatedProfile["role"]; onboarding_completed: boolean }
+    | null;
+  if (!p?.id) throw new Error("PROFILE_NOT_FOUND");
 
   return {
     supabase,
     user: {
-      id: profile.id,
-      email: profile.email,
-      name: profile.name,
-      role: profile.role,
-      onboarding_completed: profile.onboarding_completed ?? false,
+      id: p.id,
+      email: p.email,
+      name: p.name,
+      role: p.role,
+      onboarding_completed: p.onboarding_completed ?? false,
       provider: "supabase",
     },
   };

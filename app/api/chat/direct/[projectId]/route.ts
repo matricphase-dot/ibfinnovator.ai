@@ -5,6 +5,7 @@ import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import NewMessageEmail from "@/lib/email/templates/NewMessageEmail";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { enqueueNotification } from "@/lib/notifications";
 async function authorize(projectId: string, userId: string, s: any) {
   const { data: project } = await s
     .from("projects")
@@ -109,7 +110,7 @@ export async function POST(
       )
       .single();
     if (error) throw error;
-    await supabase.from("notifications").insert({
+    await enqueueNotification({
       user_id: access.other,
       type: "NEW_MESSAGE",
       message: "You received a new project message",

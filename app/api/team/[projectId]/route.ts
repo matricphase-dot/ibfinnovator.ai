@@ -32,7 +32,7 @@ export async function GET(
       .eq("project_id", projectId)
       .maybeSingle();
     if (!room && project.founder_id === user.id) {
-      const r = await supabase
+      const created = await supabase
         .from("team_rooms")
         .insert({
           project_id: projectId,
@@ -41,7 +41,17 @@ export async function GET(
         })
         .select()
         .single();
-      room = r.data;
+      if (created.error && created.error.code !== "23505") throw created.error;
+      if (created.data) room = created.data;
+      else {
+        const existing = await supabase
+          .from("team_rooms")
+          .select("*")
+          .eq("project_id", projectId)
+          .single();
+        if (existing.error) throw existing.error;
+        room = existing.data;
+      }
       if (room)
         await supabase
           .from("team_members")

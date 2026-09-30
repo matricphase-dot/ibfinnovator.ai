@@ -118,7 +118,6 @@ export async function POST(req: Request) {
           .from("profiles")
           .select("id,name,username,bio,skills,interests,availability")
           .eq("role", "STUDENT")
-          .eq("suspended", false)
           .limit(10);
         const matches = (data || [])
           .map((x) => {
@@ -218,6 +217,12 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: `${path ? `${path}: ` : ""}${msg}` },
         { status: 400 },
+      );
+    }
+    if (e?.code === "23505" || /duplicate key|already exists/i.test(e?.message || "")) {
+      return NextResponse.json(
+        { error: "That username is already taken" },
+        { status: 409 },
       );
     }
     return NextResponse.json(
