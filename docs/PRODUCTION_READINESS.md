@@ -53,10 +53,14 @@ A passing build is necessary but does not by itself make the platform production
 
 1. Record the last stable Git/Vercel deployment.
 2. Validate all checks in Vercel Preview with separate founder and student test accounts.
-3. Apply `supabase/PRODUCTION_SETUP_ROOT.sql` to the production Supabase database.
-4. Verify environment variables in Vercel production settings.
-5. Deploy to production.
-6. Monitor Sentry errors, auth callbacks, email delivery, and API latency.
+3. Run `npm run db:check`, `npm run typecheck`, and the local/Supabase preview database smoke tests.
+4. Apply `supabase/migrations/20260924000000_reconcile_production_contract.sql` to a preview branch, run the upgrade smoke assertions, and promote the verified migration to production.
+5. For a fresh project only, paste `supabase/PRODUCTION_SETUP_ROOT.sql` into Supabase SQL Editor, then run `node scripts/verify-supabase.mjs`.
+6. If verification reports project-controllable default-privilege exposure, paste `supabase/hotfix_default_privileges.sql`, re-run verification, and retain the output. Entries owned by the platform role are informational.
+7. If the root artifact was pasted rather than migrated, record the applied versions with `supabase migration repair` so a later `db push` does not re-apply them.
+8. Verify environment variables in Vercel production settings.
+9. Deploy to production.
+10. Monitor Sentry errors, auth callbacks, email delivery, and API latency.
 
 ## Rollback by subsystem
 

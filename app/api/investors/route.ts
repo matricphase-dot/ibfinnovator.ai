@@ -7,8 +7,7 @@ export async function GET() {
       "id,name,username,company,industry,investor_pitch,avatar_url,projects!founder_id(id,title,stage,domain,status)",
     )
     .eq("investor_visible", true)
-    .eq("role", "FOUNDER")
-    .eq("suspended", false);
+    .eq("role", "FOUNDER");
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(

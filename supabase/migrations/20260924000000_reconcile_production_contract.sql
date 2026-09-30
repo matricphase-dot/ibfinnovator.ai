@@ -137,6 +137,54 @@ from public.team_rooms tr
 join public.projects p on p.id = tr.project_id
 on conflict (room_id, user_id) do update set role = excluded.role;
 
+create temporary table _ibf_connection_merge on commit drop as
+select id
+from (
+  select id, row_number() over (
+    partition by
+      case when requester_id < recipient_id then requester_id else recipient_id end,
+      case when requester_id < recipient_id then recipient_id else requester_id end,
+      coalesce(project_id, '00000000-0000-0000-0000-000000000000'::uuid)
+    order by (status = 'ACCEPTED') desc, created_at, id
+  ) as rn
+  from public.connections
+) s where rn > 1;
+
+delete from public.connections c using _ibf_connection_merge d where c.id = d.id;
+
+create or replace function public.guard_connection_pair()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform pg_advisory_xact_lock(
+    hashtextextended(
+      (case when new.requester_id < new.recipient_id then new.requester_id else new.recipient_id end)::text || ':' ||
+      (case when new.requester_id < new.recipient_id then new.recipient_id else new.requester_id end)::text || ':' ||
+      coalesce(new.project_id::text, ''),
+      0
+    )
+  );
+  if exists (
+    select 1 from public.connections c
+    where c.id <> new.id
+      and c.project_id is not distinct from new.project_id
+      and (
+        (c.requester_id = new.requester_id and c.recipient_id = new.recipient_id)
+        or (c.requester_id = new.recipient_id and c.recipient_id = new.requester_id)
+      )
+  ) then
+    raise exception 'A connection already exists for this pair and project';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.guard_connection_pair() from public, anon, authenticated;
+
+drop trigger if exists ibf_guard_connection_pair on public.connections;
+create trigger ibf_guard_connection_pair
+  before insert or update of requester_id, recipient_id, project_id on public.connections
+  for each row execute function public.guard_connection_pair();
+
 insert into public.team_members (room_id, user_id, role)
 select tr.id, c.requester_id, 'MEMBER'
 from public.team_rooms tr
@@ -174,29 +222,7 @@ using (
 create unique index if not exists bookmarks_project_unique_idx
 on public.bookmarks(user_id, project_id) where project_id is not null;
 create unique index if not exists bookmarks_profile_unique_idx
-on public.bookmarks(user_id, profile_id) where profile_id is not null;
-
-create temporary table _ibf_connection_merge on commit drop as
-select id
-from (
-  select id, row_number() over (
-    partition by
-      case when requester_id < recipient_id then requester_id else recipient_id end,
-      case when requester_id < recipient_id then recipient_id else requester_id end,
-      coalesce(project_id, '00000000-0000-0000-0000-000000000000'::uuid)
-    order by created_at, id
-  ) as rn
-  from public.connections
-) s where rn > 1;
-
-delete from public.connections c using _ibf_connection_merge d where c.id = d.id;
-
-create unique index if not exists connections_pair_project_unique_idx
-on public.connections (
-  case when requester_id < recipient_id then requester_id else recipient_id end,
-  case when requester_id < recipient_id then recipient_id else requester_id end,
-  coalesce(project_id, '00000000-0000-0000-0000-000000000000'::uuid)
-);
+  on public.bookmarks(user_id, profile_id) where profile_id is not null;
 
 do $$
 begin
@@ -235,8 +261,92 @@ begin
   if not exists (select 1 from pg_constraint where conname = 'messages_team_room_shape_check' and conrelid = 'public.messages'::regclass) then
     alter table public.messages add constraint messages_team_room_shape_check check (room_type <> 'TEAM' or room_id is not null) not valid;
   end if;
+  if not exists (select 1 from pg_constraint where conname = 'messages_room_type_check' and conrelid = 'public.messages'::regclass) then
+    alter table public.messages add constraint messages_room_type_check check (room_type in ('GENERAL', 'DIRECT', 'TEAM')) not valid;
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'meetings_time_order_check' and conrelid = 'public.meetings'::regclass) then
     alter table public.meetings add constraint meetings_time_order_check check (ends_at > starts_at) not valid;
+  end if;
+end $$;
+
+alter table public.team_tasks alter column created_by drop not null;
+alter table public.user_badges alter column awarded_by drop not null;
+alter table public.certificates alter column issued_by drop not null;
+alter table public.service_purchases alter column buyer_id drop not null;
+alter table public.service_purchases alter column provider_id drop not null;
+alter table public.community_events alter column host_id drop not null;
+alter table public.reports alter column reporter_id drop not null;
+
+do $$
+declare
+  spec record;
+  r record;
+begin
+  for spec in
+    select * from (values
+      ('public.team_tasks'::regclass, 'created_by', 'public.profiles'::regclass, 'team_tasks_created_by_fkey'),
+      ('public.user_badges'::regclass, 'awarded_by', 'public.profiles'::regclass, 'user_badges_awarded_by_fkey'),
+      ('public.certificates'::regclass, 'issued_by', 'public.profiles'::regclass, 'certificates_issued_by_fkey'),
+      ('public.service_purchases'::regclass, 'buyer_id', 'public.profiles'::regclass, 'service_purchases_buyer_id_fkey'),
+      ('public.service_purchases'::regclass, 'provider_id', 'public.profiles'::regclass, 'service_purchases_provider_id_fkey'),
+      ('public.community_events'::regclass, 'host_id', 'public.profiles'::regclass, 'community_events_host_id_fkey'),
+      ('public.reports'::regclass, 'reporter_id', 'public.profiles'::regclass, 'reports_reporter_id_fkey'),
+      ('public.reports'::regclass, 'reported_user_id', 'public.profiles'::regclass, 'reports_reported_user_id_fkey'),
+      ('public.reports'::regclass, 'project_id', 'public.projects'::regclass, 'reports_project_id_fkey'),
+      ('public.reports'::regclass, 'message_id', 'public.messages'::regclass, 'reports_message_id_fkey')
+    ) as s(table_oid, column_name, ref_table, constraint_name)
+  loop
+    for r in
+      select c.conname
+      from pg_constraint c
+      where c.conrelid = spec.table_oid
+        and c.contype = 'f'
+        and c.conkey = array[(select a.attnum from pg_attribute a where a.attrelid = spec.table_oid and a.attname = spec.column_name and not a.attisdropped)]
+    loop
+      execute format('alter table %s drop constraint %I', spec.table_oid::regclass, r.conname);
+    end loop;
+    execute format(
+      'alter table %s add constraint %I foreign key (%I) references %s(id) on delete set null not valid',
+      spec.table_oid::regclass,
+      spec.constraint_name,
+      spec.column_name,
+      spec.ref_table
+    );
+  end loop;
+end $$;
+
+do $$
+declare
+  r record;
+begin
+  for r in
+    select c.conname
+    from pg_constraint c
+    where c.conrelid = 'public.service_purchases'::regclass
+      and c.contype = 'f'
+      and c.conkey = array[(select a.attnum from pg_attribute a where a.attrelid = 'public.service_purchases'::regclass and a.attname = 'service_id' and not a.attisdropped)]
+  loop
+    execute format('alter table public.service_purchases drop constraint %I', r.conname);
+  end loop;
+  alter table public.service_purchases add constraint service_purchases_service_id_fkey
+    foreign key (service_id) references public.marketplace_services(id) on delete cascade not valid;
+end $$;
+
+do $$
+begin
+  if exists (
+    select 1 from pg_constraint
+    where conname in (
+      'team_tasks_created_by_fkey', 'user_badges_awarded_by_fkey', 'certificates_issued_by_fkey',
+      'service_purchases_buyer_id_fkey', 'service_purchases_provider_id_fkey',
+      'community_events_host_id_fkey', 'reports_reporter_id_fkey', 'reports_reported_user_id_fkey',
+      'reports_project_id_fkey', 'reports_message_id_fkey'
+    ) and confdeltype <> 'n'
+  ) then
+    raise exception 'Profile reference delete actions were not reconciled';
+  end if;
+  if exists (select 1 from pg_constraint where conname = 'service_purchases_service_id_fkey' and confdeltype <> 'c') then
+    raise exception 'Service purchase delete action was not reconciled';
   end if;
 end $$;
 
@@ -245,6 +355,22 @@ returns uuid language sql stable security definer set search_path = ''
 as $$ select auth.uid(); $$;
 revoke all on function public.current_profile_id() from public, anon;
 grant execute on function public.current_profile_id() to anon, authenticated;
+
+create or replace function public.current_user_profile()
+returns jsonb language sql stable security definer set search_path = ''
+as $$
+  select jsonb_build_object(
+    'id', p.id,
+    'email', p.email,
+    'name', p.name,
+    'role', p.role,
+    'onboarding_completed', p.onboarding_completed
+  )
+  from public.profiles p
+  where p.id = auth.uid();
+$$;
+revoke all on function public.current_user_profile() from public, anon;
+grant execute on function public.current_user_profile() to authenticated;
 
 create or replace function public.is_super_admin()
 returns boolean language sql stable security definer set search_path = ''
@@ -272,7 +398,15 @@ as $$
   select exists (
     select 1 from public.team_members tm
     where tm.room_id = target_room and tm.user_id = auth.uid()
-  ) or public.is_project_founder_for_room(target_room);
+  ) or public.is_project_founder_for_room(target_room)
+    or exists (
+      select 1
+      from public.team_rooms tr
+      join public.connections c on c.project_id = tr.project_id
+      where tr.id = target_room
+        and c.status = 'ACCEPTED'
+        and auth.uid() in (c.requester_id, c.recipient_id)
+    );
 $$;
 revoke all on function public.can_access_team_room(uuid) from public, anon;
 grant execute on function public.can_access_team_room(uuid) to authenticated;
@@ -435,9 +569,10 @@ revoke all on function public.can_endorse_receiver(uuid, text) from public, anon
 grant execute on function public.can_endorse_receiver(uuid, text) to authenticated;
 
 create or replace function public.generate_certificate_code()
-returns text language sql security definer set search_path = ''
-as $$ select encode(public.gen_random_bytes(12), 'hex'); $$;
-revoke all on function public.generate_certificate_code() from public, anon, authenticated;
+returns text language sql security definer set search_path = pg_catalog, public, extensions
+as $$ select encode(gen_random_bytes(12), 'hex'); $$;
+revoke all on function public.generate_certificate_code() from public, anon;
+grant execute on function public.generate_certificate_code() to authenticated;
 
 create or replace function public.finalize_onboarding(
   p_role text,
@@ -681,6 +816,20 @@ revoke all on function public.handle_new_user() from public, anon, authenticated
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
 
+insert into public.profiles (id, email, name, role, username, onboarding_completed, created_at, updated_at)
+select
+  u.id,
+  coalesce(u.email, u.id::text || '@users.invalid'),
+  coalesce(nullif(trim(u.raw_user_meta_data ->> 'name'), ''), split_part(coalesce(u.email, u.id::text), '@', 1)),
+  case when u.raw_user_meta_data ->> 'role' in ('FOUNDER', 'STUDENT') then (u.raw_user_meta_data ->> 'role')::public.user_role else 'STUDENT'::public.user_role end,
+  lower(regexp_replace(split_part(coalesce(u.email, u.id::text), '@', 1), '[^a-z0-9_]', '_', 'g')) || '_' || substr(replace(u.id::text, '-', ''), 1, 6),
+  false,
+  coalesce(u.created_at, now()),
+  now()
+from auth.users u
+where not exists (select 1 from public.profiles p where p.id = u.id)
+on conflict (id) do nothing;
+
 create or replace function public.recompute_profile_reputation(p_profile_id uuid)
 returns void language plpgsql security definer set search_path = ''
 as $$
@@ -754,6 +903,41 @@ returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
   if auth.uid() is null then return new; end if;
+  if public.is_super_admin()
+    and new.pinned is distinct from old.pinned
+    and new.content is not distinct from old.content
+    and new.attachments is not distinct from old.attachments
+    and new.deleted_at is not distinct from old.deleted_at
+    and new.sender_id is not distinct from old.sender_id
+    and new.recipient_id is not distinct from old.recipient_id
+    and new.project_id is not distinct from old.project_id
+    and new.room_type is not distinct from old.room_type
+    and new.room_id is not distinct from old.room_id
+    and new.parent_id is not distinct from old.parent_id
+    and new.channel is not distinct from old.channel
+    and new.created_at is not distinct from old.created_at
+    and new.read_at is not distinct from old.read_at
+    and new.edited_at is not distinct from old.edited_at then
+    return new;
+  end if;
+  if new.room_type = 'TEAM'
+    and old.room_type = 'TEAM'
+    and public.can_manage_team_room(new.room_id)
+    and new.pinned is distinct from old.pinned
+    and new.content is not distinct from old.content
+    and new.attachments is not distinct from old.attachments
+    and new.deleted_at is not distinct from old.deleted_at
+    and new.sender_id is not distinct from old.sender_id
+    and new.recipient_id is not distinct from old.recipient_id
+    and new.project_id is not distinct from old.project_id
+    and new.room_id is not distinct from old.room_id
+    and new.parent_id is not distinct from old.parent_id
+    and new.channel is not distinct from old.channel
+    and new.created_at is not distinct from old.created_at
+    and new.read_at is not distinct from old.read_at
+    and new.edited_at is not distinct from old.edited_at then
+    return new;
+  end if;
   if old.sender_id = auth.uid() then
     if new.sender_id <> old.sender_id
       or new.recipient_id is distinct from old.recipient_id
@@ -766,21 +950,21 @@ begin
     end if;
     return new;
   end if;
-  if new.room_type = 'TEAM'
-    and public.can_manage_team_room(new.room_id)
-    and new.pinned is distinct from old.pinned
-    and new.content is not distinct from old.content
-    and new.attachments is not distinct from old.attachments
-    and new.deleted_at is not distinct from old.deleted_at then
-    return new;
-  end if;
-  if new.room_type = 'DIRECT'
+  if old.room_type = 'DIRECT'
+    and new.room_type = 'DIRECT'
     and new.recipient_id = auth.uid()
     and new.read_at is distinct from old.read_at
     and new.content is not distinct from old.content
     and new.attachments is not distinct from old.attachments
     and new.pinned is not distinct from old.pinned
-    and new.deleted_at is not distinct from old.deleted_at then
+    and new.deleted_at is not distinct from old.deleted_at
+    and new.sender_id is not distinct from old.sender_id
+    and new.project_id is not distinct from old.project_id
+    and new.room_id is not distinct from old.room_id
+    and new.parent_id is not distinct from old.parent_id
+    and new.channel is not distinct from old.channel
+    and new.created_at is not distinct from old.created_at
+    and new.edited_at is not distinct from old.edited_at then
     return new;
   end if;
   raise exception 'Message update is not permitted';
@@ -831,14 +1015,14 @@ do $$
 declare r record;
 begin
   for r in
-    select c.relname, p.polyname
+    select c.relname, p.polname
     from pg_policy p
     join pg_class c on c.oid = p.polrelid
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relkind in ('r', 'p')
   loop
-    execute format('drop policy if exists %I on public.%I', r.polyname, r.relname);
-  loop;
+    execute format('drop policy if exists %I on public.%I', r.polname, r.relname);
+  end loop;
 end $$;
 
 alter table public.profiles force row level security;
@@ -897,7 +1081,6 @@ create policy "messages update access" on public.messages for update to authenti
 create policy "reactions readable" on public.message_reactions for select to authenticated using (public.can_read_message(message_id));
 create policy "own reactions manage" on public.message_reactions for all to authenticated using (user_id = auth.uid() and public.can_read_message(message_id)) with check (user_id = auth.uid() and public.can_read_message(message_id));
 create policy "message edits read" on public.message_edits for select to authenticated using (public.can_read_message(message_id));
-create policy "message edits insert" on public.message_edits for insert to authenticated with check (editor_id = auth.uid() and exists (select 1 from public.messages m where m.id = message_id and m.sender_id = auth.uid()));
 create policy "team rooms read" on public.team_rooms for select to authenticated using (public.can_access_team_room(id));
 create policy "project founders manage team rooms" on public.team_rooms for all to authenticated using (exists (select 1 from public.projects p where p.id = project_id and p.founder_id = auth.uid())) with check (exists (select 1 from public.projects p where p.id = project_id and p.founder_id = auth.uid()));
 create policy "team members read" on public.team_members for select to authenticated using (public.can_access_team_room(room_id));
@@ -957,6 +1140,7 @@ create policy "own blocks manage" on public.user_blocks for all to authenticated
 create policy "own analytics insert" on public.analytics_events for insert to authenticated with check (user_id = auth.uid());
 create policy "own analytics read" on public.analytics_events for select to authenticated using (user_id = auth.uid() or public.is_super_admin());
 
+create index if not exists connections_status_idx on public.connections(status) where status = 'ACCEPTED';
 create index if not exists profiles_last_seen_idx on public.profiles(last_seen_at desc);
 create index if not exists messages_parent_idx on public.messages(parent_id, created_at desc);
 create index if not exists messages_direct_thread_idx on public.messages(project_id, recipient_id, sender_id, created_at desc) where room_type = 'DIRECT';
@@ -1066,22 +1250,53 @@ revoke all on all routines in schema public from anon, authenticated;
 alter default privileges in schema public revoke all on tables from anon, authenticated;
 alter default privileges in schema public revoke all on sequences from anon, authenticated;
 alter default privileges in schema public revoke all on routines from anon, authenticated;
+-- Supabase creates its own default privileges in the public schema, owned by the
+-- platform role `supabase_admin`. A project cannot ALTER DEFAULT PRIVILEGES FOR
+-- ROLE a role it is not a member of, so this loop can only clean up entries the
+-- session role owns. Platform-owned entries are reported by schema_contract as
+-- platform_default_privileges and are covered by the per-object privilege audit.
+do $$
+declare
+  acl_owner oid;
+begin
+  for acl_owner in
+    select distinct d.defaclrole
+    from pg_default_acl d
+    join pg_namespace n on n.oid = d.defaclnamespace
+    where n.nspname = 'public'
+      and d.defaclacl is not null
+      and pg_has_role(current_user, d.defaclrole, 'USAGE')
+      and (d.defaclacl::text like '%anon%' or d.defaclacl::text like '%authenticated%')
+  loop
+    begin
+      execute format('alter default privileges for role %I in schema public revoke all on tables from anon, authenticated', acl_owner::regrole::text);
+      execute format('alter default privileges for role %I in schema public revoke all on sequences from anon, authenticated', acl_owner::regrole::text);
+      execute format('alter default privileges for role %I in schema public revoke all on functions from anon, authenticated', acl_owner::regrole::text);
+      raise notice 'stripped default privileges for role %', acl_owner::regrole;
+    exception when others then
+      raise warning 'failed for role %: %', acl_owner::regrole, sqlerrm;
+    end;
+  end loop;
+end $$;
 grant usage on schema public to anon, authenticated, service_role;
 grant select on all tables in schema public to authenticated;
-grant select on public.profiles, public.projects, public.open_roles, public.marketplace_services, public.community_events, public.badge_definitions, public.user_badges, public.certificates, public.reviews, public.endorsements, public.universities, public.milestones to anon;
+grant select on public.projects, public.open_roles, public.marketplace_services, public.community_events, public.event_attendees, public.badge_definitions, public.user_badges, public.certificates, public.reviews, public.endorsements, public.milestones to anon;
+revoke select on public.profiles, public.universities from anon, authenticated;
+grant select (id, name, username, avatar_url, bio, college, education_year, linkedin_url, github_url, timezone, location, skills, proficiency, interests, portfolio_urls, resume_url, availability, engagement_preferences, role_preferences, preferred_role, company, goals, past_ventures, industry, is_cofounder, working_style, values_profile, average_rating, endorsement_count, verification_status, investor_visible, investor_pitch, role, email_opt_in, onboarding_completed, last_seen_at, created_at, updated_at) on public.profiles to authenticated;
+grant select (id, name, username, avatar_url, bio, skills, interests, portfolio_urls, availability, company, goals, industry, is_cofounder, average_rating, endorsement_count, investor_visible, investor_pitch, role, created_at) on public.profiles to anon;
+grant select (id, name, domain, logo_url, active, created_at) on public.universities to anon, authenticated;
 grant insert, update, delete on public.projects to authenticated;
 grant insert, update, delete on public.open_roles to authenticated;
 grant insert, update on public.applications to authenticated;
 grant insert, update on public.connections to authenticated;
 grant insert, update on public.messages to authenticated;
 grant insert, delete on public.message_reactions to authenticated;
-grant insert on public.message_edits to authenticated;
 grant insert, update, delete on public.team_rooms, public.team_members to authenticated;
 grant insert, update, delete on public.team_tasks to authenticated;
 grant insert, update, delete on public.meetings, public.meeting_attendees to authenticated;
 grant insert, update, delete on public.milestones to authenticated;
 grant insert, delete on public.bookmarks to authenticated;
-grant update on public.notifications to authenticated;
+grant update (is_read) on public.notifications to authenticated;
 grant insert on public.reviews, public.endorsements, public.user_badges, public.certificates to authenticated;
 grant insert, update on public.cofounder_profiles, public.match_actions to authenticated;
 grant insert on public.investor_inquiries to anon, authenticated;
@@ -1096,6 +1311,30 @@ grant usage, select on all sequences in schema public to authenticated;
 grant all on all tables in schema public to service_role;
 grant all on all sequences in schema public to service_role;
 grant all on all routines in schema public to service_role;
+grant execute on function public.current_profile_id() to anon, authenticated;
+grant execute on function public.current_user_profile() to authenticated;
+grant execute on function public.is_super_admin() to anon, authenticated;
+grant execute on function public.is_project_founder_for_room(uuid) to authenticated;
+grant execute on function public.can_access_team_room(uuid) to authenticated;
+grant execute on function public.can_manage_team_room(uuid) to authenticated;
+grant execute on function public.is_project_visible(uuid) to anon, authenticated;
+grant execute on function public.is_project_participant(uuid, uuid) to authenticated;
+grant execute on function public.can_join_team_room(uuid) to authenticated;
+grant execute on function public.can_message_direct(uuid, uuid) to authenticated;
+grant execute on function public.can_read_message(uuid) to authenticated;
+grant execute on function public.is_meeting_attendee(uuid, uuid) to authenticated;
+grant execute on function public.is_meeting_organizer(uuid, uuid) to authenticated;
+grant execute on function public.is_university_member(uuid, uuid) to authenticated;
+grant execute on function public.is_university_email(uuid) to authenticated;
+grant execute on function public.can_review_project(uuid, uuid) to authenticated;
+grant execute on function public.can_endorse_receiver(uuid, text) to authenticated;
+grant execute on function public.touch_current_profile() to authenticated;
+grant execute on function public.set_onboarding_role(text) to authenticated;
+grant execute on function public.edit_message(uuid, text) to authenticated;
+grant execute on function public.join_university(uuid) to authenticated;
+grant execute on function public.delete_own_account() to authenticated;
+grant execute on function public.finalize_onboarding(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text,jsonb,text,text,jsonb,text[],text,text,text[],text,text) to authenticated;
+grant execute on function public.generate_certificate_code() to authenticated;
 alter default privileges in schema public grant all on tables to service_role;
 alter default privileges in schema public grant all on sequences to service_role;
 alter default privileges in schema public grant all on routines to service_role;
@@ -1105,9 +1344,9 @@ returns jsonb language sql security definer set search_path = ''
 as $$
   select jsonb_build_object(
     'users', (select count(*) from public.profiles where not suspended),
-    'projects', (select count(*) from public.projects where status = 'OPEN'),
+    'projects', (select count(*) from public.projects where status = 'OPEN' and not terms_private),
     'matches', (select count(*) from public.connections where status = 'ACCEPTED'),
-    'activeProjects', (select count(*) from public.projects where status = 'OPEN' and created_at >= now() - interval '30 days')
+    'activeProjects', (select count(*) from public.projects where status = 'OPEN' and not terms_private and created_at >= now() - interval '30 days')
   );
 $$;
 revoke all on function public.get_public_stats() from public, anon, authenticated;
@@ -1153,14 +1392,105 @@ as $$
     'functions', (
       select jsonb_agg(x.function_name order by x.function_name)
       from (values
-        ('current_profile_id'), ('touch_current_profile'), ('finalize_onboarding'),
+        ('current_profile_id'), ('current_user_profile'), ('touch_current_profile'), ('finalize_onboarding'),
         ('set_onboarding_role'), ('edit_message'), ('can_access_team_room'),
-        ('delete_own_account'), ('get_public_stats'), ('schema_contract')
+        ('delete_own_account'), ('join_university'), ('get_public_stats'), ('schema_contract')
       ) as x(function_name)
       where exists (
         select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and p.proname = x.function_name
       )
+    ),
+    'authenticated_rpc_count', (
+      select count(*)
+      from (values
+        ('current_profile_id'), ('current_user_profile'), ('touch_current_profile'),
+        ('finalize_onboarding'), ('set_onboarding_role'), ('edit_message'),
+        ('join_university'), ('delete_own_account'), ('can_access_team_room'),
+        ('get_public_stats')
+      ) as x(function_name)
+      where exists (
+        select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = x.function_name
+          and has_function_privilege('authenticated', p.oid, 'execute')
+      )
+    ),
+    'fk_delete_actions', (
+      select jsonb_object_agg(x.conname, c.confdeltype = x.expected_action order by x.conname)
+      from (values
+        ('team_tasks_created_by_fkey', 'n'), ('user_badges_awarded_by_fkey', 'n'),
+        ('certificates_issued_by_fkey', 'n'), ('service_purchases_buyer_id_fkey', 'n'),
+        ('service_purchases_provider_id_fkey', 'n'), ('community_events_host_id_fkey', 'n'),
+        ('reports_reporter_id_fkey', 'n'), ('reports_reported_user_id_fkey', 'n'),
+        ('reports_project_id_fkey', 'n'), ('reports_message_id_fkey', 'n'),
+        ('service_purchases_service_id_fkey', 'c')
+      ) as x(conname, expected_action)
+      join pg_constraint c on c.conname = x.conname
+    ),
+    'unsafe_api_privileges', (
+      select count(*)
+      from information_schema.role_table_grants
+      where table_schema = 'public'
+        and (
+          (grantee = 'anon' and table_name <> 'investor_inquiries' and privilege_type <> 'SELECT')
+          or (grantee = 'authenticated' and table_name in ('profiles', 'message_edits', 'admin_audit_log') and privilege_type <> 'SELECT')
+          or (grantee in ('anon', 'authenticated') and table_name = 'universities' and privilege_type <> 'SELECT')
+        )
+    ) + (
+      select count(*)
+      from information_schema.column_privileges
+      where table_schema = 'public'
+        and grantee = 'authenticated'
+        and table_name = 'profiles'
+        and column_name = 'role'
+        and privilege_type = 'UPDATE'
+    ),
+    'certificate_default_privilege', (
+      select has_function_privilege(
+        'authenticated',
+        p.oid,
+        'execute'
+      )
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'generate_certificate_code'
+    ),
+    'unsafe_default_privileges', (
+      -- Only entries the project role is actually able to alter count as unsafe.
+      -- Supabase creates its own default privileges in public owned by
+      -- supabase_admin, and a project cannot ALTER DEFAULT PRIVILEGES FOR ROLE a
+      -- role it is not a member of. Those are reported separately below.
+      select count(*)
+      from pg_default_acl d
+      join pg_namespace n on n.oid = d.defaclnamespace
+      where n.nspname = 'public'
+        and d.defaclacl is not null
+        and pg_has_role(current_user, d.defaclrole, 'USAGE')
+        and (d.defaclacl::text like '%anon%' or d.defaclacl::text like '%authenticated%')
+    ),
+    'platform_default_privileges', (
+      select count(*)
+      from pg_default_acl d
+      join pg_namespace n on n.oid = d.defaclnamespace
+      where n.nspname = 'public'
+        and d.defaclacl is not null
+        and not pg_has_role(current_user, d.defaclrole, 'USAGE')
+        and (d.defaclacl::text like '%anon%' or d.defaclacl::text like '%authenticated%')
+    ),
+    'sensitive_column_privileges', (
+      select count(*)
+      from information_schema.column_privileges
+      where table_schema = 'public'
+        and grantee in ('anon', 'authenticated')
+        and table_name = 'profiles'
+        and column_name = 'email'
+    ) + (
+      select count(*)
+      from information_schema.column_privileges
+      where table_schema = 'public'
+        and grantee in ('anon', 'authenticated')
+        and table_name = 'universities'
+        and column_name = 'api_key'
     )
   );
 $$;

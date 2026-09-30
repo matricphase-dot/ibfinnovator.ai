@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import ConnectionAcceptedEmail from "@/lib/email/templates/ConnectionAcceptedEmail";
+import { enqueueNotification } from "@/lib/notifications";
 export async function PATCH(
   r: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -22,7 +23,7 @@ export async function PATCH(
       .single();
     if (error) throw error;
     if (p.status === "ACCEPTED") {
-      await supabase.from("notifications").insert({
+      await enqueueNotification({
         user_id: data.requester_id,
         type: "CONNECTION_ACCEPTED",
         message: "Your connection request was accepted",

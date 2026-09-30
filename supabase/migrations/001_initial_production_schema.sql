@@ -748,10 +748,10 @@ grant execute on function public.finalize_onboarding(text,text,text,text,text,te
 -- 7. STORAGE BUCKETS & STORAGE POLICIES
 -- -----------------------------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
-  ('avatars', 'avatars', true, 2097152, array['image/png', 'image/jpeg', 'image/webp', 'image/gif']),
-  ('resumes', 'resumes', false, 10485760, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
-  ('project-files', 'project-files', false, 26214400, null),
-  ('team-files', 'team-files', false, 26214400, null),
+  ('avatars', 'avatars', true, 2097152, array['image/png', 'image/jpeg', 'image/webp']),
+  ('resumes', 'resumes', false, 10485760, array['application/pdf']),
+  ('project-files', 'project-files', false, 10485760, array['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip']),
+  ('team-files', 'team-files', false, 10485760, array['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip']),
   ('service-portfolios', 'service-portfolios', true, 10485760, array['image/png', 'image/jpeg', 'image/webp'])
 on conflict(id) do update set
   public = excluded.public,
@@ -829,6 +829,20 @@ using(bucket_id = 'service-portfolios' and (storage.foldername(name))[1] = auth.
 -- -----------------------------------------------------------------------------
 -- 8. ROW LEVEL SECURITY POLICIES (ALL TABLES)
 -- -----------------------------------------------------------------------------
+do $$
+declare r record;
+begin
+  for r in
+    select c.relname, p.polname
+    from pg_policy p
+    join pg_class c on c.oid = p.polrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind in ('r', 'p')
+  loop
+    execute format('drop policy if exists %I on public.%I', r.polname, r.relname);
+  end loop;
+end $$;
+
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.open_roles enable row level security;
@@ -1098,19 +1112,34 @@ create index if not exists universities_domain_idx on public.universities(lower(
 -- 10. REALTIME SUBSCRIPTION CHANNELS
 -- -----------------------------------------------------------------------------
 do $$ begin
-  alter publication supabase_realtime add table public.messages, public.notifications, public.connections, public.milestones, public.team_tasks;
-exception when others then null; end $$;
+  alter publication supabase_realtime add table public.messages;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.notifications;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.connections;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.milestones;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter publication supabase_realtime add table public.team_tasks;
+exception when duplicate_object then null; end $$;
 
 -- -----------------------------------------------------------------------------
 -- 11. BASE SCHEMA GRANTS
 -- -----------------------------------------------------------------------------
 grant usage on schema public to anon, authenticated, service_role;
-grant all on all tables in schema public to anon, authenticated, service_role;
-grant all on all routines in schema public to anon, authenticated, service_role;
-grant all on all sequences in schema public to anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema public grant all on routines to anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+grant select on all tables in schema public to authenticated;
+grant select on public.projects, public.open_roles, public.marketplace_services, public.community_events, public.event_attendees, public.badge_definitions, public.user_badges, public.certificates, public.reviews, public.endorsements, public.milestones to anon;
+revoke select on public.profiles, public.universities from anon, authenticated;
+grant select on public.profiles to authenticated;
+grant select (id, name, username, avatar_url, bio, college, education_year, linkedin_url, github_url, timezone, location, skills, proficiency, interests, portfolio_urls, availability, engagement_preferences, role_preferences, preferred_role, company, goals, industry, is_cofounder, working_style, values_profile, average_rating, endorsement_count, verification_status, investor_visible, investor_pitch, role, created_at) on public.profiles to anon;
+grant select (id, name, domain, logo_url, active, created_at) on public.universities to anon, authenticated;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+grant all on all routines in schema public to service_role;
 
 -- =============================================================================
 -- END OF CANONICAL PRODUCTION DATABASE SETUP

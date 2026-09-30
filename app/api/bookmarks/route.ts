@@ -17,7 +17,7 @@ export async function GET() {
     const { supabase, user } = await requireUser();
     const { data, error } = await supabase
       .from("bookmarks")
-      .select("*,project:projects(*),profile:profiles!profile_id(*)")
+      .select("*,project:projects(*),profile:profiles!profile_id(id,name,username,avatar_url,bio,skills,company,availability,average_rating)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -44,12 +44,12 @@ export async function POST(r: Request) {
     const { data: inserted, error: insertError } = p.project_id
       ? await supabase
           .from("bookmarks")
-          .insert({ user_id: user.id, project_id: p.project_id })
+          .insert({ user_id: user.id, project_id: p.project_id, target_type: "PROJECT" })
           .select()
           .single()
       : await supabase
           .from("bookmarks")
-          .insert({ user_id: user.id, profile_id: p.profile_id! })
+          .insert({ user_id: user.id, profile_id: p.profile_id!, target_type: "TALENT" })
           .select()
           .single();
     if (!insertError) return NextResponse.json({ bookmarked: true, bookmark: inserted });

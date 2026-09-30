@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import CertificateIssuedEmail from "@/lib/email/templates/CertificateIssuedEmail";
+import { enqueueNotification } from "@/lib/notifications";
 export async function GET() {
   try {
     const { supabase, user } = await requireUser();
@@ -80,7 +81,7 @@ export async function POST(r: Request) {
         );
       throw error;
     }
-    await supabase.from("notifications").insert({
+    await enqueueNotification({
       user_id: p.receiver_id,
       type: "CERTIFICATE_ISSUED",
       message: "A verified experience certificate was issued to you",

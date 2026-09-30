@@ -34,24 +34,10 @@ export async function PATCH(
         { status: 409 },
       );
     if (p.action === "EDIT") {
-      const { error: historyError } = await supabase
-        .from("message_edits")
-        .insert({
-          message_id: id,
-          editor_id: user.id,
-          previous_content: m.content,
-        });
-      if (historyError) throw historyError;
-      const { data, error } = await supabase
-        .from("messages")
-        .update({
-          content: p.content,
-          edited_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("edit_message", {
+        p_message_id: id,
+        p_content: p.content,
+      });
       if (error) throw error;
       return NextResponse.json(data);
     }

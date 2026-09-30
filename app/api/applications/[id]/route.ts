@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { z } from "zod";
 import { dispatchEmail } from "@/lib/email/dispatch";
 import ApplicationStatusEmail from "@/lib/email/templates/ApplicationStatusEmail";
+import { enqueueNotification } from "@/lib/notifications";
 export async function PATCH(
   r: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -30,7 +31,7 @@ export async function PATCH(
       .select()
       .single();
     if (error) throw error;
-    await supabase.from("notifications").insert({
+    await enqueueNotification({
       user_id: application.student_id,
       type: "APPLICATION_UPDATE",
       message: `Your application for ${application.project.title} was ${status.toLowerCase()}`,
