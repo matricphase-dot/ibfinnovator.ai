@@ -98,11 +98,49 @@ function touchPresenceCookie(response: NextResponse, req: NextRequest) {
   return response;
 }
 
-// ROOT (Supabase-only): no Clerk. Refresh Supabase Auth session, then gate protected pages.
+// ROOT FIX (Phase 2): Subdomain Routing + Clean Auth Protection
 export default async function middleware(req: NextRequest) {
   const csrfRejection = rejectCrossSiteMutation(req);
   if (csrfRejection) return csrfRejection;
 
+  const host = (
+    req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    req.headers.get("host") ||
+    ""
+  ).toLowerCase();
+
+  const pathname = req.nextUrl.pathname;
+
+  // Detect whether request is targeting the authenticated App subdomain or local dev port
+  // In development, localhost / 127.0.0.1 acts as the app workspace, or app.localhost
+  const isAppSubdomain =
+    host.startsWith("app.") ||
+    host.includes("localhost") ||
+    host.includes("127.0.0.1");
+
+  // ---------------------------------------------------------------------------
+  // 1. Root Domain (innovator-global.com / public marketing & portfolio edge)
+  // ---------------------------------------------------------------------------
+  if (!isAppSubdomain) {
+    // Rewrite /@username to internal /portfolio/[username]
+    if (pathname.startsWith("/@")) {
+      const username = pathname.slice(2).split("/")[0];
+      if (username) {
+        const url = req.nextUrl.clone();
+        url.pathname = `/portfolio/${username}`;
+        return NextResponse.rewrite(url);
+      }
+    }
+
+    // Direct /portfolio/[username] access on root domain passes cleanly
+    if (pathname.startsWith("/portfolio/") || pathname === "/" || pathname === "/help") {
+      return NextResponse.next();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2. App Subdomain (app.innovator-global.com / authenticated workspace)
+  // ---------------------------------------------------------------------------
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let response = NextResponse.next({ request: req });
@@ -127,14 +165,16 @@ export default async function middleware(req: NextRequest) {
     userId = user?.id ?? null;
   }
 
-  if (!isProtectedPath(req.nextUrl.pathname)) return response;
+  // Handle protected app routes
+  if (!isProtectedPath(pathname)) return response;
   if (userId) return touchPresenceCookie(response, req);
 
+  // Unauthenticated user -> redirect to sign-in
   const redirect = req.nextUrl.clone();
   redirect.pathname = "/auth/signin";
   redirect.searchParams.set(
     "next",
-    sanitizeNext(`${req.nextUrl.pathname}${req.nextUrl.search}`),
+    sanitizeNext(`${pathname}${req.nextUrl.search}`),
   );
   return NextResponse.redirect(redirect);
 }

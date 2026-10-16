@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     const { supabase, user } = await requireUser();
     const parsed = z
-      .object({ role: z.enum(["FOUNDER", "STUDENT"]) })
+      .object({ role: z.enum(["FOUNDER", "STUDENT", "EMPLOYEE"]) })
       .safeParse(await req.json().catch(() => null));
     if (!parsed.success)
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
