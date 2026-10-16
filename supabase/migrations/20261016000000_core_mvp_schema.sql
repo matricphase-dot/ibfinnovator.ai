@@ -188,14 +188,48 @@ CREATE POLICY "Members can view workspace members" ON public.workspace_members
     EXISTS (SELECT 1 FROM public.workspace_members wm WHERE wm.workspace_id = workspace_members.workspace_id AND wm.user_id = auth.uid())
   );
 
+-- CYCLES RLS
+DROP POLICY IF EXISTS "Members can view cycles" ON public.cycles;
+CREATE POLICY "Members can view cycles" ON public.cycles
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.projects p
+      WHERE p.id = cycles.project_id
+        AND (
+          p.founder_id = auth.uid() OR
+          EXISTS (SELECT 1 FROM public.workspace_members wm WHERE wm.workspace_id = p.workspace_id AND wm.user_id = auth.uid()) OR
+          EXISTS (SELECT 1 FROM public.connections c WHERE c.project_id = p.id AND (c.requester_id = auth.uid() OR c.recipient_id = auth.uid()) AND c.status = 'ACCEPTED')
+        )
+    )
+  );
+
+DROP POLICY IF EXISTS "Members can manage cycles" ON public.cycles;
+CREATE POLICY "Members can manage cycles" ON public.cycles
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.projects p
+      WHERE p.id = cycles.project_id
+        AND (
+          p.founder_id = auth.uid() OR
+          EXISTS (SELECT 1 FROM public.workspace_members wm WHERE wm.workspace_id = p.workspace_id AND wm.user_id = auth.uid())
+        )
+    )
+  );
+
 -- ISSUES RLS
 DROP POLICY IF EXISTS "Workspace members can view issues" ON public.issues;
 CREATE POLICY "Workspace members can view issues" ON public.issues
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.projects p
-      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
-      WHERE p.id = issues.project_id AND wm.user_id = auth.uid()
+      WHERE p.id = issues.project_id
+        AND (
+          p.founder_id = auth.uid() OR
+          issues.created_by = auth.uid() OR
+          issues.assignee_id = auth.uid() OR
+          EXISTS (SELECT 1 FROM public.workspace_members wm WHERE wm.workspace_id = p.workspace_id AND wm.user_id = auth.uid()) OR
+          EXISTS (SELECT 1 FROM public.connections c WHERE c.project_id = p.id AND (c.requester_id = auth.uid() OR c.recipient_id = auth.uid()) AND c.status = 'ACCEPTED')
+        )
     )
   );
 
@@ -204,8 +238,13 @@ CREATE POLICY "Workspace members can create and update issues" ON public.issues
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.projects p
-      JOIN public.workspace_members wm ON wm.workspace_id = p.workspace_id
-      WHERE p.id = issues.project_id AND wm.user_id = auth.uid()
+      WHERE p.id = issues.project_id
+        AND (
+          p.founder_id = auth.uid() OR
+          issues.created_by = auth.uid() OR
+          EXISTS (SELECT 1 FROM public.workspace_members wm WHERE wm.workspace_id = p.workspace_id AND wm.user_id = auth.uid()) OR
+          EXISTS (SELECT 1 FROM public.connections c WHERE c.project_id = p.id AND (c.requester_id = auth.uid() OR c.recipient_id = auth.uid()) AND c.status = 'ACCEPTED')
+        )
     )
   );
 

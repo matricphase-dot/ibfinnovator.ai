@@ -263,12 +263,15 @@ export default function Detail() {
               </div>
               {isOwner ? (
                 <div className="p-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[.05] text-center">
-                  <p className="text-xs text-cyan-300 font-bold">
-                    THIS IS YOUR PROJECT
-                  </p>
+                  <Link
+                    href={`/projects/${id}/board`}
+                    className="btn btn-primary w-full mt-3 flex items-center justify-center gap-2"
+                  >
+                    Open PM Board
+                  </Link>
                   <Link
                     href="/dashboard"
-                    className="btn btn-primary w-full mt-3"
+                    className="btn btn-secondary w-full mt-2"
                   >
                     Manage from dashboard
                   </Link>
@@ -277,6 +280,18 @@ export default function Detail() {
                       No accepted collaborators yet
                     </p>
                   )}
+                </div>
+              ) : hasAccepted ? (
+                <div className="p-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[.05] text-center space-y-2">
+                  <span className="pill bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs">
+                    Team Member
+                  </span>
+                  <Link
+                    href={`/projects/${id}/board`}
+                    className="btn btn-primary w-full mt-2 flex items-center justify-center gap-2"
+                  >
+                    Open PM Board
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-2">
