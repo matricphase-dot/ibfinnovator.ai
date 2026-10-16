@@ -29,7 +29,6 @@ export async function GET() {
       "meetings",
       "user_badges",
       "certificates",
-      "match_actions",
     ];
 
     const entries = await Promise.all(
@@ -43,7 +42,7 @@ export async function GET() {
           q = q.eq("founder_id", user.id);
         } else if (table === "applications") {
           q = q.eq("student_id", user.id);
-        } else if (["bookmarks", "notifications", "match_actions"].includes(table)) {
+        } else if (["bookmarks", "notifications"].includes(table)) {
           q = q.eq("user_id", user.id);
         } else if (table === "messages") {
           q = q.eq("sender_id", user.id);
