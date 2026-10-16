@@ -42,11 +42,8 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
             <Link className="hover:text-cyan-300 transition" href="/projects">
               Explore Projects
             </Link>
-            <Link className="hover:text-cyan-300 transition" href="/matches">
-              Find Talent
-            </Link>
-            <Link className="hover:text-cyan-300 transition" href="/investors">
-              For Investors
+            <Link className="hover:text-cyan-300 transition" href="/dashboard">
+              Workspace
             </Link>
             <a className="hover:text-cyan-300 transition" href="/#how">
               How It Works
@@ -142,16 +139,9 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
           <Link
             onClick={() => setOpen(false)}
             className="p-3 rounded-lg hover:bg-white/5"
-            href="/matches"
+            href="/dashboard"
           >
-            Find Talent
-          </Link>
-          <Link
-            onClick={() => setOpen(false)}
-            className="p-3 rounded-lg hover:bg-white/5"
-            href="/investors"
-          >
-            For Investors
+            Workspace
           </Link>
           <a
             onClick={() => setOpen(false)}

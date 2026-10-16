@@ -10,10 +10,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import EndorseSkillButton from "./EndorseSkillButton";
-import LeaveReviewModal from "./LeaveReviewModal";
-import BadgeGrid from "./BadgeGrid";
-import CertificateCard from "./CertificateCard";
 export default function ProfileView({
   userId,
   own = false,
@@ -100,9 +96,7 @@ export default function ProfileView({
                 <Link href="/settings" className="btn btn-primary">
                   Edit Profile
                 </Link>
-              ) : (
-                <LeaveReviewModal userId={p.id} onSuccess={load} />
-              )}
+              ) : null}
             </div>
           </div>
           <div className="mt-6">
@@ -117,7 +111,7 @@ export default function ProfileView({
               <p className="text-cyan-300 text-sm mt-1">@{p.username}</p>
             )}
             <p className="text-slate-400 font-semibold mt-1">
-              {p.company || "IBF member"}
+              {p.company || "Innovator member"}
             </p>
             <p className="text-sm text-slate-500 flex gap-2 mt-3">
               <MapPin size={16} />
@@ -140,12 +134,6 @@ export default function ProfileView({
                         key={skill}
                       >
                         {skill}
-                        <EndorseSkillButton
-                          receiverId={p.id}
-                          skill={skill}
-                          initialCount={counts[skill] || 0}
-                          disabled={isOwn}
-                        />
                       </span>
                     ))
                   ) : (
@@ -173,76 +161,15 @@ export default function ProfileView({
                   <Empty text="No portfolio links yet." />
                 )}
               </Section>
-              <Section title="Experience badges">
-                <BadgeGrid badges={p.badges || []} />
-              </Section>
             </main>
             <aside className="space-y-5">
               <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <p className="text-xs font-bold text-slate-500">
-                  IBF REPUTATION
+                  INNOVATORS MEMBER
                 </p>
-                <div className="flex items-center mt-3">
-                  <b className="text-3xl">
-                    {p.average_rating?.toFixed?.(1) || "—"}
-                  </b>
-                  <div className="flex text-amber-400 ml-3">
-                    {[1, 2, 3, 4, 5].map((x) => (
-                      <Star
-                        key={x}
-                        size={15}
-                        fill={p.average_rating >= x ? "currentColor" : "none"}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  {p.reviews?.length || 0} reviews · {p.endorsement_count || 0}{" "}
-                  endorsements
+                <p className="text-sm text-slate-600 mt-2">
+                  Verified member of the Innovators startup ecosystem.
                 </p>
-              </div>
-              <div>
-                <h2 className="font-extrabold mb-3">Certificates</h2>
-                {p.certificates?.length ? (
-                  <div className="space-y-3">
-                    {p.certificates.map((c: any) => (
-                      <CertificateCard certificate={c} key={c.id} />
-                    ))}
-                  </div>
-                ) : (
-                  <Empty text="No certificates issued yet." />
-                )}
-              </div>
-              <div>
-                <h2 className="font-extrabold mb-3">Reviews</h2>
-                {p.reviews?.length ? (
-                  <div className="space-y-3">
-                    {p.reviews.map((r: any) => (
-                      <div
-                        className="bg-white border border-slate-200 rounded-xl p-4"
-                        key={r.id}
-                      >
-                        <div className="flex text-amber-300">
-                          {[1, 2, 3, 4, 5].map((x) => (
-                            <Star
-                              size={12}
-                              key={x}
-                              fill={x <= r.rating ? "currentColor" : "none"}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-sm text-slate-400 mt-2">
-                          {r.comment}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-2">
-                          {r.project?.title} · {r.reviewer?.name}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <Empty text="No reviews received yet." />
-                )}
               </div>
             </aside>
           </div>

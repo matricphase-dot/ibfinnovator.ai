@@ -26,18 +26,9 @@ import {
 } from "lucide-react";
 const links = [
   [LayoutDashboard, "Overview", "/dashboard"],
-  [Sparkles, "AI Matches", "/matches"],
   [FolderKanban, "Projects", "/projects"],
-  [FileText, "Applications", "/applications"],
-  [HeartHandshake, "Co-founder mode", "/cofounder-matches"],
-  [Award, "Credentials", "/credentials"],
-  [Store, "Marketplace", "/marketplace"],
-  [Inbox, "Service inquiries", "/marketplace/inquiries"],
-  [CalendarRange, "Community events", "/events"],
-  [GraduationCap, "University portal", "/university"],
   [MessagesSquare, "Messages", "/chat/general"],
   [Users, "Team rooms", "/team"],
-  [Bookmark, "Bookmarks", "/bookmarks"],
   [CalendarDays, "Meetings", "/meetings"],
   [BarChart3, "Analytics", "/analytics"],
 ];
@@ -67,11 +58,11 @@ export default function Sidebar() {
         </div>
       </div>
       <Link
-        href={founder ? "/projects/new" : "/matches"}
+        href={founder ? "/projects/new" : "/projects"}
         className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-3 py-2.5 text-xs font-black text-slate-950 hover:bg-cyan-200 transition"
       >
-        {founder ? <PlusCircle size={16} /> : <Sparkles size={16} />}{" "}
-        {founder ? "Submit project" : "Find matched projects"}
+        {founder ? <PlusCircle size={16} /> : <FolderKanban size={16} />}{" "}
+        {founder ? "Create project" : "Explore projects"}
       </Link>
       <div className="space-y-1">
         {links.map(([I, label, href]: any) => {

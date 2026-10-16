@@ -20,8 +20,6 @@ import toast from "react-hot-toast";
 import ApplyToProject from "@/components/ApplyToProject";
 import FileUploader from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
-import AwardBadgeModal from "@/components/AwardBadgeModal";
-import IssueCertificateModal from "@/components/IssueCertificateModal";
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<any>(null),
@@ -274,13 +272,6 @@ export default function Detail() {
                   >
                     Manage from dashboard
                   </Link>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <AwardBadgeModal projectId={id} disabled={!hasAccepted} />
-                    <IssueCertificateModal
-                      projectId={id}
-                      disabled={!hasAccepted}
-                    />
-                  </div>
                   {!hasAccepted && (
                     <p className="text-[10px] text-slate-500 mt-2">
                       No accepted collaborators yet

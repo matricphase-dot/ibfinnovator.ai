@@ -7,9 +7,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const fixed: MetadataRoute.Sitemap = [
     "",
     "/projects",
-    "/investors",
-    "/marketplace",
-    "/events",
     "/help",
   ].map((path, i) => ({
     url: `${base}${path}`,

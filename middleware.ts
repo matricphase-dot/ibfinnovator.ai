@@ -60,8 +60,6 @@ function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
 
 const PROTECTED = [
   "/dashboard",
-  "/matches",
-  "/bookmarks",
   "/profile",
   "/settings",
   "/chat",
@@ -69,13 +67,9 @@ const PROTECTED = [
   "/meetings",
   "/analytics",
   "/notifications",
-  "/cofounder-matches",
-  "/credentials",
   "/applications",
   "/auth/complete-onboarding",
   "/auth/choose-role",
-  "/marketplace/inquiries",
-  "/university",
   "/projects/new",
 ];
 
