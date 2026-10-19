@@ -142,6 +142,9 @@ server {
     listen [::]:80;
     server_name innovators-global.com www.innovators-global.com app.innovators-global.com;
 
+    # Large client header buffers (for large browser cookies)
+    large_client_header_buffers 4 64k;
+
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -207,6 +210,11 @@ server {
         proxy_read_timeout 120s;
         proxy_connect_timeout 30s;
         proxy_send_timeout 120s;
+
+        # Upstream header & buffer limits (prevents 502 Bad Gateway on large Next.js headers/cookies)
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
 
         # WebSocket support (for Supabase Realtime)
         proxy_buffering off;
