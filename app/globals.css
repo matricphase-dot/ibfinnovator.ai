@@ -237,27 +237,46 @@ button:disabled {
 }
 
 .sidebar-link:hover,
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.15s ease;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
 .sidebar-link.active {
-  background: var(--surface);
-  color: var(--ink);
+  background: rgba(0, 245, 212, 0.1);
+  color: #00f5d4;
+  border: 1px solid rgba(0, 245, 212, 0.2);
 }
 
 .app-main {
   min-height: calc(100vh - 64px);
-  background: var(--base);
-  color: var(--ink);
+  background: #080c14;
+  color: #f8fafc;
 }
 
 .app-main article {
-  border-color: var(--hairline);
+  background: #0d1424;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .app-main input,
 .app-main textarea,
 .app-main select {
-  background: var(--base);
-  color: var(--ink);
-  border-color: var(--hairline);
+  background: #0e1626;
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .editorial-wrap {

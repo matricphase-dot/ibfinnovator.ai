@@ -1,377 +1,321 @@
 "use client";
+
+import React, { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
-import ProjectCard from "@/components/ProjectCard";
-import Link from "next/link";
+import { ProjectManagementWorkspace } from "@/components/pm/pm-workspace";
 import {
-  ArrowRight,
-  Bookmark,
-  BriefcaseBusiness,
-  Loader2,
-  MessageSquare,
+  FolderKanban,
   Plus,
-  Star,
-  Users,
+  Loader2,
+  Sparkles,
+  ChevronDown,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
-const mapProject = (x: any, match?: any) => ({
-  id: x.id,
-  title: x.title,
-  desc: x.description,
-  domain: x.domain || "Startup",
-  stage: x.stage || "IDEA",
-  match: match?.score || 0,
-  skills: x.required_skills || [],
-  founder: x.founder?.name || "IBF Founder",
-  initials: (x.title || "IB").slice(0, 2),
-  color: "#00f5d4",
-  commit: x.commitment_hours ? `${x.commitment_hours} hrs/wk` : "Flexible",
-  type: x.engagement_type || "Collaboration",
-});
+interface Project {
+  id: string;
+  title: string;
+  name?: string;
+  identifier?: string;
+  description?: string;
+  stage?: string;
+  domain?: string;
+  founder_id?: string;
+}
 
 export default function Dashboard() {
-  const [d, setD] = useState<any>(null),
-    [loading, setLoading] = useState(true),
-    [pendingId, setPendingId] = useState<string | null>(null);
-  async function load() {
-    setLoading(true);
-    const urls = [
-      "/api/profile",
-      "/api/projects",
-      "/api/connections",
-      "/api/notifications",
-      "/api/matches",
-      "/api/bookmarks",
-    ];
-    const [profile, projects, connections, notifications, matches, bookmarks] =
-      await Promise.all(
-        urls.map((u) =>
-          fetch(u, { cache: "no-store" })
-            .then(async (r) => (r.ok ? r.json() : null))
-            .catch(() => null),
-        ),
-      );
-    // ROOT FIX: expired session must redirect (was: blank 0s + wrong onboarding banner).
-    if (!profile?.id) {
-      window.location.assign("/auth/signin?next=/dashboard");
-      return;
-    }
-    setD({
-      profile: profile || {},
-      projects: projects?.projects || [],
-      connections: Array.isArray(connections) ? connections : [],
-      notifications: Array.isArray(notifications) ? notifications : [],
-      matches: matches?.matches || [],
-      bookmarks: Array.isArray(bookmarks) ? bookmarks : [],
-    });
-    setLoading(false);
-  }
+  const [profile, setProfile] = useState<any>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // New project modal state for empty accounts
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newIdentifier, setNewIdentifier] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
-    load();
-  }, []);
-  async function respond(id: string, status: "ACCEPTED" | "REJECTED") {
-    // ROOT FIX: per-row pending + optimistic guard (was: double Accept → 2nd 404 toast).
-    if (pendingId) return;
-    setPendingId(id);
-    try {
-      const r = await fetch(`/api/connections/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (r.ok) {
-        toast.success(`Request ${status.toLowerCase()}`);
-        await load();
-      } else {
-        const err = await r.json().catch(() => ({}));
-        toast.error(err?.error || "Could not update request");
+    async function loadWorkspace() {
+      setLoading(true);
+      try {
+        const [profileRes, projectsRes] = await Promise.all([
+          fetch("/api/profile", { cache: "no-store" }).catch(() => null),
+          fetch("/api/projects", { cache: "no-store" }).catch(() => null),
+        ]);
+
+        if (profileRes && profileRes.ok) {
+          const profileData = await profileRes.json().catch(() => null);
+          setProfile(profileData);
+        } else {
+          // If unauthenticated, redirect to signin
+          window.location.assign("/auth/signin?next=/dashboard");
+          return;
+        }
+
+        if (projectsRes && projectsRes.ok) {
+          const projectsData = await projectsRes.json().catch(() => null);
+          const list: Project[] = projectsData?.projects || [];
+          setProjects(list);
+          if (list.length > 0) {
+            setSelectedProjectId(list[0].id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load workspace data:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      toast.error("Network error — please retry");
+    }
+
+    loadWorkspace();
+  }, []);
+
+  async function handleCreateFirstProject(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const ident = (newIdentifier.trim() || newTitle.slice(0, 3)).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          description: newDescription.trim() || `Core engineering workspace for ${newTitle.trim()}.`,
+          required_skills: ["Engineering", "Architecture", "Design"],
+          domain: "Technology",
+          stage: "BUILDING",
+          identifier: ident || "INN",
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create project");
+      }
+
+      const createdProject = await res.json();
+      toast.success("Project created! Launching Plane workspace…");
+
+      // Seed starter Plane issues for the user
+      try {
+        await Promise.all([
+          fetch(`/api/projects/${createdProject.id}/issues`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "Welcome to Plane Workspace on Innovators.ai",
+              description: "Explore Kanban boards, high-density List views, Sprint cycles, and real-time collaboration.",
+              state: "in_progress",
+              priority: "high",
+            }),
+          }),
+          fetch(`/api/projects/${createdProject.id}/issues`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "Define milestone deliverables & roadmap",
+              description: "Break down the core venture milestones and invite team collaborators.",
+              state: "todo",
+              priority: "urgent",
+            }),
+          }),
+          fetch(`/api/projects/${createdProject.id}/issues`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "Configure team permissions & roles",
+              description: "Review permissions and assign issues to builders across your team.",
+              state: "backlog",
+              priority: "medium",
+            }),
+          }),
+        ]);
+      } catch {}
+
+      setProjects([createdProject, ...projects]);
+      setSelectedProjectId(createdProject.id);
+      setCreatingProject(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create project");
     } finally {
-      setPendingId(null);
+      setSubmitting(false);
     }
   }
-  if (loading)
+
+  const activeProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+
+  // 1. Shimmer Loading Skeleton
+  if (loading) {
     return (
       <AppShell>
-        <div className="min-h-[70vh] grid place-items-center">
-          <Loader2 className="animate-spin text-cyan-300" />
+        <div className="min-h-[calc(100vh-64px)] bg-[#080c14] p-6 flex flex-col gap-6">
+          {/* Top Bar Skeleton */}
+          <div className="h-14 bg-[#0d1424] border border-white/[0.06] rounded-2xl animate-pulse flex items-center px-6 justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/10" />
+              <div className="w-36 h-4 rounded-md bg-white/10" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-24 h-8 rounded-xl bg-white/10" />
+              <div className="w-28 h-8 rounded-xl bg-white/10" />
+            </div>
+          </div>
+
+          {/* 5 Kanban Columns Skeleton */}
+          <div className="grid grid-cols-5 gap-4 flex-1">
+            {[1, 2, 3, 4, 5].map((col) => (
+              <div
+                key={col}
+                className="bg-[#080d18] border border-white/[0.06] rounded-2xl p-4 flex flex-col gap-3 min-h-[500px]"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.04]">
+                  <div className="w-20 h-4 rounded bg-white/10" />
+                  <div className="w-6 h-4 rounded-full bg-white/5" />
+                </div>
+                <div className="h-24 bg-[#0e1626] border border-white/[0.06] rounded-xl animate-pulse" />
+                <div className="h-28 bg-[#0e1626] border border-white/[0.06] rounded-xl animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
       </AppShell>
     );
-  const p = d.profile,
-    founder = p.role === "FOUNDER" || p.role === "SUPER_ADMIN";
-  const own = d.projects.filter((x: any) => x.founder_id === p.id),
-    accepted = d.connections.filter((x: any) => x.status === "ACCEPTED"),
-    pending = d.connections.filter((x: any) => x.status === "PENDING");
-  const metrics = founder
-    ? [
-        [BriefcaseBusiness, "Your projects", own.length],
-        [Users, "Connections", accepted.length],
-        [MessageSquare, "Pending requests", pending.length],
-        [
-          Star,
-          "Open projects",
-          own.filter((x: any) => x.status === "OPEN").length,
-        ],
-      ]
-    : [
-        [
-          Star,
-          "Strong matches",
-          d.matches.filter((x: any) => x.match?.score >= 70).length,
-        ],
-        [Users, "Connections", accepted.length],
-        [MessageSquare, "Pending requests", pending.length],
-        [Bookmark, "Saved items", d.bookmarks.length],
-      ];
+  }
+
+  // 2. Empty State: No Projects Created Yet
+  if (!activeProject || projects.length === 0) {
+    return (
+      <AppShell>
+        <div className="min-h-[calc(100vh-64px)] bg-[#080c14] flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-[#0d1424] border border-white/[0.08] rounded-2xl p-8 shadow-2xl text-center">
+            <div className="w-14 h-14 rounded-2xl bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center mx-auto mb-5 shadow-[0_0_30px_rgba(0,245,212,0.15)]">
+              <FolderKanban size={28} />
+            </div>
+
+            <h2 className="text-xl font-black tracking-tight text-white">
+              Launch Your Plane Workspace
+            </h2>
+            <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+              Create your project to start tracking issues, sprint cycles, and milestone roadmaps with Plane.
+            </p>
+
+            <form onSubmit={handleCreateFirstProject} className="mt-6 text-left space-y-4">
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Project Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Innovator Engine"
+                  value={newTitle}
+                  onChange={(e) => {
+                    setNewTitle(e.target.value);
+                    if (!newIdentifier) {
+                      setNewIdentifier(e.target.value.slice(0, 3).toUpperCase());
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Identifier Prefix
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={5}
+                  placeholder="e.g. INN"
+                  value={newIdentifier}
+                  onChange={(e) => setNewIdentifier(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                  className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm font-mono text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Briefly describe what your venture is building..."
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting || !newTitle.trim()}
+                className="w-full py-3 bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black text-sm rounded-xl transition flex items-center justify-center gap-2 mt-4 shadow-lg disabled:opacity-50"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Initializing Workspace…
+                  </>
+                ) : (
+                  <>
+                    Create Project & Launch Board <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // 3. Active Plane.so Project Management Workspace
   return (
     <AppShell>
-      <div className="p-5 md:p-8 max-w-7xl mx-auto">
-        {!p.onboarding_completed && (
-          <div className="p-4 mb-6 rounded-2xl border border-amber-300/20 bg-amber-300/[.06] flex items-center gap-4">
-            <div>
-              <b className="text-amber-200">Finish your onboarding</b>
-              <p className="text-sm text-slate-500 mt-1">
-                Complete your role-specific profile to unlock accurate matches.
-              </p>
+      <div className="flex flex-col min-h-[calc(100vh-64px)] bg-[#080c14]">
+        {/* Project Switcher Bar if user has multiple projects */}
+        {projects.length > 1 && (
+          <div className="px-6 py-2 bg-[#090e1a] border-b border-white/[0.04] flex items-center gap-3">
+            <span className="text-[11px] font-mono text-slate-400">ACTIVE PROJECT:</span>
+            <div className="relative inline-flex items-center">
+              <select
+                value={activeProject.id}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className="appearance-none pl-3 pr-8 py-1 bg-[#0d1424] border border-white/[0.08] rounded-lg text-xs font-bold text-white hover:border-cyan-300/40 focus:outline-none cursor-pointer"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title || p.name} ({p.identifier || "INN"})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="pointer-events-none absolute right-2 text-slate-400" />
             </div>
             <Link
-              href="/auth/complete-onboarding"
-              className="btn btn-primary ml-auto"
+              href="/projects/new"
+              className="ml-auto text-[11px] font-semibold text-cyan-300 hover:underline flex items-center gap-1"
             >
-              Complete now
+              <Plus size={12} /> New Project
             </Link>
           </div>
         )}
-        <div className="flex flex-wrap items-end gap-4">
-          <div>
-            <p className="text-sm text-slate-500">
-              {new Date().toLocaleDateString(undefined, {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </p>
-            <h1 className="text-3xl font-black mt-1">
-              Welcome, {p.name?.split(" ")[0] || "Builder"} 👋
-            </h1>
-            <p className="text-slate-500 mt-2">
-              Your live {founder ? "founder" : "builder"} workspace and
-              collaboration activity.
-            </p>
-          </div>
-          <Link
-            href={founder ? "/projects/new" : "/matches"}
-            className="btn btn-primary ml-auto"
-          >
-            {founder ? <Plus size={17} /> : <Star size={17} />}{" "}
-            {founder ? "Submit project" : "Discover matches"}
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-8">
-          {metrics.map(([Icon, label, value]: any) => (
-            <div
-              className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start"
-              key={label}
-            >
-              <span className="w-10 h-10 bg-violet-50 text-violet-600 rounded-xl grid place-items-center">
-                <Icon size={19} />
-              </span>
-              <div className="ml-4">
-                <p className="text-xs text-slate-500 font-semibold">{label}</p>
-                <p className="text-2xl font-black mt-1">{value}</p>
-                <p className="text-[10px] text-cyan-300 mt-1">LIVE DATA</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid xl:grid-cols-[1fr_340px] gap-6 mt-7">
-          <section>
-            <div className="flex items-center mb-4">
-              <h2 className="font-extrabold text-lg">
-                {founder ? "Your projects" : "Top matches for you"}
-              </h2>
-              <Link
-                href={founder ? "/projects" : "/matches"}
-                className="ml-auto text-sm text-cyan-300 font-bold flex items-center gap-1"
-              >
-                View all <ArrowRight size={14} />
-              </Link>
-            </div>
-            {founder ? (
-              own.length ? (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {own.slice(0, 4).map((x: any) => (
-                    <ProjectCard p={mapProject(x)} key={x.id} />
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  title="No projects yet"
-                  text="Publish your first project to start discovering talent."
-                  href="/projects/new"
-                  action="Submit project"
-                />
-              )
-            ) : d.matches.length ? (
-              <div className="grid md:grid-cols-2 gap-4">
-                {d.matches.slice(0, 2).map((x: any) => (
-                  <ProjectCard p={mapProject(x, x.match)} key={x.id} />
-                ))}
-              </div>
-            ) : (
-              <Empty
-                title="No matches yet"
-                text="Add skills and interests, then check again when founders publish projects."
-                href="/settings"
-                action="Improve profile"
-              />
-            )}
-            <div className="flex items-center mt-8 mb-4">
-              <h2 className="font-extrabold text-lg">Connections</h2>
-              <span className="ml-auto text-xs text-slate-500">
-                {accepted.length} accepted
-              </span>
-            </div>
-            {d.connections.length ? (
-              <div className="space-y-3">
-                {d.connections.slice(0, 6).map((c: any) => (
-                  <ConnectionRow
-                    key={c.id}
-                    c={c}
-                    userId={p.id}
-                    respond={respond}
-                    pendingId={pendingId}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">
-                No connection activity yet.
-              </p>
-            )}
-          </section>
-          <aside>
-            <h2 className="font-extrabold text-lg mb-4">Recent activity</h2>
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-5">
-              {d.notifications.length ? (
-                d.notifications.slice(0, 7).map((n: any) => (
-                  <Link
-                    href={n.link || "/notifications"}
-                    className="flex gap-3"
-                    key={n.id}
-                  >
-                    <span className="shrink-0 w-8 h-8 rounded-full bg-violet-100 text-violet-700 grid place-items-center text-[10px] font-bold">
-                      IB
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold">
-                        {n.type.replaceAll("_", " ")}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-1">
-                        {n.message}
-                      </p>
-                    </div>
-                    <time className="ml-auto text-[9px] text-slate-600">
-                      {new Date(n.created_at).toLocaleDateString()}
-                    </time>
-                  </Link>
-                ))
-              ) : (
-                <p className="text-sm text-slate-500">No notifications yet.</p>
-              )}
-            </div>
-            <div className="mt-5 rounded-2xl p-5 border border-cyan-300/15 bg-cyan-300/[.05]">
-              <Star className="text-cyan-300" size={20} />
-              <b className="block mt-3">Improve match quality</b>
-              <p className="text-xs text-slate-500 mt-2 leading-5">
-                Complete skills, interests, availability and bio for accurate
-                recommendations.
-              </p>
-              <Link
-                href="/settings"
-                className="btn btn-primary mt-4 !py-2 text-xs"
-              >
-                Update profile
-              </Link>
-            </div>
-          </aside>
-        </div>
+
+        {/* 1:1 Plane Workspace Engine */}
+        <ProjectManagementWorkspace
+          projectId={activeProject.id}
+          projectName={activeProject.title || activeProject.name || "Innovator Project"}
+          projectIdentifier={activeProject.identifier || "INN"}
+          initialTab="board"
+        />
       </div>
     </AppShell>
-  );
-}
-function ConnectionRow({
-  c,
-  userId,
-  respond,
-  pendingId,
-}: {
-  c: any;
-  userId: string;
-  respond: (id: string, status: "ACCEPTED" | "REJECTED") => void;
-  pendingId: string | null;
-}) {
-  const incoming = c.recipient_id === userId,
-    person = incoming ? c.requester : c.recipient;
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center">
-      <span className="h-9 w-9 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center text-xs font-bold">
-        {person?.name?.slice(0, 2).toUpperCase() || "IB"}
-      </span>
-      <div className="ml-3">
-        <b className="text-sm">{person?.name || "IBF member"}</b>
-        <p className="text-xs text-slate-500 mt-1">
-          {c.project?.title || c.type} · {c.status}
-        </p>
-      </div>
-      {incoming && c.status === "PENDING" ? (
-        <div className="ml-auto flex gap-2">
-          <button
-            onClick={() => respond(c.id, "REJECTED")}
-            disabled={pendingId === c.id}
-            className="btn btn-secondary !py-2 text-xs disabled:opacity-50"
-          >
-            {pendingId === c.id ? "Working…" : "Decline"}
-          </button>
-          <button
-            onClick={() => respond(c.id, "ACCEPTED")}
-            disabled={pendingId === c.id}
-            className="btn btn-primary !py-2 text-xs disabled:opacity-50"
-          >
-            {pendingId === c.id ? "Working…" : "Accept"}
-          </button>
-        </div>
-      ) : (
-        <span className="ml-auto pill bg-cyan-300/10 text-cyan-300">
-          {c.status}
-        </span>
-      )}
-    </div>
-  );
-}
-function Empty({
-  title,
-  text,
-  href,
-  action,
-}: {
-  title: string;
-  text: string;
-  href: string;
-  action: string;
-}) {
-  return (
-    <div className="py-16 border border-dashed border-white/10 rounded-2xl text-center">
-      <BriefcaseBusiness className="mx-auto text-slate-600" />
-      <h3 className="font-bold mt-4">{title}</h3>
-      <p className="text-sm text-slate-500 mt-2">{text}</p>
-      <Link href={href} className="btn btn-primary mt-5">
-        {action}
-      </Link>
-    </div>
   );
 }
