@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
-const allowed = ["👍", "❤️", "🔥", "👏", "🚀"] as const;
+const emojiSchema = z.string().trim().min(1).max(10);
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -10,11 +10,11 @@ export async function POST(
     const { id } = await params,
       { supabase, user } = await requireUser();
     const { emoji } = z
-      .object({ emoji: z.enum(allowed) })
+      .object({ emoji: emojiSchema })
       .parse(await req.json());
     const { data: message } = await supabase
       .from("messages")
-      .select("id,sender_id,recipient_id,room_id,room_type")
+      .select("id,sender_id,recipient_id,room_id,room_type,channel_id")
       .eq("id", id)
       .maybeSingle();
     if (!message)
@@ -22,11 +22,11 @@ export async function POST(
         { error: "Message not found or unavailable" },
         { status: 404 },
       );
-    // ROOT FIX M4: same read-access gate as team reactions — no oracle.
     let canRead = false;
     if (message.sender_id === user.id || message.recipient_id === user.id)
       canRead = true;
-    else if (message.room_type === "GENERAL") canRead = true;
+    else if (message.room_type === "GENERAL" || message.channel_id)
+      canRead = true;
     else if (message.room_id) {
       const { data: access } = await supabase.rpc("can_access_team_room", {
         target_room: message.room_id,

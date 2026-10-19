@@ -19,6 +19,7 @@ import {
   Loader2,
   FolderKanban,
   Filter,
+  MessageSquare,
 } from "lucide-react";
 
 interface ProjectManagementWorkspaceProps {
@@ -289,8 +290,16 @@ export function ProjectManagementWorkspace({
           </div>
         </div>
 
-        {/* Primary Action Button */}
-        <div>
+        {/* Primary Action Buttons */}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/chat"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-800/80 hover:bg-slate-700/80 text-cyan-300 text-xs font-semibold rounded-xl border border-cyan-500/20 transition hover:scale-[1.02]"
+            title="Open Team Chat"
+          >
+            <MessageSquare size={14} />
+            Team Chat
+          </Link>
           <button
             onClick={() => openCreateModal("todo")}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-300 hover:bg-cyan-200 text-slate-950 text-xs font-bold rounded-xl transition shadow-sm"
