@@ -21,13 +21,16 @@ export default function SignUpPage() {
     setLoading(provider === "google" ? "google" : "linkedin");
     setError("");
     try {
-      const { error } = await getSupabaseBrowser().auth.signInWithOAuth({
+      const { data, error } = await getSupabaseBrowser().auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/choose-role")}`,
         },
       });
       if (error) throw error;
+      if (data?.url) {
+        window.location.assign(data.url);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "OAuth sign-up failed");
       setLoading(null);

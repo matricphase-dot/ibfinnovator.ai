@@ -43,13 +43,16 @@ export default function SignInPage() {
     setLoading(provider === "google" ? "google" : "linkedin");
     setError("");
     try {
-      const { error } = await getSupabaseBrowser().auth.signInWithOAuth({
+      const { data, error } = await getSupabaseBrowser().auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNext())}`,
         },
       });
       if (error) throw error;
+      if (data?.url) {
+        window.location.assign(data.url);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "OAuth sign-in failed");
       setLoading(null);
