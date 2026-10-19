@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 export { requireUser } from "@/lib/auth/require-user";
 
+import { getSharedCookieOptions } from "@/lib/auth/domain";
+
 /**
  * ROOT (Supabase-only): server Supabase client bound to request cookies.
  * Auth = Supabase Auth session (email / Google / LinkedIn-OIDC).
@@ -17,13 +19,15 @@ export async function createClient(): Promise<SupabaseClient> {
     );
   }
   const store = await cookies();
+  const sharedCookieOpts = getSharedCookieOptions();
   return createServerClient(url, key, {
+    cookieOptions: sharedCookieOpts,
     cookies: {
       getAll: () => store.getAll(),
       setAll(values) {
         try {
           values.forEach(({ name, value, options }) =>
-            store.set(name, value, options),
+            store.set(name, value, { ...sharedCookieOpts, ...options }),
           );
         } catch {
           // Called from Server Component (read-only): middleware refreshes instead.

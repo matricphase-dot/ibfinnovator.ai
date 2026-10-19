@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { CheckCircle2, Loader2, Mail } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { IS_PROD, APP_ORIGIN } from "@/lib/auth/domain";
 
 /**
  * ROOT (Supabase-only): email signup (verification link) + Google + LinkedIn (OIDC).
@@ -20,11 +21,12 @@ export default function SignUpPage() {
   async function oauth(provider: "google" | "linkedin_oidc") {
     setLoading(provider === "google" ? "google" : "linkedin");
     setError("");
+    const roleTarget = IS_PROD ? `${APP_ORIGIN}/auth/choose-role` : "/auth/choose-role";
     try {
       const { data, error } = await getSupabaseBrowser().auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/choose-role")}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(roleTarget)}`,
         },
       });
       if (error) throw error;
@@ -46,18 +48,19 @@ export default function SignUpPage() {
     const passwordVal = String(f.get("password") || "");
     const nameVal = String(f.get("name") || "").trim();
     setSubmittedEmail(emailVal);
+    const roleTarget = IS_PROD ? `${APP_ORIGIN}/auth/choose-role` : "/auth/choose-role";
     try {
       const { data, error } = await getSupabaseBrowser().auth.signUp({
         email: emailVal,
         password: passwordVal,
         options: {
           data: { name: nameVal },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/choose-role")}`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(roleTarget)}`,
         },
       });
       if (error) throw error;
       if (data?.session) {
-        window.location.assign("/auth/choose-role");
+        window.location.assign(roleTarget);
       } else {
         setSent(true);
       }

@@ -1,26 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-
-function sanitizeNext(raw: string | null): string {
-  if (!raw || typeof raw !== "string") return "/dashboard";
-  const t = raw.trim();
-  if (
-    !t.startsWith("/") ||
-    t.startsWith("//") ||
-    t.startsWith("/\\") ||
-    t.includes("\\") ||
-    t.includes("://") ||
-    /[\x00-\x1F\x7F]/.test(t) ||
-    /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t)
-  ) {
-    return "/dashboard";
-  }
-  return t;
-}
+import {
+  IS_PROD,
+  COOKIE_DOMAIN,
+  MARKETING_ORIGIN,
+  APP_ORIGIN,
+  sanitizeNext,
+  getSharedCookieOptions,
+} from "@/lib/auth/domain";
 
 function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
-  // ROOT FIX M7: edge-level CSRF gate for state-changing API calls.
-  // Safe methods pass; cross-site fetches and mismatched Origin/Referer fail closed.
   const method = req.method.toUpperCase();
   if (method === "GET" || method === "HEAD" || method === "OPTIONS")
     return null;
@@ -37,28 +26,43 @@ function rejectCrossSiteMutation(req: NextRequest): NextResponse | null {
   try {
     const originHost = new URL(
       origin.startsWith("http") ? origin : `https://${origin}`,
-    ).host.toLowerCase();
-    const expected = (
+    ).host.toLowerCase().split(":")[0];
+
+    // Whitelist production domains
+    if (
+      originHost === "innovators-global.com" ||
+      originHost === "www.innovators-global.com" ||
+      originHost === "app.innovators-global.com"
+    ) {
+      return null;
+    }
+
+    const hostHeader = (
       req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
       req.headers.get("host") ||
       ""
-    )
-      .toLowerCase()
-      .split(":")[0];
-    const actual = originHost.split(":")[0];
-    if (expected && actual !== expected) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-      if (!appUrl || actual !== new URL(appUrl).host.toLowerCase().split(":")[0]) {
-        return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
-      }
+    ).toLowerCase().split(":")[0];
+
+    if (
+      originHost === hostHeader ||
+      originHost === "localhost" ||
+      originHost === "127.0.0.1"
+    ) {
+      return null;
     }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl && originHost === new URL(appUrl).host.toLowerCase().split(":")[0]) {
+      return null;
+    }
+
+    return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
   } catch {
     return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
   }
-  return null;
 }
 
-const PROTECTED = [
+const PROTECTED_PREFIXES = [
   "/dashboard",
   "/profile",
   "/settings",
@@ -68,37 +72,35 @@ const PROTECTED = [
   "/analytics",
   "/notifications",
   "/applications",
+  "/bookmarks",
   "/auth/complete-onboarding",
   "/auth/choose-role",
   "/projects/new",
 ];
 
-function isProtectedPath(pathname: string) {
-  return PROTECTED.some(
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 }
 
-function touchPresenceCookie(response: NextResponse, req: NextRequest) {
-  const isProd = process.env.NODE_ENV === "production";
-  // ROOT FIX (hardening): __Host- prefix in prod binds cookie to host+secure+path.
-  // Dev over http cannot set Secure, so keep the plain name there.
-  const cookieName = isProd ? "__Host-ibf_seen" : "ibf_seen";
+function touchPresenceCookie(response: NextResponse, req: NextRequest): NextResponse {
+  const cookieName = "ibf_seen";
   const last = Number(req.cookies.get(cookieName)?.value || 0);
   const now = Date.now();
   if (now - last < 60000) return response;
 
   response.cookies.set(cookieName, String(now), {
     httpOnly: true,
-    secure: isProd,
+    secure: IS_PROD,
     sameSite: "lax",
     path: "/",
+    domain: COOKIE_DOMAIN,
     maxAge: 120,
   });
   return response;
 }
 
-// ROOT FIX (Phase 2): Subdomain Routing + Clean Auth Protection
 export default async function middleware(req: NextRequest) {
   const csrfRejection = rejectCrossSiteMutation(req);
   if (csrfRejection) return csrfRejection;
@@ -107,76 +109,169 @@ export default async function middleware(req: NextRequest) {
     req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
     req.headers.get("host") ||
     ""
-  ).toLowerCase();
+  ).toLowerCase().split(":")[0];
 
-  const pathname = req.nextUrl.pathname;
+  const { pathname, search } = req.nextUrl;
 
-  // Detect whether request is targeting the authenticated App subdomain or local dev port
-  // In development, localhost / 127.0.0.1 acts as the app workspace, or app.localhost
-  const isAppSubdomain =
-    host.startsWith("app.") ||
-    host.includes("localhost") ||
-    host.includes("127.0.0.1");
+  // Let API and static files pass through without page redirects
+  if (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
+  }
 
-  // ---------------------------------------------------------------------------
-  // 1. Root Domain (innovator-global.com / public marketing & portfolio edge)
-  // ---------------------------------------------------------------------------
-  if (!isAppSubdomain) {
-    // Rewrite /@username to internal /portfolio/[username]
-    if (pathname.startsWith("/@")) {
-      const username = pathname.slice(2).split("/")[0];
-      if (username) {
-        const url = req.nextUrl.clone();
-        url.pathname = `/portfolio/${username}`;
-        return NextResponse.rewrite(url);
-      }
-    }
-
-    // Direct /portfolio/[username] access on root domain passes cleanly
-    if (pathname.startsWith("/portfolio/") || pathname === "/" || pathname === "/help") {
-      return NextResponse.next();
+  // Handle /@username rewrite to /portfolio/[username]
+  if (pathname.startsWith("/@")) {
+    const username = pathname.slice(2).split("/")[0];
+    if (username) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/portfolio/${username}`;
+      return NextResponse.rewrite(url);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 2. App Subdomain (app.innovator-global.com / authenticated workspace)
-  // ---------------------------------------------------------------------------
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Determine domain
+  const isAppDomain = host.startsWith("app.");
+  const isMarketingDomain =
+    host === "innovators-global.com" ||
+    host === "www.innovators-global.com";
+
+  // Initialize Supabase client to check session
   let response = NextResponse.next({ request: req });
   let userId: string | null = null;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const sharedCookieOpts = getSharedCookieOptions();
 
   if (url && key) {
-    const client = createServerClient(url, key, {
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll: () => req.cookies.getAll(),
         setAll(items) {
           items.forEach(({ name, value }) => req.cookies.set(name, value));
           response = NextResponse.next({ request: req });
           items.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
+            response.cookies.set(name, value, {
+              ...options,
+              ...sharedCookieOpts,
+            }),
           );
         },
       },
+      cookieOptions: sharedCookieOpts,
     });
-    const {
-      data: { user },
-    } = await client.auth.getUser();
-    userId = user?.id ?? null;
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      userId = user?.id ?? null;
+    } catch {
+      userId = null;
+    }
   }
 
-  // Handle protected app routes
-  if (!isProtectedPath(pathname)) return response;
-  if (userId) return touchPresenceCookie(response, req);
+  // Helper to copy any refreshed cookies to a redirect response
+  function createRedirect(targetUrl: string | URL): NextResponse {
+    const redirectResponse = NextResponse.redirect(targetUrl);
+    response.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c.name, c.value, {
+        domain: COOKIE_DOMAIN,
+        path: "/",
+        sameSite: "lax",
+        secure: IS_PROD,
+      });
+    });
+    return redirectResponse;
+  }
 
-  // Unauthenticated user -> redirect to sign-in
-  const redirect = req.nextUrl.clone();
-  redirect.pathname = "/auth/signin";
-  redirect.searchParams.set(
-    "next",
-    sanitizeNext(`${pathname}${req.nextUrl.search}`),
-  );
-  return NextResponse.redirect(redirect);
+  // ---------------------------------------------------------------------------
+  // SCENARIO A: Request is on APP subdomain (app.innovators-global.com)
+  // ---------------------------------------------------------------------------
+  if (isAppDomain) {
+    // If NOT authenticated -> Redirect to signin on marketing apex
+    if (!userId) {
+      const targetPath = pathname === "/" ? "/dashboard" : `${pathname}${search}`;
+      const intendedDestination = `${APP_ORIGIN}${targetPath}`;
+      const signinUrl = new URL(`${MARKETING_ORIGIN}/auth/signin`);
+      signinUrl.searchParams.set("next", intendedDestination);
+      return createRedirect(signinUrl);
+    }
+
+    // Authenticated on app domain:
+    // If hitting root "/" on app -> go to /dashboard
+    if (pathname === "/") {
+      return createRedirect(new URL("/dashboard", req.url));
+    }
+
+    // If hitting auth pages on app -> go to /dashboard
+    if (pathname === "/auth/signin" || pathname === "/auth/signup") {
+      return createRedirect(new URL("/dashboard", req.url));
+    }
+
+    // Allow authenticated access to app routes and touch presence
+    return touchPresenceCookie(response, req);
+  }
+
+  // ---------------------------------------------------------------------------
+  // SCENARIO B: Request is on MARKETING apex domain (innovators-global.com)
+  // ---------------------------------------------------------------------------
+  if (isMarketingDomain) {
+    // 1. Auth pages (/auth/signin, /auth/signup)
+    if (pathname === "/auth/signin" || pathname === "/auth/signup") {
+      if (userId) {
+        // Already logged in! Redirect to target or /dashboard on app subdomain
+        const nextParam = req.nextUrl.searchParams.get("next");
+        const destination = sanitizeNext(nextParam);
+        return createRedirect(destination);
+      }
+      return response;
+    }
+
+    // 2. Auth callback / forgot / reset
+    if (pathname.startsWith("/auth/")) {
+      return response;
+    }
+
+    // 3. Workspace / Protected routes hit directly on marketing domain
+    if (isProtectedPath(pathname)) {
+      if (userId) {
+        // Authenticated -> move to app subdomain
+        return createRedirect(`${APP_ORIGIN}${pathname}${search}`);
+      } else {
+        // Unauthenticated -> redirect to signin on marketing domain with next param
+        const intendedDestination = `${APP_ORIGIN}${pathname}${search}`;
+        const signinUrl = new URL(`${MARKETING_ORIGIN}/auth/signin`);
+        signinUrl.searchParams.set("next", intendedDestination);
+        return createRedirect(signinUrl);
+      }
+    }
+
+    // 4. Public marketing routes (/ landing, /help, /portfolio, etc.)
+    return response;
+  }
+
+  // ---------------------------------------------------------------------------
+  // SCENARIO C: Local Development or Preview Environments (localhost / IP)
+  // ---------------------------------------------------------------------------
+  if (isProtectedPath(pathname)) {
+    if (!userId) {
+      const redirect = req.nextUrl.clone();
+      redirect.pathname = "/auth/signin";
+      redirect.searchParams.set("next", `${pathname}${search}`);
+      return createRedirect(redirect);
+    }
+    return touchPresenceCookie(response, req);
+  }
+
+  if (userId && (pathname === "/auth/signin" || pathname === "/auth/signup")) {
+    const nextParam = req.nextUrl.searchParams.get("next");
+    return createRedirect(sanitizeNext(nextParam));
+  }
+
+  return response;
 }
 
 export const config = {

@@ -5,21 +5,14 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/browser";
 
+import { sanitizeNext, DEFAULT_APP_HOME } from "@/lib/auth/domain";
+
 function getNext(): string {
   try {
     const raw = new URLSearchParams(window.location.search).get("next");
-    if (!raw) return "/dashboard";
-    const t = raw.trim();
-    if (
-      !t.startsWith("/") ||
-      t.startsWith("//") ||
-      t.includes("\\") ||
-      t.includes("://")
-    )
-      return "/dashboard";
-    return t;
+    return sanitizeNext(raw);
   } catch {
-    return "/dashboard";
+    return DEFAULT_APP_HOME;
   }
 }
 

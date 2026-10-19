@@ -1,23 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-
-function sanitizeNext(raw: string | null): string {
-  if (!raw || typeof raw !== "string") return "/dashboard";
-  const t = raw.trim();
-  if (
-    !t.startsWith("/") ||
-    t.startsWith("//") ||
-    t.startsWith("/\\") ||
-    t.includes("\\") ||
-    t.includes("://") ||
-    /[\x00-\x1F\x7F]/.test(t) ||
-    /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t)
-  ) {
-    return "/dashboard";
-  }
-  return t;
-}
+import { getSharedCookieOptions, sanitizeNext, IS_PROD, APP_ORIGIN } from "@/lib/auth/domain";
 
 /**
  * ROOT (Supabase-only): PKCE/OAuth code exchange.
@@ -42,19 +26,22 @@ export async function GET(request: Request) {
 
   if (code) {
     const store = await cookies();
+    const sharedCookieOpts = getSharedCookieOptions();
     const response = NextResponse.redirect(new URL(next, url.origin));
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions: sharedCookieOpts,
         cookies: {
           getAll: () => store.getAll(),
           setAll(values) {
             try {
               values.forEach(({ name, value, options }) => {
-                store.set(name, value, options);
-                response.cookies.set(name, value, options);
+                const merged = { ...sharedCookieOpts, ...options };
+                store.set(name, value, merged);
+                response.cookies.set(name, value, merged);
               });
             } catch {
               // Server component read-only fallback
@@ -96,8 +83,8 @@ export async function GET(request: Request) {
         // If newly created user landed on /dashboard without completing onboarding,
         // route them to role selection or onboarding wizard.
         if (profile && !profile.onboarding_completed) {
-          if (next === "/dashboard") {
-            next = "/auth/choose-role";
+          if (next.includes("/dashboard")) {
+            next = IS_PROD ? `${APP_ORIGIN}/auth/choose-role` : "/auth/choose-role";
           }
         }
       }

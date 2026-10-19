@@ -2,6 +2,8 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getSharedCookieOptions } from "@/lib/auth/domain";
+
 let client: SupabaseClient | null = null;
 
 /**
@@ -16,7 +18,11 @@ export function useSupabaseBrowser(): SupabaseClient {
       "Supabase browser client requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
     );
   }
-  if (!client) client = createBrowserClient(url, key);
+  if (!client) {
+    client = createBrowserClient(url, key, {
+      cookieOptions: getSharedCookieOptions(),
+    });
+  }
   return client;
 }
 

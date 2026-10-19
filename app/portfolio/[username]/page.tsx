@@ -68,7 +68,7 @@ export default async function PortfolioPage({ params }: PortfolioProps) {
           <span className="font-bold text-sm tracking-tight text-white">innovators.ai</span>
         </Link>
         <Link
-          href="https://app.innovator-global.com/auth/signup"
+          href="/auth/signup"
           className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-cyan-300/40 hover:text-cyan-300 transition"
         >
           Build your portfolio
