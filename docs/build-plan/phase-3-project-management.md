@@ -1,68 +1,76 @@
-# Phase 3: Project Management Engine (Plane Codebase Extraction & Refactor)
-> **Status:** ✅ **COMPLETED & VERIFIED** · Ponytail Strict: Battle-tested UI extracted from Plane, wired natively to Next.js & Supabase PostgreSQL with Realtime multi-user replication.  
-> **Source:** [https://github.com/makeplane/plane](https://github.com/makeplane/plane) (`apps/web` & `packages/ui`)  
-> **Strategy:** Take Plane's actual UI components (Kanban Board, Issue Cards, State Selectors, Priority Badges, Issue Modals) and adapt them to run natively inside our Next.js + Supabase architecture without Django/Python backend bloat.
+# Phase 3: Project Management Engine (1:1 Plane.so Clone Rebranded as IBF)
+
+> **Platform Target**: `app.innovators-global.com`  
+> **Source Baseline**: [makeplane/plane](https://github.com/makeplane/plane) (`apps/web` & `packages/ui`)  
+> **Brand Name**: **IBF** (Innovator Bridge Foundry)  
+> **Architecture**: Next.js 15 App Router + Supabase PostgreSQL + Realtime WebSockets  
+> **Full Phase Documentation**: See [`docs/ibf-plane-engine/`](../ibf-plane-engine/README.md) for individual phase specifications.
 
 ---
 
-## 1. What We Extract from `makeplane/plane`
+## 1. Executive Summary & Architecture
 
-Plane has polished, keyboard-first, Linear-grade project management UI. We port and refactor specific components directly into `src/components/plane/`:
+The IBF Project Management Engine delivers an authentic, 1:1 feature-complete clone of Plane.so, completely stripped of Django/Python backend bloat and re-engineered natively on Next.js 15 App Router and Supabase PostgreSQL.
 
-| Plane Component Path (`makeplane/plane`) | Refactored Innovators.ai Path | What it Provides | Adaptation / Refactor Needed |
-|---|---|---|---|
-| `packages/ui/src/board/` | `src/components/pm/board/` | Kanban Board, Columns, Column Headers, Drag/Drop columns | Replace Plane internal context with Supabase hooks / Zustand store |
-| `packages/ui/src/issue-card/` | `src/components/pm/issue-card.tsx` | Issue Card with sequence ID (INN-1), priority icons, assignee avatar, state pill | Connect to our `issues` schema |
-| `apps/web/core/components/issues/issue-modal/` | `src/components/pm/issue-modal.tsx` | Full issue creation / edit modal with Title, Description, State, Priority, Due date | Wire to `POST /api/projects/[id]/issues` |
-| `packages/ui/src/dropdowns/priority.tsx` | `src/components/pm/priority-select.tsx` | Priority picker with Plane SVG icons (`urgent`, `high`, `medium`, `low`, `none`) | Zero dependency, pure Radix UI / Tailwind |
-| `packages/ui/src/dropdowns/state.tsx` | `src/components/pm/state-select.tsx` | State picker (`backlog`, `todo`, `in_progress`, `done`, `canceled`) | Wire to our state enum |
-| `apps/web/core/components/cycles/` | `src/components/pm/cycles/` | Sprint/Cycle progress, active sprint countdown, backlog picker | Connect to our `cycles` table |
+All legacy cyber neon and beige paper backgrounds have been eliminated. The entire workspace operates on a dark precision canvas (`#080c14`, `#0d121f`, `#111a2e`) with `#00f5d4` cyan accents.
 
 ---
 
-## 2. Refactoring Process & Architecture (Django -> Supabase)
+## 2. Complete 6-Phase Specification Directory
 
-Plane uses a Python/Django REST API with MobX/SWR state management. We eliminate the Django layer entirely:
+The implementation is broken down into 6 comprehensive, file-by-file blueprints:
 
+| Phase | Blueprint Specification | Scope & Deliverables |
+| :--- | :--- | :--- |
+| **Phase 1** | [Phase 1: Database Schema & Migrations](../ibf-plane-engine/phase-1-database-schema.md) | PostgreSQL schema for `labels`, `modules`, `issue_comments`, `issue_activities`, `pages`, sub-issues (`parent_issue_id`), audit triggers, and Realtime publications. |
+| **Phase 2** | [Phase 2: Authentic Workspace Shell](../ibf-plane-engine/phase-2-workspace-shell.md) | Authentic Plane Workspace Sidebar, collapsible Project Tree, dynamic Topbar breadcrumbs, view switchers, and user profile footer. |
+| **Phase 3** | [Phase 3: The Complete Issue Experience](../ibf-plane-engine/phase-3-issue-experience.md) | 5-lane Kanban Board, Linear-grade high-density List View, and 720px Side-Peek Issue Drawer with Markdown description, checklist subtasks, and comments. |
+| **Phase 4** | [Phase 4: Sprints & Epics Engine](../ibf-plane-engine/phase-4-cycles-modules.md) | Sprints (Cycles) countdown clock & burndown velocity, interactive Backlog transfer tray, and Feature Modules (Epics) roadmaps. |
+| **Phase 5** | [Phase 5: Collaborative Pages & Cmd+K](../ibf-plane-engine/phase-5-pages-docs.md) | Notion-grade collaborative documentation editor (PRDs & Notes) with auto-save to Supabase, and global `Cmd+K` Command Palette. |
+| **Phase 6** | [Phase 6: Multi-User Realtime & Deploy](../ibf-plane-engine/phase-6-realtime-deploy.md) | Supabase Realtime WebSockets (<150ms sync), Nginx 128k proxy buffers to prevent 502 Bad Gateway, and EC2 PM2 cluster rollout. |
+
+---
+
+## 3. Plane to IBF Component Extraction & Mapping
+
+| Plane Component Path (`makeplane/plane`) | Refactored IBF Workspace Path | Feature / Component | Rebranding & Refactor |
+| :--- | :--- | :--- | :--- |
+| `packages/ui/src/sidebar/` | `components/ibf/layout/ibf-sidebar.tsx` | Workspace Sidebar | Rebrand: Plane Logo → **IBF Logo**; Project switcher |
+| `packages/ui/src/board/` | `components/ibf/board/kanban-board.tsx` | Kanban Board Engine | 5-lane board, smooth drag physics, inline card creation |
+| `packages/ui/src/list/` | `components/ibf/list/list-view.tsx` | Linear-grade List View | High-density table, keyboard navigation, inline cell edits |
+| `apps/web/core/components/issues/issue-detail/` | `components/ibf/issues/issue-drawer.tsx` | Side-Peek Issue Detail | Markdown editor, subtasks, activities, comments |
+| `apps/web/core/components/issues/issue-modal/` | `components/ibf/issues/issue-modal.tsx` | Quick Issue Creator | Keyboard shortcut `C`, auto-focus, smart defaults |
+| `apps/web/core/components/cycles/` | `components/ibf/cycles/cycles-view.tsx` | Sprint & Cycles Engine | Countdown timer, burndown chart, backlog transfer |
+| `apps/web/core/components/modules/` | `components/ibf/modules/modules-view.tsx` | Feature Modules / Epics | Lead time, progress bar, issue grouping |
+| `apps/web/core/components/pages/` | `components/ibf/pages/pages-view.tsx` | IBF Pages (Docs/PRDs) | Collaborative documentation editor |
+| `apps/web/core/components/command-palette/` | `components/ibf/command-palette.tsx` | Global `Cmd+K` Palette | Search issues, jump to project, create cycle |
+
+---
+
+## 4. UI Color Tokens (Plane 1:1 Dark Precision)
+
+```css
+:root {
+  --ibf-canvas: #080c14;            /* Main content area */
+  --ibf-sidebar: #0d121f;           /* Sidebar navigation */
+  --ibf-topbar: #0d1422;            /* Top navigation bar */
+  --ibf-surface: #111a2e;           /* Cards, dropdowns, panels */
+  --ibf-surface-hover: #16223b;     /* Interactive hover state */
+  --ibf-border-subtle: rgba(255, 255, 255, 0.06);
+  --ibf-brand: #00f5d4;             /* IBF Cyan Accent */
+  --ibf-text-primary: #f8fafc;
+  --ibf-text-secondary: #94a3b8;
+  --ibf-text-muted: #64748b;
+}
 ```
-[ Plane Original Stack ]
-Plane Frontend React ---> MobX Store ---> Django REST API ---> PostgreSQL
-                                     (Python Backend)
-
-[ Innovators.ai Refactored Stack ]
-Plane UI Components ---> Lightweight Zustand/React-Query ---> Next.js Server Actions / Supabase Client ---> Supabase PostgreSQL
-```
-
-### Key Refactor Steps:
-1. **Strip MobX / Custom Store Boilerplate:** Replace Plane's MobX stores with lightweight Zustand or standard React Server Actions + Supabase queries.
-2. **Preserve Plane's Visual Excellence & Keyboard Navigation:** Keep Plane's exact CSS/Tailwind design tokens, icon SVGs, smooth drag interactions, and `Cmd+K` palette patterns.
-3. **Connect to Supabase Schema:**
-   - Map Plane's `issue.sequence_id` to `INN-<id>`.
-   - Map Plane's priority values (`urgent`, `high`, `medium`, `low`, `none`) 1:1.
-   - Map Plane's state values (`backlog`, `unstarted`, `started`, `completed`, `cancelled`) to our `state` enum (`backlog`, `todo`, `in_progress`, `done`, `canceled`).
 
 ---
 
-## 3. Detailed Component Plan
+## 5. End-to-End Verification Gate
 
-### 3.1 Kanban Board (`src/app/projects/[id]/board/page.tsx`)
-- Adapted from Plane's `KanbanView`.
-- 5 lanes: Backlog, To Do, In Progress, Done, Canceled.
-- Drag-and-drop powered by `@hello-pangea/dnd` or `@dnd-kit` (already standard in Plane).
-- Instant optimistic UI update on drop, followed by `PATCH /api/issues/[id]`.
-
-### 3.2 List View (`src/app/projects/[id]/list/page.tsx`)
-- Adapted from Plane's `ListView`.
-- High-density table with inline state toggling, quick assignee selector, and keyboard navigation.
-
-### 3.3 Sprint / Cycle Management (`src/app/projects/[id]/cycles/page.tsx`)
-- Adapted from Plane's `CycleDetailView`.
-- Burndown/progress visualization (% issues completed).
-- Ability to move issues from Backlog into an active Cycle.
-
----
-
-## 4. Verification & Gate Checks
-- Test issue creation, update, and deletion using Plane's adapted components.
-- Verify zero runtime references to Plane's Django endpoints or legacy MobX dependencies.
-- Pass `npm run typecheck` and `npm run build` with clean bundle sizes.
+1. **Workspace Shell**: Navigating to `https://app.innovators-global.com/dashboard` loads the dark precision IBF workspace without infinite spinners.
+2. **Kanban & List**: Issues can be dragged across 5 lanes or triaged in high-density list view with instant optimistic UI.
+3. **Side-Peek Drawer**: Clicking an issue smoothly opens the 720px drawer with Markdown description, checklist subtasks, activity log, and comments.
+4. **Sprints & Epics**: Active sprints display live countdown clocks and burndown velocity; modules track delivery progress.
+5. **Pages & Cmd+K**: Notion-style docs auto-save to PostgreSQL; `Cmd+K` palette searches across all workspace entities.
+6. **Live Multi-User Sync**: Card movements and comments synchronize in real-time across multiple browsers over WebSockets.

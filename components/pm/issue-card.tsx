@@ -5,6 +5,8 @@ import { PriorityIcon, Priority } from "./priority-select";
 import { StateIcon, IssueState } from "./state-select";
 import { Calendar, User } from "lucide-react";
 
+import { Label, Module } from "@/types/database.types";
+
 export interface Issue {
   id: string;
   project_id: string;
@@ -14,6 +16,12 @@ export interface Issue {
   priority: Priority;
   state: IssueState;
   due_date?: string | null;
+  cycle_id?: string | null;
+  module_id?: string | null;
+  parent_issue_id?: string | null;
+  estimate_points?: number | null;
+  labels?: Label[];
+  module?: Module | null;
   assignee?: {
     id: string;
     name?: string | null;
@@ -21,6 +29,9 @@ export interface Issue {
     username?: string | null;
     avatar_url?: string | null;
   } | null;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
   project_identifier?: string;
 }
 
@@ -49,13 +60,44 @@ export function IssueCard({
         <span className="font-mono text-[11px] font-bold text-slate-400 group-hover:text-cyan-300 transition">
           {projectIdentifier}-{issue.sequence_id}
         </span>
-        <StateIcon state={issue.state} size={14} />
+        <div className="flex items-center gap-1.5">
+          {issue.estimate_points !== null && issue.estimate_points !== undefined && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/5 text-slate-300 border border-white/10">
+              {issue.estimate_points} pts
+            </span>
+          )}
+          <StateIcon state={issue.state} size={14} />
+        </div>
       </div>
 
       {/* Title */}
       <h3 className="text-xs font-semibold text-white leading-snug line-clamp-2">
         {issue.title}
       </h3>
+
+      {/* Labels & Module Tags */}
+      {((issue.labels && issue.labels.length > 0) || issue.module) && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {issue.module && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 truncate max-w-[130px]">
+              ⊡ {issue.module.name}
+            </span>
+          )}
+          {issue.labels?.map((label) => (
+            <span
+              key={label.id}
+              className="text-[10px] font-medium px-2 py-0.5 rounded-md border truncate max-w-[100px]"
+              style={{
+                backgroundColor: `${label.color}15`,
+                borderColor: `${label.color}35`,
+                color: label.color,
+              }}
+            >
+              {label.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Footer: Priority + Assignee + Due Date */}
       <div className="flex items-center justify-between pt-1 border-t border-white/[0.04] text-[11px] text-slate-400">

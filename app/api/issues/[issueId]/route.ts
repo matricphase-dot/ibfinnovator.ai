@@ -8,8 +8,12 @@ const updateIssueSchema = z.object({
   priority: z.enum(["urgent", "high", "medium", "low", "none"]).optional(),
   state: z.enum(["backlog", "todo", "in_progress", "done", "canceled"]).optional(),
   cycle_id: z.string().uuid().optional().nullable(),
+  module_id: z.string().uuid().optional().nullable(),
+  parent_issue_id: z.string().uuid().optional().nullable(),
+  estimate_points: z.number().int().min(0).max(100).optional().nullable(),
   assignee_id: z.string().uuid().optional().nullable(),
   due_date: z.string().optional().nullable(),
+  label_ids: z.array(z.string().uuid()).optional(),
 });
 
 export async function GET(
@@ -26,13 +30,25 @@ export async function GET(
         *,
         assignee:profiles!assignee_id(id, name, full_name, username, avatar_url),
         created_by_profile:profiles!created_by(id, name, full_name, username, avatar_url),
-        cycle:cycles!cycle_id(id, name, status)
+        cycle:cycles!cycle_id(id, name, status),
+        module:modules!module_id(id, name, status),
+        issue_labels(label:labels(id, name, color, description)),
+        subtasks:issues!parent_issue_id(id, sequence_id, title, state, priority, assignee:profiles!assignee_id(id, name, full_name, avatar_url))
       `)
       .eq("id", issueId)
       .single();
 
     if (error) throw error;
-    return NextResponse.json(data);
+
+    // Flatten labels for convenience
+    const labels = (data.issue_labels || [])
+      .map((il: any) => il.label)
+      .filter(Boolean);
+
+    return NextResponse.json({
+      ...data,
+      labels,
+    });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Issue not found" },
@@ -58,10 +74,12 @@ export async function PATCH(
       );
     }
 
+    const { label_ids, ...updateFields } = parsed.data;
+
     const { data, error } = await supabase
       .from("issues")
       .update({
-        ...parsed.data,
+        ...updateFields,
         updated_at: new Date().toISOString(),
       })
       .eq("id", issueId)
@@ -69,11 +87,24 @@ export async function PATCH(
         *,
         assignee:profiles!assignee_id(id, name, full_name, username, avatar_url),
         created_by_profile:profiles!created_by(id, name, full_name, username, avatar_url),
-        cycle:cycles!cycle_id(id, name, status)
+        cycle:cycles!cycle_id(id, name, status),
+        module:modules!module_id(id, name, status),
+        issue_labels(label:labels(id, name, color, description))
       `)
       .single();
 
     if (error) throw error;
+
+    // If label_ids was explicitly provided, replace issue labels
+    if (label_ids !== undefined) {
+      await supabase.from("issue_labels").delete().eq("issue_id", issueId);
+      if (label_ids.length > 0) {
+        await supabase.from("issue_labels").insert(
+          label_ids.map((lid) => ({ issue_id: issueId, label_id: lid }))
+        );
+      }
+    }
+
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json(

@@ -9,11 +9,16 @@ import { IssueModal } from "@/components/pm/issue-modal";
 import { Issue } from "@/components/pm/issue-card";
 import { IssueState } from "@/components/pm/state-select";
 import { Priority } from "@/components/pm/priority-select";
+import { IssueDrawer } from "@/components/ibf/issues/issue-drawer";
+import { ModulesView } from "@/components/ibf/modules/modules-view";
+import { PagesView } from "@/components/ibf/pages/pages-view";
 import { useSupabaseBrowser } from "@/lib/supabase/browser";
 import {
   Kanban,
   List,
   RotateCw,
+  Layers,
+  FileText,
   Plus,
   ArrowLeft,
   Loader2,
@@ -22,11 +27,13 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+export type PMTab = "board" | "list" | "cycles" | "modules" | "pages";
+
 interface ProjectManagementWorkspaceProps {
   projectId: string;
   projectName: string;
   projectIdentifier: string;
-  initialTab?: "board" | "list" | "cycles";
+  initialTab?: PMTab;
 }
 
 export function ProjectManagementWorkspace({
@@ -35,16 +42,20 @@ export function ProjectManagementWorkspace({
   projectIdentifier = "INN",
   initialTab = "board",
 }: ProjectManagementWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState<"board" | "list" | "cycles">(initialTab);
+  const [activeTab, setActiveTab] = useState<PMTab>(initialTab);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Quick creator modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [modalDefaultState, setModalDefaultState] = useState<IssueState>("todo");
+
+  // 720px Side-Peek drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerIssue, setDrawerIssue] = useState<Issue | null>(null);
 
   const supabase = useSupabaseBrowser();
 
@@ -102,8 +113,14 @@ export function ProjectManagementWorkspace({
             setIssues((prev) =>
               prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i))
             );
+            setDrawerIssue((prev) =>
+              prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+            );
           } else if (payload.eventType === "DELETE") {
             setIssues((prev) => prev.filter((i) => i.id !== payload.old.id));
+            setDrawerIssue((prev) =>
+              prev && prev.id === payload.old.id ? null : prev
+            );
           }
         }
       )
@@ -115,7 +132,7 @@ export function ProjectManagementWorkspace({
   }, [projectId, supabase]);
 
   // Tab change handler with history sync
-  function handleTabChange(tab: "board" | "list" | "cycles") {
+  function handleTabChange(tab: PMTab) {
     setActiveTab(tab);
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", `/projects/${projectId}/${tab}`);
@@ -160,13 +177,14 @@ export function ProjectManagementWorkspace({
     }
   }
 
+  // Open 720px Side-Peek Drawer on issue select
   function handleSelectIssue(issue: Issue) {
-    setSelectedIssue(issue);
-    setModalOpen(true);
+    setDrawerIssue(issue);
+    setDrawerOpen(true);
   }
 
+  // Open quick creator modal
   function openCreateModal(defaultState: IssueState = "todo") {
-    setSelectedIssue(null);
     setModalDefaultState(defaultState);
     setModalOpen(true);
   }
@@ -182,10 +200,17 @@ export function ProjectManagementWorkspace({
     setIssues((prev) =>
       prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i))
     );
+    setDrawerIssue((prev) =>
+      prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+    );
   }
 
   function handleIssueDeleted(issueId: string) {
     setIssues((prev) => prev.filter((i) => i.id !== issueId));
+    if (drawerIssue?.id === issueId) {
+      setDrawerOpen(false);
+      setDrawerIssue(null);
+    }
   }
 
   function handleCycleCreated(newCycle: Cycle) {
@@ -195,8 +220,8 @@ export function ProjectManagementWorkspace({
   // Filter issues by sprint
   const filteredIssues = issues.filter((i) => {
     if (selectedCycleId === "all") return true;
-    if (selectedCycleId === "unassigned") return !(i as any).cycle_id;
-    return (i as any).cycle_id === selectedCycleId;
+    if (selectedCycleId === "unassigned") return !i.cycle_id;
+    return i.cycle_id === selectedCycleId;
   });
 
   return (
@@ -229,10 +254,10 @@ export function ProjectManagementWorkspace({
           </div>
         </div>
 
-        {/* View Switchers (Board, List, Cycles) & Sprint Filter */}
+        {/* View Switchers (Board, List, Cycles, Modules, Pages) & Sprint Filter */}
         <div className="flex items-center gap-3">
           {/* Sprint Filter */}
-          {cycles.length > 0 && activeTab !== "cycles" && (
+          {cycles.length > 0 && (activeTab === "board" || activeTab === "list") && (
             <div className="relative inline-flex items-center">
               <select
                 value={selectedCycleId}
@@ -253,7 +278,7 @@ export function ProjectManagementWorkspace({
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 p-1 bg-[#0e1626] border border-white/[0.08] rounded-xl text-xs font-semibold">
+          <div className="flex items-center gap-1 p-1 bg-[#0e1626] border border-white/[0.08] rounded-xl text-xs font-semibold">
             <button
               onClick={() => handleTabChange("board")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
@@ -286,6 +311,28 @@ export function ProjectManagementWorkspace({
             >
               <RotateCw size={14} />
               Cycles
+            </button>
+            <button
+              onClick={() => handleTabChange("modules")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
+                activeTab === "modules"
+                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Layers size={14} />
+              Modules
+            </button>
+            <button
+              onClick={() => handleTabChange("pages")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
+                activeTab === "pages"
+                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <FileText size={14} />
+              Pages
             </button>
           </div>
         </div>
@@ -352,19 +399,45 @@ export function ProjectManagementWorkspace({
                 onCycleCreated={handleCycleCreated}
               />
             )}
+
+            {activeTab === "modules" && (
+              <ModulesView
+                projectId={projectId}
+                onSelectModule={(modId) => {
+                  // Switch to board or filter
+                  handleTabChange("board");
+                }}
+              />
+            )}
+
+            {activeTab === "pages" && (
+              <PagesView projectId={projectId} />
+            )}
           </>
         )}
       </div>
 
-      {/* Issue Modal (Create & Edit) */}
+      {/* 720px Side-Peek Issue Drawer */}
+      <IssueDrawer
+        isOpen={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerIssue(null);
+        }}
+        issue={drawerIssue}
+        projectId={projectId}
+        projectIdentifier={projectIdentifier}
+        cycles={cycles}
+        onIssueUpdated={handleIssueUpdated}
+        onIssueDeleted={handleIssueDeleted}
+      />
+
+      {/* Issue Modal (Quick Creator) */}
       <IssueModal
         isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setSelectedIssue(null);
-        }}
+        onClose={() => setModalOpen(false)}
         projectId={projectId}
-        issue={selectedIssue}
+        issue={null}
         cycles={cycles}
         defaultState={modalDefaultState}
         onIssueCreated={handleIssueCreated}

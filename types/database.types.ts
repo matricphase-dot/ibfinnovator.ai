@@ -1491,3 +1491,92 @@ export const Constants = {
         }
 } as const
 
+// ============================================================================
+// IBF PLANE ENGINE: PHASE 1 INTERFACES
+// ============================================================================
+
+export interface Label {
+  id: string;
+  project_id: string;
+  name: string;
+  color: string;
+  description?: string | null;
+  created_at: string;
+}
+
+export interface IssueLabel {
+  issue_id: string;
+  label_id: string;
+}
+
+export interface Module {
+  id: string;
+  project_id: string;
+  name: string;
+  description?: string | null;
+  status: 'planned' | 'in_progress' | 'completed' | 'paused' | 'canceled';
+  start_date?: string | null;
+  target_date?: string | null;
+  lead_id?: string | null;
+  lead?: {
+    id: string;
+    full_name: string;
+    name?: string;
+    avatar_url?: string;
+  } | null;
+  created_at: string;
+  updated_at: string;
+  issue_count?: number;
+  completed_issue_count?: number;
+}
+
+export interface IssueComment {
+  id: string;
+  issue_id: string;
+  actor_id: string;
+  comment_html: string;
+  created_at: string;
+  updated_at: string;
+  actor?: {
+    id?: string;
+    full_name?: string | null;
+    name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+export interface IssueActivity {
+  id: string;
+  issue_id: string;
+  actor_id?: string | null;
+  field: string;
+  old_value?: string | null;
+  new_value?: string | null;
+  created_at: string;
+  actor?: {
+    id?: string;
+    full_name?: string | null;
+    name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+export interface IBFPage {
+  id: string;
+  project_id: string;
+  created_by: string;
+  title: string;
+  content_markdown: string;
+  content_json: Record<string, any>;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+  author?: {
+    id?: string;
+    full_name?: string | null;
+    name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+
