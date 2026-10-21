@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabasePublic } from "@/lib/supabase/public";
 import { ProjectManagementWorkspace } from "@/components/pm/pm-workspace";
-import NavBar from "@/components/NavBar";
+import AppShell from "@/components/AppShell";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -40,14 +40,15 @@ export default async function ProjectListPage({ params }: Props) {
   const identifier = project.identifier || "INN";
 
   return (
-    <>
-      <NavBar dashboard={true} />
+    <AppShell activeView="list" showTabs={true}>
       <ProjectManagementWorkspace
         projectId={id}
         projectName={projectName}
         projectIdentifier={identifier}
         initialTab="list"
+        hideTopBar={true}
       />
-    </>
+    </AppShell>
   );
 }
+

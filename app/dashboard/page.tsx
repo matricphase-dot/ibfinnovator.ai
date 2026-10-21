@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AppShell from "@/components/AppShell";
 import { ProjectManagementWorkspace } from "@/components/pm/pm-workspace";
 import {
   FolderKanban,
@@ -154,168 +153,163 @@ export default function Dashboard() {
   // 1. Shimmer Loading Skeleton
   if (loading) {
     return (
-      <AppShell>
-        <div className="min-h-[calc(100vh-64px)] bg-[#080c14] p-6 flex flex-col gap-6">
-          {/* Top Bar Skeleton */}
-          <div className="h-14 bg-[#0d1424] border border-white/[0.06] rounded-2xl animate-pulse flex items-center px-6 justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/10" />
-              <div className="w-36 h-4 rounded-md bg-white/10" />
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-24 h-8 rounded-xl bg-white/10" />
-              <div className="w-28 h-8 rounded-xl bg-white/10" />
-            </div>
+      <div className="p-6 flex flex-col gap-6">
+        {/* Top Bar Skeleton */}
+        <div className="h-14 bg-[#0d1424] border border-white/[0.06] rounded-2xl animate-pulse flex items-center px-6 justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white/10" />
+            <div className="w-36 h-4 rounded-md bg-white/10" />
           </div>
-
-          {/* 5 Kanban Columns Skeleton */}
-          <div className="grid grid-cols-5 gap-4 flex-1">
-            {[1, 2, 3, 4, 5].map((col) => (
-              <div
-                key={col}
-                className="bg-[#080d18] border border-white/[0.06] rounded-2xl p-4 flex flex-col gap-3 min-h-[500px]"
-              >
-                <div className="flex items-center justify-between pb-3 border-b border-white/[0.04]">
-                  <div className="w-20 h-4 rounded bg-white/10" />
-                  <div className="w-6 h-4 rounded-full bg-white/5" />
-                </div>
-                <div className="h-24 bg-[#0e1626] border border-white/[0.06] rounded-xl animate-pulse" />
-                <div className="h-28 bg-[#0e1626] border border-white/[0.06] rounded-xl animate-pulse" />
-              </div>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="w-24 h-8 rounded-xl bg-white/10" />
+            <div className="w-28 h-8 rounded-xl bg-white/10" />
           </div>
         </div>
-      </AppShell>
+
+        {/* 5 Kanban Columns Skeleton */}
+        <div className="grid grid-cols-5 gap-4 flex-1">
+          {[1, 2, 3, 4, 5].map((col) => (
+            <div
+              key={col}
+              className="bg-[#080d18] border border-white/[0.06] rounded-2xl p-4 flex flex-col gap-3 min-h-[500px]"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.04]">
+                <div className="w-20 h-4 rounded bg-white/10" />
+                <div className="w-6 h-4 rounded-full bg-white/5" />
+              </div>
+              <div className="h-24 bg-[#0e1626] border border-white/[0.06] rounded-xl animate-pulse" />
+              <div className="h-28 bg-[#0e1626] border border-white/[0.06] rounded-xl animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
   // 2. Empty State: No Projects Created Yet
   if (!activeProject || projects.length === 0) {
     return (
-      <AppShell>
-        <div className="min-h-[calc(100vh-64px)] bg-[#080c14] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-[#0d1424] border border-white/[0.08] rounded-2xl p-8 shadow-2xl text-center">
-            <div className="w-14 h-14 rounded-2xl bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center mx-auto mb-5 shadow-[0_0_30px_rgba(0,245,212,0.15)]">
-              <FolderKanban size={28} />
+      <div className="flex items-center justify-center p-6 min-h-[500px]">
+        <div className="max-w-md w-full bg-[#0d1424] border border-white/[0.08] rounded-2xl p-8 shadow-2xl text-center">
+          <div className="w-14 h-14 rounded-2xl bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center mx-auto mb-5 shadow-[0_0_30px_rgba(0,245,212,0.15)]">
+            <FolderKanban size={28} />
+          </div>
+
+          <h2 className="text-xl font-black tracking-tight text-white">
+            Launch Your Plane Workspace
+          </h2>
+          <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+            Create your project to start tracking issues, sprint cycles, and milestone roadmaps with Plane.
+          </p>
+
+          <form onSubmit={handleCreateFirstProject} className="mt-6 text-left space-y-4">
+            <div>
+              <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                Project Title
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Innovator Engine"
+                value={newTitle}
+                onChange={(e) => {
+                  setNewTitle(e.target.value);
+                  if (!newIdentifier) {
+                    setNewIdentifier(e.target.value.slice(0, 3).toUpperCase());
+                  }
+                }}
+                className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition"
+              />
             </div>
 
-            <h2 className="text-xl font-black tracking-tight text-white">
-              Launch Your Plane Workspace
-            </h2>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-              Create your project to start tracking issues, sprint cycles, and milestone roadmaps with Plane.
-            </p>
+            <div>
+              <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                Identifier Prefix
+              </label>
+              <input
+                type="text"
+                required
+                maxLength={5}
+                placeholder="e.g. INN"
+                value={newIdentifier}
+                onChange={(e) => setNewIdentifier(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm font-mono text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition uppercase"
+              />
+            </div>
 
-            <form onSubmit={handleCreateFirstProject} className="mt-6 text-left space-y-4">
-              <div>
-                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Project Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Innovator Engine"
-                  value={newTitle}
-                  onChange={(e) => {
-                    setNewTitle(e.target.value);
-                    if (!newIdentifier) {
-                      setNewIdentifier(e.target.value.slice(0, 3).toUpperCase());
-                    }
-                  }}
-                  className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                Description
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Briefly describe what your venture is building..."
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition resize-none"
+              />
+            </div>
 
-              <div>
-                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Identifier Prefix
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={5}
-                  placeholder="e.g. INN"
-                  value={newIdentifier}
-                  onChange={(e) => setNewIdentifier(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-                  className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm font-mono text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition uppercase"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Briefly describe what your venture is building..."
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting || !newTitle.trim()}
-                className="w-full py-3 bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black text-sm rounded-xl transition flex items-center justify-center gap-2 mt-4 shadow-lg disabled:opacity-50"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Initializing Workspace…
-                  </>
-                ) : (
-                  <>
-                    Create Project & Launch Board <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              disabled={submitting || !newTitle.trim()}
+              className="w-full py-3 bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-black text-sm rounded-xl transition flex items-center justify-center gap-2 mt-4 shadow-lg disabled:opacity-50"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Initializing Workspace…
+                </>
+              ) : (
+                <>
+                  Create Project & Launch Board <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
         </div>
-      </AppShell>
+      </div>
     );
   }
 
   // 3. Active Plane.so Project Management Workspace
   return (
-    <AppShell>
-      <div className="flex flex-col min-h-[calc(100vh-64px)] bg-[#080c14]">
-        {/* Project Switcher Bar if user has multiple projects */}
-        {projects.length > 1 && (
-          <div className="px-6 py-2 bg-[#090e1a] border-b border-white/[0.04] flex items-center gap-3">
-            <span className="text-[11px] font-mono text-slate-400">ACTIVE PROJECT:</span>
-            <div className="relative inline-flex items-center">
-              <select
-                value={activeProject.id}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1 bg-[#0d1424] border border-white/[0.08] rounded-lg text-xs font-bold text-white hover:border-cyan-300/40 focus:outline-none cursor-pointer"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title || p.name} ({p.identifier || "INN"})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-2 text-slate-400" />
-            </div>
-            <Link
-              href="/projects/new"
-              className="ml-auto text-[11px] font-semibold text-cyan-300 hover:underline flex items-center gap-1"
+    <div className="flex flex-col min-h-full bg-[#080c14]">
+      {/* Project Switcher Bar if user has multiple projects */}
+      {projects.length > 1 && (
+        <div className="px-6 py-2 bg-[#090e1a] border-b border-white/[0.04] flex items-center gap-3">
+          <span className="text-[11px] font-mono text-slate-400">ACTIVE PROJECT:</span>
+          <div className="relative inline-flex items-center">
+            <select
+              value={activeProject.id}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-1 bg-[#0d1424] border border-white/[0.08] rounded-lg text-xs font-bold text-white hover:border-cyan-300/40 focus:outline-none cursor-pointer"
             >
-              <Plus size={12} /> New Project
-            </Link>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title || p.name} ({p.identifier || "INN"})
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={13} className="pointer-events-none absolute right-2 text-slate-400" />
           </div>
-        )}
+          <Link
+            href="/projects/new"
+            className="ml-auto text-[11px] font-semibold text-cyan-300 hover:underline flex items-center gap-1"
+          >
+            <Plus size={12} /> New Project
+          </Link>
+        </div>
+      )}
 
-        {/* 1:1 Plane Workspace Engine */}
-        <ProjectManagementWorkspace
-          projectId={activeProject.id}
-          projectName={activeProject.title || activeProject.name || "Innovator Project"}
-          projectIdentifier={activeProject.identifier || "INN"}
-          initialTab="board"
-        />
-      </div>
-    </AppShell>
+      {/* 1:1 Plane Workspace Engine */}
+      <ProjectManagementWorkspace
+        projectId={activeProject.id}
+        projectName={activeProject.title || activeProject.name || "Innovator Project"}
+        projectIdentifier={activeProject.identifier || "INN"}
+        initialTab="board"
+        hideTopBar={true}
+      />
+    </div>
   );
 }

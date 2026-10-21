@@ -3,6 +3,24 @@
 @import "tailwindcss";
 
 :root {
+  /* IBF Plane Workspace Theme Tokens */
+  --ibf-canvas: #080c14;            /* Main content area */
+  --ibf-sidebar: #0d121f;           /* Sidebar navigation */
+  --ibf-topbar: #0d1422;            /* Top navigation bar */
+  --ibf-surface: #111a2e;           /* Cards, dropdowns, panels */
+  --ibf-surface-hover: #16223b;     /* Interactive hover state */
+  --ibf-surface-active: #1b2947;    /* Selected row or active tab */
+  
+  --ibf-border-subtle: rgba(255, 255, 255, 0.06);
+  --ibf-border-medium: rgba(255, 255, 255, 0.12);
+  
+  --ibf-brand: #00f5d4;             /* IBF Cyan Accent */
+  --ibf-brand-dim: rgba(0, 245, 212, 0.1);
+  
+  --ibf-text-primary: #f8fafc;
+  --ibf-text-secondary: #94a3b8;
+  --ibf-text-muted: #64748b;
+
   --base: #F5F1EA;
   --surface: #EBE5DA;
   --hairline: #E0D8C8;
@@ -29,8 +47,8 @@ html {
 
 body {
   margin: 0;
-  background: var(--base);
-  color: var(--ink);
+  background: var(--ibf-canvas, #080c14);
+  color: var(--ibf-text-primary, #f8fafc);
   font-family: var(--font-body);
   font-weight: 400;
   line-height: 1.6;

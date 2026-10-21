@@ -3,8 +3,10 @@ import { createClient, requireUser } from "@/lib/supabase/server";
 import { safeHttpsUrlSchema } from "@/lib/security/url";
 import { z } from "zod";
 const update = z.object({
-  title: z.string().min(3).max(120).optional(),
-  description: z.string().min(20).max(10000).optional(),
+  title: z.string().min(2).max(120).optional(),
+  name: z.string().min(2).max(120).optional(),
+  identifier: z.string().min(2).max(10).optional(),
+  description: z.string().min(10).max(10000).optional(),
   required_skills: z.array(z.string()).min(1).max(20).optional(),
   domain: z.string().nullable().optional(),
   stage: z.string().nullable().optional(),
