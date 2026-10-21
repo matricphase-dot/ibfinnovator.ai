@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckSquare, Plus, CheckCircle2, Circle, Loader2 } from "lucide-react";
 
 interface Subtask {
@@ -31,6 +31,19 @@ export function IssueSubtasks({
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialSubtasks && initialSubtasks.length > 0) {
+      setSubtasks(initialSubtasks);
+    } else if (parentIssueId && projectId) {
+      fetch(`/api/projects/${projectId}/issues?parent_issue_id=${parentIssueId}`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => setSubtasks(data || []))
+        .catch(() => {});
+    } else {
+      setSubtasks([]);
+    }
+  }, [parentIssueId, projectId, initialSubtasks]);
 
   const completedCount = subtasks.filter((s) => s.state === "done").length;
   const progressPercent =

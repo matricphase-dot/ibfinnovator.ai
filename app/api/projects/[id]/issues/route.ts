@@ -30,6 +30,8 @@ export async function GET(
     const state = searchParams.get("state");
     const priority = searchParams.get("priority");
 
+    const parentId = searchParams.get("parent_issue_id");
+
     let query = supabase
       .from("issues")
       .select(`
@@ -38,10 +40,22 @@ export async function GET(
         created_by_profile:profiles!created_by(id, name, full_name, username, avatar_url),
         cycle:cycles!cycle_id(id, name, status),
         module:modules!module_id(id, name, status),
-        issue_labels(label:labels(id, name, color, description))
+        issue_labels(label:labels(id, name, color, description)),
+        subtasks:issues!parent_issue_id(id, sequence_id, title, state, priority)
       `)
       .eq("project_id", projectId)
       .order("sequence_id", { ascending: false });
+
+    if (parentId !== undefined && parentId !== null) {
+      if (parentId === "null" || parentId === "") {
+        query = query.is("parent_issue_id", null);
+      } else {
+        query = query.eq("parent_issue_id", parentId);
+      }
+    } else {
+      // By default for board/list, only return top-level issues
+      query = query.is("parent_issue_id", null);
+    }
 
     if (cycleId) query = query.eq("cycle_id", cycleId);
     if (moduleId) query = query.eq("module_id", moduleId);
@@ -51,14 +65,21 @@ export async function GET(
     const { data, error } = await query;
     if (error) throw error;
 
-    // Flatten labels for convenience
+    // Flatten labels and calculate subtask metrics
     const formattedData = (data || []).map((issue: any) => {
       const labels = (issue.issue_labels || [])
         .map((il: any) => il.label)
         .filter(Boolean);
+      const subtasks = issue.subtasks || [];
+      const completedSubtasks = subtasks.filter((s: any) => s.state === "done").length;
       return {
         ...issue,
         labels,
+        subtasks,
+        subtask_count: {
+          total: subtasks.length,
+          completed: completedSubtasks,
+        },
       };
     });
 
@@ -124,7 +145,18 @@ export async function POST(
       await supabase.from("issue_labels").insert(labelInserts);
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(
+      {
+        ...data,
+        labels: [],
+        subtasks: [],
+        subtask_count: {
+          total: 0,
+          completed: 0,
+        },
+      },
+      { status: 201 }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Failed to create issue" },

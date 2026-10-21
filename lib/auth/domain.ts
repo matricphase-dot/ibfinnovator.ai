@@ -58,6 +58,7 @@ export function sanitizeNext(raw: string | null | undefined): string {
       if (
         t === "/" ||
         t === "/help" ||
+        t === "/privacy" ||
         t.startsWith("/portfolio/") ||
         t === "/auth/signin" ||
         t === "/auth/signup" ||

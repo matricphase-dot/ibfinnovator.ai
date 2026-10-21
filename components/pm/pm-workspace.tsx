@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { KanbanBoard } from "@/components/pm/board/kanban-board";
-import { ListView } from "@/components/pm/list/list-view";
+import { KanbanBoard } from "@/components/ibf/board/kanban-board";
+import { ListView } from "@/components/ibf/list/list-view";
 import { CyclesView, Cycle } from "@/components/pm/cycles/cycles-view";
-import { IssueModal } from "@/components/pm/issue-modal";
-import { Issue } from "@/components/pm/issue-card";
+import { IssueModal } from "@/components/ibf/issues/issue-modal";
+import { Issue } from "@/components/ibf/board/issue-card";
 import { IssueState } from "@/components/pm/state-select";
 import { Priority } from "@/components/pm/priority-select";
 import { IssueDrawer } from "@/components/ibf/issues/issue-drawer";
@@ -154,6 +154,9 @@ export function ProjectManagementWorkspace({
 
   // Optimistic State Update
   async function handleStateChange(issueId: string, newState: IssueState) {
+    const current = issues.find((i) => i.id === issueId);
+    if (current && current.state === newState) return;
+
     const previousIssues = [...issues];
     setIssues((prev) =>
       prev.map((i) => (i.id === issueId ? { ...i, state: newState } : i))
@@ -173,6 +176,9 @@ export function ProjectManagementWorkspace({
 
   // Optimistic Priority Update
   async function handlePriorityChange(issueId: string, newPriority: Priority) {
+    const current = issues.find((i) => i.id === issueId);
+    if (current && current.priority === newPriority) return;
+
     const previousIssues = [...issues];
     setIssues((prev) =>
       prev.map((i) => (i.id === issueId ? { ...i, priority: newPriority } : i))
@@ -207,6 +213,30 @@ export function ProjectManagementWorkspace({
       if (prev.some((i) => i.id === newIssue.id)) return prev;
       return [newIssue, ...prev];
     });
+  }
+
+  // Rapid inline card creation directly from Kanban column
+  async function handleInlineCreate(title: string, state: IssueState) {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/issues`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          state,
+          cycle_id:
+            selectedCycleId !== "all" && selectedCycleId !== "unassigned"
+              ? selectedCycleId
+              : null,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create issue inline");
+      const created = await res.json();
+      handleIssueCreated(created);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function handleIssueUpdated(updated: Issue) {
@@ -423,6 +453,7 @@ export function ProjectManagementWorkspace({
                 onOpenCreateModal={openCreateModal}
                 onSelectIssue={handleSelectIssue}
                 onIssueStateChange={handleStateChange}
+                onInlineCreate={handleInlineCreate}
               />
             )}
 

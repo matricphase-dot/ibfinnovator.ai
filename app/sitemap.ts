@@ -8,11 +8,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "",
     "/projects",
     "/help",
+    "/privacy",
   ].map((path, i) => ({
     url: `${base}${path}`,
     lastModified: new Date(),
     changeFrequency: (i < 2 ? "daily" : "weekly") as "daily" | "weekly",
-    priority: i === 0 ? 1 : 0.8,
+    priority: i === 0 ? 1 : i === 3 ? 0.6 : 0.8,
   }));
 
   let projectEntries: MetadataRoute.Sitemap = [];

@@ -12,7 +12,7 @@ import { IbfMobileDrawer } from "./ibf-mobile-drawer";
 import { IbfCommandPalette } from "./ibf-command-palette";
 import { IbfCreateProjectModal } from "./ibf-create-project-modal";
 import { IbfCreateWorkspaceModal } from "./ibf-create-workspace-modal";
-import { IssueModal } from "@/components/pm/issue-modal";
+import { IssueModal } from "@/components/ibf/issues/issue-modal";
 import { IssueState } from "@/components/pm/state-select";
 
 export interface IbfWorkspaceShellProps {

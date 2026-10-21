@@ -241,6 +241,17 @@ export default function SignUpPage() {
                     "Create account"
                   )}
                 </button>
+
+                <p className="mt-4 text-[11px] text-[var(--muted)] text-center leading-relaxed">
+                  By continuing, you agree to our{" "}
+                  <Link href="/help" className="underline hover:text-[var(--ink)]">
+                    Terms
+                  </Link>{" "}
+                  and acknowledge our{" "}
+                  <Link href="/privacy" className="underline hover:text-[var(--ink)]">
+                    Privacy Policy
+                  </Link>.
+                </p>
               </form>
             </>
           )}

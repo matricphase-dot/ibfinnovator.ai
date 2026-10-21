@@ -731,7 +731,7 @@ export default function Home() {
           <div className="pt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-mono text-[var(--muted)]">
             <p>© 2026 Innovator Bridge Foundry. All rights reserved.</p>
             <div className="flex gap-6">
-              <Link href="/help" className="hover:text-[var(--ink)] transition">Privacy Policy</Link>
+              <Link href="/privacy" className="hover:text-[var(--ink)] transition">Privacy Policy</Link>
               <Link href="/help" className="hover:text-[var(--ink)] transition">Terms of Service</Link>
               <Link href="/help" className="hover:text-[var(--ink)] transition">Attestation Spec</Link>
             </div>

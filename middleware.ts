@@ -191,6 +191,11 @@ export default async function middleware(req: NextRequest) {
   // SCENARIO A: Request is on APP subdomain (app.innovators-global.com)
   // ---------------------------------------------------------------------------
   if (isAppDomain) {
+    // Public informational pages belong on the marketing apex
+    if (pathname === "/privacy" || pathname === "/help") {
+      return NextResponse.redirect(`${MARKETING_ORIGIN}${pathname}${search}`);
+    }
+
     // If NOT authenticated -> Redirect to signin on marketing apex
     if (!userId) {
       const targetPath = pathname === "/" ? "/dashboard" : `${pathname}${search}`;

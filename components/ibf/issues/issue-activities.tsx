@@ -8,6 +8,25 @@ interface IssueActivitiesProps {
   issueId: string;
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  state: "State",
+  priority: "Priority",
+  title: "Title",
+  estimate_points: "Estimate Points",
+  due_date: "Due Date",
+  cycle_id: "Sprint Cycle",
+  module_id: "Module",
+  assignee_id: "Assignee",
+};
+
+function formatActivityValue(val: string | null | undefined): string {
+  if (!val) return "none";
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)) {
+    return "(selected)";
+  }
+  return val;
+}
+
 export function IssueActivities({ issueId }: IssueActivitiesProps) {
   const [activities, setActivities] = useState<IssueActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +82,10 @@ export function IssueActivities({ issueId }: IssueActivitiesProps) {
               minute: "2-digit",
             });
 
+            const fieldLabel = FIELD_LABELS[act.field] || act.field;
+            const oldValFormatted = formatActivityValue(act.old_value);
+            const newValFormatted = formatActivityValue(act.new_value);
+
             return (
               <div key={act.id} className="relative flex flex-col gap-1 text-xs">
                 {/* Node icon */}
@@ -72,16 +95,16 @@ export function IssueActivities({ issueId }: IssueActivitiesProps) {
                   <span className="font-semibold text-white">{actorName}</span>
                   <span>changed</span>
                   <span className="font-mono text-cyan-300 font-medium px-1.5 py-0.5 rounded bg-cyan-400/10 text-[11px]">
-                    {act.field}
+                    {fieldLabel}
                   </span>
                   {act.old_value && (
                     <>
                       <span>from</span>
-                      <span className="line-through text-slate-500 font-mono text-[11px]">{act.old_value}</span>
+                      <span className="line-through text-slate-500 font-mono text-[11px]">{oldValFormatted}</span>
                     </>
                   )}
                   <span>to</span>
-                  <span className="font-semibold text-slate-200 font-mono text-[11px]">{act.new_value || "none"}</span>
+                  <span className="font-semibold text-slate-200 font-mono text-[11px]">{newValFormatted}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">{dateStr}</span>
               </div>
