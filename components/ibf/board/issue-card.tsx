@@ -5,6 +5,7 @@ import { PriorityIcon, Priority } from "@/components/pm/priority-select";
 import { StateIcon, IssueState } from "@/components/pm/state-select";
 import { Calendar, User, CheckSquare } from "lucide-react";
 import { Label, Module } from "@/types/database.types";
+import { PlaneAvatar, PlaneSequenceBadge } from "@/components/ibf/ui";
 
 export interface Issue {
   id: string;
@@ -81,13 +82,15 @@ export function IssueCard({
           onClick?.();
         }
       }}
-      className="p-3.5 bg-[#0e1626] hover:bg-[#131d31] border border-white/[0.08] hover:border-cyan-300/40 rounded-xl transition-all duration-150 cursor-pointer select-none group shadow-sm flex flex-col gap-2.5 hover:shadow-cyan-950/20 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-cyan-400"
+      className="p-3 bg-[var(--plane-surface-1)] hover:bg-[var(--plane-surface-2)] border border-[var(--plane-border-subtle)] hover:border-[var(--plane-border-medium)] rounded-[var(--plane-radius-md)] transition-all duration-150 cursor-pointer select-none group shadow-xs hover:shadow-md flex flex-col gap-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-400"
     >
       {/* Header: ID + Estimate + State */}
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[11px] font-bold text-slate-400 group-hover:text-cyan-300 transition-colors">
-          {projectIdentifier}-{issue.sequence_id}
-        </span>
+        <PlaneSequenceBadge
+          identifier={projectIdentifier}
+          sequence={issue.sequence_id}
+          className="group-hover:text-cyan-300"
+        />
         <div className="flex items-center gap-1.5">
           {issue.estimate_points !== null && issue.estimate_points !== undefined && (
             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/5 text-slate-300 border border-white/10 font-mono">
@@ -141,7 +144,7 @@ export function IssueCard({
       )}
 
       {/* Footer: Priority + Due Date + Assignee */}
-      <div className="flex items-center justify-between pt-1 border-t border-white/[0.04] text-[11px] text-slate-400">
+      <div className="flex items-center justify-between pt-1 border-t border-[var(--plane-border-subtle)] text-[11px] text-slate-400">
         <div className="flex items-center gap-2">
           <span title={`Priority: ${issue.priority}`}>
             <PriorityIcon priority={issue.priority} size={13} />
@@ -156,19 +159,11 @@ export function IssueCard({
 
         {/* Assignee Avatar */}
         {issue.assignee ? (
-          <div className="flex items-center gap-1" title={assigneeName || "Assignee"}>
-            {issue.assignee.avatar_url ? (
-              <img
-                src={issue.assignee.avatar_url}
-                alt={assigneeName || "avatar"}
-                className="w-5 h-5 rounded-full object-cover border border-white/10"
-              />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-cyan-300/10 text-cyan-300 border border-cyan-300/20 grid place-items-center text-[10px] font-bold">
-                {(assigneeName || "U").slice(0, 1).toUpperCase()}
-              </div>
-            )}
-          </div>
+          <PlaneAvatar
+            name={assigneeName || "Assignee"}
+            src={issue.assignee.avatar_url || undefined}
+            size="xs"
+          />
         ) : (
           <span title="Unassigned" className="text-slate-600">
             <User size={13} />

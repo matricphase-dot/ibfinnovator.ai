@@ -9,6 +9,7 @@ import { Label, Module } from "@/types/database.types";
 import { IssueComments } from "./issue-comments";
 import { IssueActivities } from "./issue-activities";
 import { IssueSubtasks } from "./issue-subtasks";
+import { PlaneSequenceBadge, PlaneTooltip } from "@/components/ibf/ui";
 import {
   X,
   Copy,
@@ -343,9 +344,11 @@ export function IssueDrawer({
         {/* Top Header: ID + FullScreen + Copy + Close */}
         <div className="px-6 py-3 border-b border-white/[0.06] flex items-center justify-between bg-[#0b101c]/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-400/10 text-cyan-300 border border-cyan-400/20">
-              {projectIdentifier}-{issue.sequence_id}
-            </span>
+            <PlaneSequenceBadge
+              identifier={projectIdentifier}
+              sequence={issue.sequence_id}
+              className="text-xs px-2.5 py-1"
+            />
             {isSaving && (
               <span className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-medium">
                 <Loader2 size={12} className="animate-spin" />
@@ -356,50 +359,54 @@ export function IssueDrawer({
 
           <div className="flex items-center gap-1.5">
             {/* Full Screen Toggle */}
-            <button
-              onClick={() => setIsFullScreen((prev) => !prev)}
-              title={isFullScreen ? "Restore side drawer" : "Full screen modal"}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition"
-            >
-              {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
+            <PlaneTooltip content={isFullScreen ? "Restore side drawer" : "Full screen view"}>
+              <button
+                onClick={() => setIsFullScreen((prev) => !prev)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition"
+              >
+                {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
+            </PlaneTooltip>
 
             {/* Copy Link Button */}
-            <button
-              onClick={handleCopyLink}
-              title="Copy issue link"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition flex items-center gap-1 text-xs"
-            >
-              {copied ? (
-                <>
-                  <Check size={14} className="text-emerald-400" />
-                  <span className="text-emerald-400 font-mono text-[11px]">Copied</span>
-                </>
-              ) : (
-                <Copy size={14} />
-              )}
-            </button>
+            <PlaneTooltip content="Copy issue link">
+              <button
+                onClick={handleCopyLink}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition flex items-center gap-1 text-xs"
+              >
+                {copied ? (
+                  <>
+                    <Check size={14} className="text-emerald-400" />
+                    <span className="text-emerald-400 font-mono text-[11px]">Copied</span>
+                  </>
+                ) : (
+                  <Copy size={14} />
+                )}
+              </button>
+            </PlaneTooltip>
 
             {/* Delete Button */}
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              title="Delete issue"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-            >
-              <Trash2 size={14} />
-            </button>
+            <PlaneTooltip content="Delete issue">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+              >
+                <Trash2 size={14} />
+              </button>
+            </PlaneTooltip>
 
             <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
             {/* Close Button */}
-            <button
-              onClick={onClose}
-              title="Close drawer (Esc)"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
-            >
-              <X size={16} />
-            </button>
+            <PlaneTooltip content="Close drawer" shortcut="Esc">
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+              >
+                <X size={16} />
+              </button>
+            </PlaneTooltip>
           </div>
         </div>
 

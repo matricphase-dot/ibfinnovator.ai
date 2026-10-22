@@ -228,13 +228,20 @@ export function IbfWorkspaceProvider({ children }: { children: React.ReactNode }
     setCurrentWorkspace(workspace);
   }, []);
 
-  // Global Keyboard Shortcuts (Cmd+K, Ctrl+K, and C)
+  // Phase 7: Universal Keyboard Reflex Engine (Cmd+K, Cmd+B, C, P, B, L, D)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       // Cmd+K or Ctrl+K triggers command palette
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // Cmd+B or Ctrl+B toggles sidebar
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleCollapse();
         return;
       }
 
@@ -250,18 +257,45 @@ export function IbfWorkspaceProvider({ children }: { children: React.ReactNode }
         return;
       }
 
+      // Prevent if modifier keys are pressed for single-key hotkeys
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
       // Pressing 'C' opens quick issue creator
       if (e.key === "c" || e.key === "C") {
-        // Prevent if modifier keys are pressed
-        if (e.metaKey || e.ctrlKey || e.altKey) return;
         e.preventDefault();
         openCreateIssue();
+      }
+      // Pressing 'P' opens quick project creator
+      else if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        openCreateProject();
+      }
+      // Pressing 'B' jumps to Kanban Board
+      else if ((e.key === "b" || e.key === "B") && activeProjectId) {
+        e.preventDefault();
+        selectProject(activeProjectId, "board");
+      }
+      // Pressing 'L' jumps to List View
+      else if ((e.key === "l" || e.key === "L") && activeProjectId) {
+        e.preventDefault();
+        selectProject(activeProjectId, "list");
+      }
+      // Pressing 'D' jumps to Documentation Pages
+      else if ((e.key === "d" || e.key === "D") && activeProjectId) {
+        e.preventDefault();
+        selectProject(activeProjectId, "pages");
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [openCreateIssue]);
+  }, [
+    openCreateIssue,
+    openCreateProject,
+    toggleCollapse,
+    activeProjectId,
+    selectProject,
+  ]);
 
   return (
     <WorkspaceContext.Provider

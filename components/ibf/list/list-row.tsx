@@ -5,6 +5,7 @@ import { Issue } from "../board/issue-card";
 import { StateSelect, IssueState } from "@/components/pm/state-select";
 import { PrioritySelect, Priority } from "@/components/pm/priority-select";
 import { Calendar, User, CheckSquare } from "lucide-react";
+import { PlaneAvatar, PlaneSequenceBadge } from "@/components/ibf/ui";
 
 interface ListRowProps {
   issue: Issue;
@@ -54,8 +55,12 @@ export function ListRow({
       }`}
     >
       {/* Identifier */}
-      <td className="py-2.5 px-4 font-mono font-bold text-slate-400 group-hover:text-cyan-300 transition-colors w-28 text-xs select-none">
-        {projectIdentifier}-{issue.sequence_id}
+      <td className="py-2.5 px-4 w-28 select-none">
+        <PlaneSequenceBadge
+          identifier={projectIdentifier}
+          sequence={issue.sequence_id}
+          className="group-hover:text-cyan-300"
+        />
       </td>
 
       {/* Title & Metadata Tags */}
@@ -104,15 +109,15 @@ export function ListRow({
       {/* Assignee */}
       <td className="py-2.5 px-4 text-slate-400 w-36 text-xs">
         <div className="flex items-center gap-1.5" title={assigneeName || "Unassigned"}>
-          {issue.assignee?.avatar_url ? (
-            <img
-              src={issue.assignee.avatar_url}
-              alt={assigneeName || "avatar"}
-              className="w-5 h-5 rounded-full object-cover border border-white/10"
+          {issue.assignee ? (
+            <PlaneAvatar
+              name={assigneeName || "Assignee"}
+              src={issue.assignee.avatar_url || undefined}
+              size="xs"
             />
           ) : (
-            <div className="w-5 h-5 rounded-full bg-cyan-300/10 text-cyan-300 grid place-items-center text-[10px] font-bold">
-              {assigneeName ? assigneeName.slice(0, 1).toUpperCase() : <User size={10} />}
+            <div className="w-5 h-5 rounded-full bg-white/5 text-slate-500 grid place-items-center text-[10px]">
+              <User size={10} />
             </div>
           )}
           <span className="truncate max-w-[95px] text-slate-300">

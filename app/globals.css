@@ -21,6 +21,40 @@
   --ibf-text-secondary: #94a3b8;
   --ibf-text-muted: #64748b;
 
+  /* Plane 1:1 Design System Tokens */
+  --plane-canvas: #080c14;
+  --plane-sidebar: #0d121f;
+  --plane-topbar: #0d1422;
+  --plane-surface-1: #0f172a;
+  --plane-surface-2: #131f38;
+  --plane-surface-hover: #182645;
+  --plane-surface-active: #1e2f54;
+
+  --plane-border-subtle: rgba(255, 255, 255, 0.06);
+  --plane-border-medium: rgba(255, 255, 255, 0.12);
+  --plane-border-strong: rgba(255, 255, 255, 0.20);
+
+  --plane-accent: #00f5d4;
+  --plane-accent-dim: rgba(0, 245, 212, 0.12);
+  --plane-accent-glow: rgba(0, 245, 212, 0.25);
+
+  --plane-state-backlog: #64748b;
+  --plane-state-todo: #94a3b8;
+  --plane-state-in-progress: #f59e0b;
+  --plane-state-done: #10b981;
+  --plane-state-canceled: #ef4444;
+
+  --plane-priority-urgent: #ef4444;
+  --plane-priority-high: #f97316;
+  --plane-priority-medium: #eab308;
+  --plane-priority-low: #3b82f6;
+  --plane-priority-none: #475569;
+
+  --plane-radius-sm: 4px;
+  --plane-radius-md: 8px;
+  --plane-radius-lg: 12px;
+  --plane-radius-xl: 16px;
+
   --base: #F5F1EA;
   --surface: #EBE5DA;
   --hairline: #E0D8C8;
