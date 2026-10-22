@@ -202,6 +202,24 @@ export function ProjectManagementWorkspace({
     setDrawerOpen(true);
   }
 
+  function handleSelectIssueById(issueId: string) {
+    const found = issues.find((i) => i.id === issueId);
+    if (found) {
+      setDrawerIssue(found);
+      setDrawerOpen(true);
+    } else {
+      fetch(`/api/issues/${issueId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((issue) => {
+          if (issue) {
+            setDrawerIssue(issue);
+            setDrawerOpen(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
   // Open quick creator modal
   function openCreateModal(defaultState: IssueState = "todo") {
     setModalDefaultState(defaultState);
@@ -478,6 +496,8 @@ export function ProjectManagementWorkspace({
             {activeTab === "modules" && (
               <ModulesView
                 projectId={projectId}
+                projectIdentifier={projectIdentifier}
+                onSelectIssue={handleSelectIssueById}
                 onSelectModule={(modId) => {
                   // Switch to board or filter
                   handleTabChange("board");
@@ -486,7 +506,7 @@ export function ProjectManagementWorkspace({
             )}
 
             {activeTab === "pages" && (
-              <PagesView projectId={projectId} />
+              <PagesView projectId={projectId} onOpenIssue={handleSelectIssueById} />
             )}
           </>
         )}

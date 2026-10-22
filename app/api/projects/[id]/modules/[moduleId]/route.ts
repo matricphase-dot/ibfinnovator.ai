@@ -109,6 +109,12 @@ export async function DELETE(
     const { id: projectId, moduleId } = await params;
     const { supabase } = await requireUser();
 
+    // Detach any issues from this module first
+    await supabase
+      .from("issues")
+      .update({ module_id: null, updated_at: new Date().toISOString() })
+      .eq("module_id", moduleId);
+
     const { error } = await supabase
       .from("modules")
       .delete()

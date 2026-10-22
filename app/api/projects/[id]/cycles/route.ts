@@ -20,7 +20,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from("cycles")
-      .select("*, issues(id, state, priority)")
+      .select("*, issues(id, sequence_id, title, state, priority, estimate_points)")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
 
@@ -51,6 +51,15 @@ export async function POST(
       );
     }
 
+    // Rule: Only one cycle can be active at a time per project
+    if (parsed.data.status === "active") {
+      await supabase
+        .from("cycles")
+        .update({ status: "planned", updated_at: new Date().toISOString() })
+        .eq("project_id", projectId)
+        .eq("status", "active");
+    }
+
     const { data, error } = await supabase
       .from("cycles")
       .insert({
@@ -61,7 +70,7 @@ export async function POST(
         end_date: parsed.data.end_date || null,
         status: parsed.data.status,
       })
-      .select()
+      .select("*, issues(id, sequence_id, title, state, priority, estimate_points)")
       .single();
 
     if (error) throw error;

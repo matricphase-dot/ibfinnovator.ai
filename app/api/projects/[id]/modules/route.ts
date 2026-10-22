@@ -104,7 +104,7 @@ export async function POST(
       .single();
 
     if (error) throw error;
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json({ ...data, issue_count: 0, completed_issue_count: 0 }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Failed to create module" },

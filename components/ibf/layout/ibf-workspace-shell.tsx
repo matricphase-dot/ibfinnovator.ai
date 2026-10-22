@@ -156,6 +156,7 @@ function WorkspaceShellInner({
         isOpen={isCommandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         projects={projects}
+        activeProjectId={activeProjectId || undefined}
         onOpenCreateIssue={() => openCreateIssue()}
         onOpenCreateProject={openCreateProject}
       />
