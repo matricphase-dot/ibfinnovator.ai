@@ -167,12 +167,16 @@ server {
         image/svg+xml
         application/wasm;
 
-    # Next.js static assets — served directly by Nginx (bypass Node)
+    # Next.js static assets — reverse proxy to Next.js cluster with immutable caching
+    # Bypassing raw disk alias prevents 404/403 HTML error pages and CSS MIME type blocking
     location /_next/static/ {
-        alias /var/www/innovators/.next/static/;
+        proxy_pass http://nextjs_cluster;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
         expires 365d;
         access_log off;
-        add_header Cache-Control "public, immutable";
+        add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
     # Public folder assets
