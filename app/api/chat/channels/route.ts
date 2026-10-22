@@ -24,7 +24,8 @@ export async function GET(req: NextRequest) {
     const limit = checkRateLimit(`${user.id}:chat-channels-list`, 60, 60);
     if (!limit.allowed) return rateLimitResponse(limit);
 
-    const workspace = await getActiveWorkspace(supabase, user.id);
+    const requestedWorkspaceId = req.nextUrl.searchParams.get("workspace_id");
+    const workspace = await getActiveWorkspace(supabase, user.id, requestedWorkspaceId);
     if (!workspace) {
       return NextResponse.json(
         { error: "No active workspace found" },
@@ -128,15 +129,15 @@ export async function POST(req: NextRequest) {
     const limit = checkRateLimit(`${user.id}:chat-channels-create`, 15, 60);
     if (!limit.allowed) return rateLimitResponse(limit);
 
-    const workspace = await getActiveWorkspace(supabase, user.id);
+    const body = await req.json();
+    const workspaceId = body?.workspace_id || req.nextUrl.searchParams.get("workspace_id");
+    const workspace = await getActiveWorkspace(supabase, user.id, workspaceId);
     if (!workspace) {
       return NextResponse.json(
         { error: "No active workspace found" },
         { status: 404 },
       );
     }
-
-    const body = await req.json();
     const parsed = createChannelSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(

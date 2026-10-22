@@ -1081,7 +1081,26 @@ create policy "own blocks manage" on public.user_blocks for all using(blocker_id
 
 -- Analytics Events Policies
 create policy "own analytics insert" on public.analytics_events for insert with check(user_id = auth.uid() or user_id is null);
-create policy "own analytics read" on public.analytics_events for select using(user_id = auth.uid() or public.is_super_admin());
+create policy "own analytics read" on public.analytics_events for select using (
+  user_id = auth.uid() 
+  or public.is_super_admin()
+  or (
+    project_id is not null and exists (
+      select 1 from public.projects p
+      where p.id = analytics_events.project_id
+        and p.founder_id = auth.uid()
+    )
+  )
+  or (
+    (metadata->>'project_id') is not null
+    and (metadata->>'project_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    and exists (
+      select 1 from public.projects p
+      where p.id = (metadata->>'project_id')::uuid
+        and p.founder_id = auth.uid()
+    )
+  )
+);
 
 -- -----------------------------------------------------------------------------
 -- 9. PRODUCTION PERFORMANCE INDEXES (FOR SCALE)
@@ -2284,7 +2303,26 @@ create policy "submit reports" on public.reports for insert to authenticated wit
 create policy "own reports read" on public.reports for select to authenticated using (reporter_id = auth.uid() or public.is_super_admin());
 create policy "own blocks manage" on public.user_blocks for all to authenticated using (blocker_id = auth.uid()) with check (blocker_id = auth.uid());
 create policy "own analytics insert" on public.analytics_events for insert to authenticated with check (user_id = auth.uid());
-create policy "own analytics read" on public.analytics_events for select to authenticated using (user_id = auth.uid() or public.is_super_admin());
+create policy "own analytics read" on public.analytics_events for select to authenticated using (
+  user_id = auth.uid() 
+  or public.is_super_admin()
+  or (
+    project_id is not null and exists (
+      select 1 from public.projects p
+      where p.id = analytics_events.project_id
+        and p.founder_id = auth.uid()
+    )
+  )
+  or (
+    (metadata->>'project_id') is not null
+    and (metadata->>'project_id') ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    and exists (
+      select 1 from public.projects p
+      where p.id = (metadata->>'project_id')::uuid
+        and p.founder_id = auth.uid()
+    )
+  )
+);
 
 create index if not exists connections_status_idx on public.connections(status) where status = 'ACCEPTED';
 create index if not exists profiles_last_seen_idx on public.profiles(last_seen_at desc);

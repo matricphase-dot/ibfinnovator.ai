@@ -62,12 +62,39 @@ export async function POST(req: Request) {
 
     if (createError) throw createError;
 
-    // Add owner to members table
-    await supabase.from("workspace_members").insert({
-      workspace_id: newWorkspace.id,
-      user_id: user.id,
-      role: "owner",
-    });
+    // Add owner to members table with upsert for idempotency
+    await supabase.from("workspace_members").upsert(
+      {
+        workspace_id: newWorkspace.id,
+        user_id: user.id,
+        role: "owner",
+      },
+      { onConflict: "workspace_id,user_id" },
+    );
+
+    // Initialize default #general channel
+    try {
+      const { data: genCh } = await supabase
+        .from("channels")
+        .insert({
+          workspace_id: newWorkspace.id,
+          name: "general",
+          description: "General workspace discussion",
+          is_private: false,
+          created_by: user.id,
+        })
+        .select()
+        .maybeSingle();
+
+      if (genCh) {
+        await supabase.from("channel_members").upsert(
+          { channel_id: genCh.id, user_id: user.id },
+          { onConflict: "channel_id,user_id" },
+        );
+      }
+    } catch (channelErr) {
+      console.warn("Failed to create default channel for workspace:", channelErr);
+    }
 
     return NextResponse.json({ workspace: newWorkspace }, { status: 201 });
   } catch (err: any) {

@@ -32,7 +32,11 @@ export default function Analytics() {
       ? [
           [FolderKanban, "Projects", d.projects?.length || 0],
           [Users, "Applications", d.applications?.length || 0],
-          [Eye, "Project views", d.counts?.view_project || 0],
+          [
+            Eye,
+            "Project views",
+            founder?.funnel?.views ?? (d.counts?.view_project || 0),
+          ],
           [MessageSquare, "Messages", d.counts?.message_sent || 0],
         ]
       : [

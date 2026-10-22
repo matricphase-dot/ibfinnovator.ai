@@ -67,11 +67,17 @@ export function sanitizeNext(raw: string | null | undefined): string {
   ) {
     // In production, app routes belong on the app subdomain
     if (IS_PROD) {
+      const isPublicProject =
+        (t === "/projects" || t.startsWith("/projects/")) &&
+        !t.startsWith("/projects/new") &&
+        !/\/(?:board|list|cycles|modules|pages|analytics|settings)(?:\/|$)/.test(t);
+
       if (
         t === "/" ||
         t === "/help" ||
         t === "/privacy" ||
         t.startsWith("/portfolio/") ||
+        isPublicProject ||
         t === "/auth/signin" ||
         t === "/auth/signup" ||
         t === "/auth/forgot-password" ||

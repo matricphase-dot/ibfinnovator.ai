@@ -141,16 +141,7 @@ export default async function middleware(req: NextRequest) {
 
   const { pathname, search } = req.nextUrl;
 
-  // Let API and static files pass through without page redirects
-  if (
-    pathname.startsWith("/api/") ||
-    pathname.startsWith("/_next/") ||
-    pathname.includes(".")
-  ) {
-    return NextResponse.next();
-  }
-
-  // Handle /@username rewrite to /portfolio/[username]
+  // 1. Handle /@username rewrite to /portfolio/[username] (runs before static check so usernames with dots work)
   if (pathname.startsWith("/@")) {
     const username = pathname.slice(2).split("/")[0];
     if (username) {
@@ -158,6 +149,19 @@ export default async function middleware(req: NextRequest) {
       url.pathname = `/portfolio/${username}`;
       return NextResponse.rewrite(url);
     }
+  }
+
+  // 2. Let API, Next.js internal chunks, and static assets pass through without page redirects
+  const isStaticAsset =
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    /\.(?:ico|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|eot|css|js|map|txt|xml|json)$/i.test(pathname);
+
+  if (isStaticAsset) {
+    return NextResponse.next();
   }
 
   // Determine domain
@@ -221,12 +225,12 @@ export default async function middleware(req: NextRequest) {
   if (isAppDomain) {
     // Public informational pages belong on the marketing apex
     if (pathname === "/privacy" || pathname === "/help") {
-      return NextResponse.redirect(`${MARKETING_ORIGIN}${pathname}${search}`);
+      return createRedirect(`${MARKETING_ORIGIN}${pathname}${search}`);
     }
 
     // Public projects directory & public project profiles belong on the marketing apex
     if (!isProtectedPath(pathname) && (pathname === "/projects" || pathname.startsWith("/projects/"))) {
-      return NextResponse.redirect(`${MARKETING_ORIGIN}${pathname}${search}`);
+      return createRedirect(`${MARKETING_ORIGIN}${pathname}${search}`);
     }
 
     // If NOT authenticated -> Redirect to signin on marketing apex

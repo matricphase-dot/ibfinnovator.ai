@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { getSigninUrl } from "@/lib/auth/domain";
 
 export interface IbfWorkspace {
   id: string;
@@ -135,7 +136,10 @@ export function IbfWorkspaceProvider({ children }: { children: React.ReactNode }
       const res = await fetch(url);
       if (!res.ok) {
         if (res.status === 401) {
-          // Unauthenticated
+          if (typeof window !== "undefined") {
+            const currentDest = window.location.pathname + window.location.search;
+            window.location.assign(getSigninUrl(currentDest));
+          }
           return;
         }
         throw new Error("Failed to load workspace data");

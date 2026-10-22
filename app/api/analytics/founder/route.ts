@@ -40,11 +40,16 @@ export async function GET() {
         .select("id,created_at")
         .eq("sender_id", user.id)
         .gte("created_at", since),
-      supabase
-        .from("analytics_events")
-        .select("id,created_at,metadata")
-        .eq("event_type", "view_project")
-        .gte("created_at", since),
+      ids.length
+        ? supabase
+            .from("analytics_events")
+            .select("id,created_at,metadata,project_id")
+            .eq("event_type", "view_project")
+            .or(
+              `project_id.in.(${ids.join(",")}),metadata->>project_id.in.(${ids.join(",")})`,
+            )
+            .gte("created_at", since)
+        : Promise.resolve({ data: [] }),
     ]);
     const statusCounts = (projects || []).reduce(
         (a: any, p: any) => ((a[p.status] = (a[p.status] || 0) + 1), a),

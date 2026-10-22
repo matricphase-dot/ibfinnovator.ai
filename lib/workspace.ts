@@ -12,12 +12,47 @@ export interface Workspace {
 export async function getActiveWorkspace(
   supabase: SupabaseClient,
   userId: string,
+  preferredWorkspaceId?: string | null,
 ): Promise<Workspace | null> {
-  // 1. Try to find workspace where user is an accepted member or owner
+  if (!userId) return null;
+
+  // 0. If a preferred workspace was requested, verify user has membership or ownership
+  if (preferredWorkspaceId) {
+    const { data: preferredMembership } = await supabase
+      .from("workspace_members")
+      .select("workspace:workspaces(*)")
+      .eq("workspace_id", preferredWorkspaceId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (preferredMembership?.workspace) {
+      return preferredMembership.workspace as unknown as Workspace;
+    }
+
+    const { data: preferredOwned } = await supabase
+      .from("workspaces")
+      .select("*")
+      .eq("id", preferredWorkspaceId)
+      .eq("owner_id", userId)
+      .maybeSingle();
+
+    if (preferredOwned) {
+      await supabase
+        .from("workspace_members")
+        .upsert(
+          { workspace_id: preferredOwned.id, user_id: userId, role: "owner" },
+          { onConflict: "workspace_id,user_id" },
+        );
+      return preferredOwned as Workspace;
+    }
+  }
+
+  // 1. Try to find workspace where user is an accepted member
   const { data: membership } = await supabase
     .from("workspace_members")
     .select("workspace:workspaces(*)")
     .eq("user_id", userId)
+    .order("joined_at", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -44,7 +79,7 @@ export async function getActiveWorkspace(
     return ownedWs as Workspace;
   }
 
-  // 2. Try primary community workspace
+  // 2. Try primary community workspace (if accessible)
   const { data: communityWs } = await supabase
     .from("workspaces")
     .select("*")
@@ -52,7 +87,6 @@ export async function getActiveWorkspace(
     .maybeSingle();
 
   if (communityWs) {
-    // Ensure membership
     await supabase
       .from("workspace_members")
       .upsert(
@@ -69,11 +103,20 @@ export async function getActiveWorkspace(
     .eq("id", userId)
     .maybeSingle();
 
-  const baseName = profile?.name?.trim() || profile?.username?.trim() || "Personal";
-  const userPrefix = (profile?.username || `user-${userId.substring(0, 8)}`)
+  const rawName = (profile?.name || profile?.username || "Personal").trim();
+  const baseName = rawName.slice(0, 50) || "Personal";
+
+  let cleanPrefix = (profile?.username || `user-${userId.substring(0, 8)}`)
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "-");
-  const uniqueSlug = `${userPrefix}-ws`;
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!cleanPrefix || cleanPrefix.length < 2) {
+    cleanPrefix = `user-${userId.substring(0, 8)}`;
+  }
+
+  const entropy = Math.random().toString(36).substring(2, 7);
+  const uniqueSlug = `${cleanPrefix}-ws-${entropy}`;
 
   const { data: created, error: createErr } = await supabase
     .from("workspaces")
@@ -83,19 +126,92 @@ export async function getActiveWorkspace(
       owner_id: userId,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (created) {
-    await supabase.from("workspace_members").insert({
-      workspace_id: created.id,
-      user_id: userId,
-      role: "owner",
-    });
+    // Add owner to members table with upsert for idempotency
+    await supabase.from("workspace_members").upsert(
+      {
+        workspace_id: created.id,
+        user_id: userId,
+        role: "owner",
+      },
+      { onConflict: "workspace_id,user_id" },
+    );
+
+    // Initialize default #general channel for new workspace
+    try {
+      const { data: generalCh } = await supabase
+        .from("channels")
+        .insert({
+          workspace_id: created.id,
+          name: "general",
+          description: "General workspace discussion",
+          is_private: false,
+          created_by: userId,
+        })
+        .select()
+        .maybeSingle();
+
+      if (generalCh) {
+        await supabase.from("channel_members").upsert(
+          { channel_id: generalCh.id, user_id: userId },
+          { onConflict: "channel_id,user_id" },
+        );
+      }
+    } catch (channelErr) {
+      console.warn("Failed to create default channel for workspace:", channelErr);
+    }
+
     return created as Workspace;
   }
 
+  // Concurrency resilience: If insert failed (e.g. parallel request created it or slug collided),
+  // re-check if a workspace already exists for this user.
   if (createErr) {
-    console.error("Failed to create isolated personal workspace:", createErr);
+    const { data: existingOwned } = await supabase
+      .from("workspaces")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingOwned) {
+      await supabase
+        .from("workspace_members")
+        .upsert(
+          { workspace_id: existingOwned.id, user_id: userId, role: "owner" },
+          { onConflict: "workspace_id,user_id" },
+        );
+      return existingOwned as Workspace;
+    }
+
+    // Slug collision retry with high-entropy timestamped slug
+    const retrySlug = `${cleanPrefix}-ws-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
+    const { data: retryCreated, error: retryErr } = await supabase
+      .from("workspaces")
+      .insert({
+        name: `${baseName}'s Workspace`,
+        slug: retrySlug,
+        owner_id: userId,
+      })
+      .select()
+      .maybeSingle();
+
+    if (retryCreated) {
+      await supabase.from("workspace_members").upsert(
+        {
+          workspace_id: retryCreated.id,
+          user_id: userId,
+          role: "owner",
+        },
+        { onConflict: "workspace_id,user_id" },
+      );
+      return retryCreated as Workspace;
+    }
+
+    console.error("Failed to create isolated personal workspace after retry:", retryErr || createErr);
   }
 
   return null;

@@ -34,7 +34,7 @@ export async function GET(req: Request) {
       activeWorkspace = workspaces[0];
     }
     if (!activeWorkspace) {
-      activeWorkspace = await getActiveWorkspace(supabase, user.id);
+      activeWorkspace = await getActiveWorkspace(supabase, user.id, requestedWorkspaceId);
       if (activeWorkspace && !workspaces.some((w) => w.id === activeWorkspace!.id)) {
         workspaces.push(activeWorkspace);
       }
@@ -47,7 +47,9 @@ export async function GET(req: Request) {
       .order("created_at", { ascending: false });
 
     if (activeWorkspace) {
-      projectsQuery = projectsQuery.or(`workspace_id.eq.${activeWorkspace.id},workspace_id.is.null`);
+      projectsQuery = projectsQuery.eq("workspace_id", activeWorkspace.id);
+    } else {
+      projectsQuery = projectsQuery.eq("founder_id", user.id);
     }
 
     const { data: projectsData, error: projectsError } = await projectsQuery;
@@ -56,45 +58,55 @@ export async function GET(req: Request) {
     const rawProjects = projectsData || [];
     const projectIds = rawProjects.map((p) => p.id);
 
-    // Batch query counts in 4 parallel queries instead of 4 * N queries
+    // Optimized SQL count queries via RPC (single round-trip, zero rows over wire)
     const issueCounts: Record<string, number> = {};
     const cycleCounts: Record<string, number> = {};
     const moduleCounts: Record<string, number> = {};
     const pageCounts: Record<string, number> = {};
 
     if (projectIds.length > 0) {
-      const [issuesRes, cyclesRes, modulesRes, pagesRes] = await Promise.all([
-        supabase
-          .from("issues")
-          .select("project_id")
-          .in("project_id", projectIds),
-        supabase
-          .from("cycles")
-          .select("project_id")
-          .in("project_id", projectIds)
-          .in("status", ["current", "in_progress", "active"]),
-        supabase
-          .from("modules")
-          .select("project_id")
-          .in("project_id", projectIds),
-        supabase
-          .from("pages")
-          .select("project_id")
-          .in("project_id", projectIds),
-      ]);
+      const { data: countData, error: countErr } = await supabase.rpc(
+        "get_workspace_project_counts",
+        { p_project_ids: projectIds },
+      );
 
-      (issuesRes.data || []).forEach((row: any) => {
-        if (row.project_id) issueCounts[row.project_id] = (issueCounts[row.project_id] || 0) + 1;
-      });
-      (cyclesRes.data || []).forEach((row: any) => {
-        if (row.project_id) cycleCounts[row.project_id] = (cycleCounts[row.project_id] || 0) + 1;
-      });
-      (modulesRes.data || []).forEach((row: any) => {
-        if (row.project_id) moduleCounts[row.project_id] = (moduleCounts[row.project_id] || 0) + 1;
-      });
-      (pagesRes.data || []).forEach((row: any) => {
-        if (row.project_id) pageCounts[row.project_id] = (pageCounts[row.project_id] || 0) + 1;
-      });
+      if (!countErr && Array.isArray(countData) && countData.length > 0) {
+        for (const row of countData as any[]) {
+          issueCounts[row.project_id] = Number(row.issue_count || 0);
+          cycleCounts[row.project_id] = Number(row.active_cycle_count || 0);
+          moduleCounts[row.project_id] = Number(row.module_count || 0);
+          pageCounts[row.project_id] = Number(row.page_count || 0);
+        }
+      } else {
+        // Fallback: parallel count queries with head: true
+        await Promise.all(
+          projectIds.map(async (pid) => {
+            const [issues, cycles, modules, pages] = await Promise.all([
+              supabase
+                .from("issues")
+                .select("*", { count: "exact", head: true })
+                .eq("project_id", pid),
+              supabase
+                .from("cycles")
+                .select("*", { count: "exact", head: true })
+                .eq("project_id", pid)
+                .in("status", ["current", "in_progress", "active"]),
+              supabase
+                .from("modules")
+                .select("*", { count: "exact", head: true })
+                .eq("project_id", pid),
+              supabase
+                .from("pages")
+                .select("*", { count: "exact", head: true })
+                .eq("project_id", pid),
+            ]);
+            issueCounts[pid] = issues.count || 0;
+            cycleCounts[pid] = cycles.count || 0;
+            moduleCounts[pid] = modules.count || 0;
+            pageCounts[pid] = pages.count || 0;
+          }),
+        );
+      }
     }
 
     const projectsWithCounts = rawProjects.map((project) => ({

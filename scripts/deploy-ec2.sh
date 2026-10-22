@@ -207,8 +207,17 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Host $host;
+
+        # Real client IP behind Cloudflare (fallback to remote_addr if direct/local)
+        set $real_client_ip $http_cf_connecting_ip;
+        if ($real_client_ip = "") {
+            set $real_client_ip $remote_addr;
+        }
+        proxy_set_header X-Real-IP $real_client_ip;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # Forward Cloudflare HTTPS protocol to Next.js (fallback to scheme if direct)
         set $forwarded_proto $http_x_forwarded_proto;
         if ($forwarded_proto = "") {
             set $forwarded_proto $scheme;

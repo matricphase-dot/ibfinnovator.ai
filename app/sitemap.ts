@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { supabasePublic } from "@/lib/supabase/public";
+import { MARKETING_ORIGIN } from "@/lib/auth/domain";
 
-const base = process.env.NEXT_PUBLIC_APP_URL || "https://innovators-global.com";
+const base = MARKETING_ORIGIN;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const fixed: MetadataRoute.Sitemap = [

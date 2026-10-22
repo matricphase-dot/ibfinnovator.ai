@@ -1,4 +1,6 @@
 import type { MetadataRoute } from "next";
+import { MARKETING_ORIGIN } from "@/lib/auth/domain";
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -13,9 +15,16 @@ export default function robots(): MetadataRoute.Robots {
         "/team/",
         "/applications",
         "/notifications",
+        "/projects/new",
+        "/projects/*/board",
+        "/projects/*/cycles",
+        "/projects/*/list",
+        "/projects/*/modules",
+        "/projects/*/pages",
+        "/projects/*/settings",
       ],
     },
-    sitemap: "https://innovators-global.com/sitemap.xml",
-    host: "https://innovators-global.com",
+    sitemap: `${MARKETING_ORIGIN}/sitemap.xml`,
+    host: MARKETING_ORIGIN,
   };
 }
