@@ -13,6 +13,7 @@ import { IssueDrawer } from "@/components/ibf/issues/issue-drawer";
 import { ModulesView } from "@/components/ibf/modules/modules-view";
 import { PagesView } from "@/components/ibf/pages/pages-view";
 import { useSupabaseBrowser } from "@/lib/supabase/browser";
+import { useProjectRealtime } from "@/lib/realtime/use-project-realtime";
 import {
   Kanban,
   List,
@@ -101,47 +102,42 @@ export function ProjectManagementWorkspace({
     loadData();
   }, [projectId]);
 
-  // Realtime Supabase Subscription for Multi-User Live Board
-  useEffect(() => {
-    const channel = supabase
-      .channel(`pm-issues-${projectId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "issues",
-          filter: `project_id=eq.${projectId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            const newIssue = payload.new as Issue;
-            setIssues((prev) => {
-              if (prev.some((i) => i.id === newIssue.id)) return prev;
-              return [newIssue, ...prev];
-            });
-          } else if (payload.eventType === "UPDATE") {
-            const updated = payload.new as Issue;
-            setIssues((prev) =>
-              prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i))
-            );
-            setDrawerIssue((prev) =>
-              prev && prev.id === updated.id ? { ...prev, ...updated } : prev
-            );
-          } else if (payload.eventType === "DELETE") {
-            setIssues((prev) => prev.filter((i) => i.id !== payload.old.id));
-            setDrawerIssue((prev) =>
-              prev && prev.id === payload.old.id ? null : prev
-            );
-          }
+  // Realtime Supabase Subscription for Multi-User Live Collaboration
+  const { isLive } = useProjectRealtime(projectId, {
+    onIssueChange: (payload) => {
+      if (payload.eventType === "INSERT") {
+        const newIssue = payload.new as Issue;
+        setIssues((prev) => {
+          if (prev.some((i) => i.id === newIssue.id)) return prev;
+          return [newIssue, ...prev];
+        });
+      } else if (payload.eventType === "UPDATE") {
+        const updated = payload.new as Issue;
+        setIssues((prev) =>
+          prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i))
+        );
+        setDrawerIssue((prev) =>
+          prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+        );
+      } else if (payload.eventType === "DELETE") {
+        setIssues((prev) => prev.filter((i) => i.id !== payload.old.id));
+        setDrawerIssue((prev) =>
+          prev && prev.id === payload.old.id ? null : prev
+        );
+      }
+    },
+    onCycleChange: async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/cycles`);
+        if (res.ok) {
+          const data = await res.json();
+          setCycles(data || []);
         }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [projectId, supabase]);
+      } catch (err) {
+        console.error("Failed to sync cycles:", err);
+      }
+    },
+  });
 
   // Tab change handler with history sync
   function handleTabChange(tab: PMTab) {
@@ -312,8 +308,16 @@ export function ProjectManagementWorkspace({
                 </div>
               </div>
             </div>
-            <div className="text-[11px] font-mono text-slate-400">
-              {filteredIssues.length} issues
+            <div className="flex items-center gap-2">
+              {isLive && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Sync
+                </span>
+              )}
+              <div className="text-[11px] font-mono text-slate-400">
+                {filteredIssues.length} issues
+              </div>
             </div>
           </div>
         ) : null
@@ -338,8 +342,14 @@ export function ProjectManagementWorkspace({
                     {projectIdentifier}
                   </span>
                 </h1>
-                <p className="text-[11px] text-slate-400 font-mono">
-                  {filteredIssues.length} Issues · {cycles.length} Sprints
+                <p className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                  <span>{filteredIssues.length} Issues · {cycles.length} Sprints</span>
+                  {isLive && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

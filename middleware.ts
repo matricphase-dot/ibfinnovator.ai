@@ -75,7 +75,8 @@ const PROTECTED_PREFIXES = [
   "/bookmarks",
   "/auth/complete-onboarding",
   "/auth/choose-role",
-  "/projects/new",
+  "/projects",
+  "/your-issues",
 ];
 
 function isProtectedPath(pathname: string): boolean {
