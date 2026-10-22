@@ -56,7 +56,9 @@ export function KanbanBoard({
           i.title.toLowerCase().includes(q) ||
           `${projectIdentifier}-${i.sequence_id}`.toLowerCase().includes(q) ||
           i.assignee?.full_name?.toLowerCase().includes(q) ||
-          i.assignee?.name?.toLowerCase().includes(q)
+          i.assignee?.name?.toLowerCase().includes(q) ||
+          i.assignee?.username?.toLowerCase().includes(q) ||
+          i.module?.name?.toLowerCase().includes(q)
       );
     }
 

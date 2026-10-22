@@ -3,7 +3,8 @@
 import React from "react";
 
 interface PlaneProgressProps {
-  value: number; // 0 to 100
+  value?: number; // 0 to 100
+  percent?: number; // alias for value
   size?: "sm" | "md" | "lg";
   variant?: "accent" | "emerald" | "amber";
   showLabel?: boolean;
@@ -12,12 +13,14 @@ interface PlaneProgressProps {
 
 export function PlaneProgress({
   value,
+  percent,
   size = "md",
   variant = "accent",
   showLabel = false,
   className = "",
 }: PlaneProgressProps) {
-  const clamped = Math.max(0, Math.min(100, Math.round(value)));
+  const raw = value !== undefined ? value : percent !== undefined ? percent : 0;
+  const clamped = Math.max(0, Math.min(100, Math.round(raw)));
 
   const heightClasses = {
     sm: "h-1 rounded-[2px]",

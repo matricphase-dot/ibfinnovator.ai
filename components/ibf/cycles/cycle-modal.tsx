@@ -53,7 +53,7 @@ export function CycleModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || loading) return;
 
     setLoading(true);
     setError("");

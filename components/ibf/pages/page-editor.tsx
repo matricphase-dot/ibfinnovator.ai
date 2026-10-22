@@ -96,6 +96,16 @@ export function PageEditor({
     };
   }, []);
 
+  // Sync state if active page changes to prevent saving previous page's buffer
+  useEffect(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    setIsSaving(false);
+    setTitle(page.title || "Untitled Document");
+    setContent(page.content_markdown || "");
+    setIsFavorite(page.is_favorite || false);
+    setLastSaved(new Date(page.updated_at || Date.now()));
+  }, [page.id, page.title, page.content_markdown, page.is_favorite, page.updated_at]);
+
   function handleTitleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setTitle(val);

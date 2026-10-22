@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { IssueComment } from "@/types/database.types";
 import { MessageSquare, Send, Loader2, User } from "lucide-react";
+import { PlaneAvatar } from "@/components/ibf/ui";
 
 interface IssueCommentsProps {
   issueId: string;
@@ -101,17 +102,11 @@ export function IssueComments({ issueId }: IssueCommentsProps) {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {comment.actor?.avatar_url ? (
-                      <img
-                        src={comment.actor.avatar_url}
-                        alt={authorName}
-                        className="w-5 h-5 rounded-full object-cover border border-white/10"
-                      />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-cyan-400/10 text-cyan-300 grid place-items-center text-[10px] font-bold">
-                        {authorName.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
+                    <PlaneAvatar
+                      name={authorName}
+                      src={comment.actor?.avatar_url || undefined}
+                      size="xs"
+                    />
                     <span className="text-xs font-semibold text-white">{authorName}</span>
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">{timeStr}</span>

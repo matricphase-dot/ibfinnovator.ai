@@ -106,15 +106,48 @@ export function ProjectManagementWorkspace({
   const { isLive } = useProjectRealtime(projectId, {
     onIssueChange: (payload) => {
       if (payload.eventType === "INSERT") {
-        const newIssue = payload.new as Issue;
+        const rawIssue = payload.new as any;
+        // Optimistically add raw issue so UI card appears immediately
         setIssues((prev) => {
-          if (prev.some((i) => i.id === newIssue.id)) return prev;
-          return [newIssue, ...prev];
+          if (prev.some((i) => i.id === rawIssue.id)) return prev;
+          return [{ ...rawIssue, labels: [], subtasks: [] }, ...prev];
         });
+        // Fetch full relations (assignee, cycle, module, labels) in background
+        fetch(`/api/issues/${rawIssue.id}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((hydrated) => {
+            if (hydrated) {
+              setIssues((prev) =>
+                prev.map((i) => (i.id === hydrated.id ? hydrated : i))
+              );
+            }
+          })
+          .catch(() => {});
       } else if (payload.eventType === "UPDATE") {
-        const updated = payload.new as Issue;
+        const updated = payload.new as any;
         setIssues((prev) =>
-          prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i))
+          prev.map((i) => {
+            if (i.id !== updated.id) return i;
+            // If relations changed (assignee, module, cycle), refresh full joins
+            const needsHydration =
+              i.assignee?.id !== updated.assignee_id ||
+              i.module_id !== updated.module_id ||
+              i.cycle_id !== updated.cycle_id;
+            if (needsHydration) {
+              fetch(`/api/issues/${updated.id}`)
+                .then((res) => (res.ok ? res.json() : null))
+                .then((hydrated) => {
+                  if (hydrated) {
+                    setIssues((curr) =>
+                      curr.map((item) => (item.id === hydrated.id ? hydrated : item))
+                    );
+                    setDrawerIssue((d) => (d && d.id === hydrated.id ? hydrated : d));
+                  }
+                })
+                .catch(() => {});
+            }
+            return { ...i, ...updated };
+          })
         );
         setDrawerIssue((prev) =>
           prev && prev.id === updated.id ? { ...prev, ...updated } : prev

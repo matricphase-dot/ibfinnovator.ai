@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CheckSquare, Plus, CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { PlaneProgress, PlaneSequenceBadge } from "@/components/ibf/ui";
 
 interface Subtask {
   id: string;
@@ -118,12 +119,7 @@ export function IssueSubtasks({
 
       {/* Progress Bar */}
       {subtasks.length > 0 && (
-        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div
-            className="h-full bg-cyan-400 rounded-full transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+        <PlaneProgress percent={progressPercent} size="sm" showLabel={false} />
       )}
 
       {/* List */}
@@ -146,9 +142,12 @@ export function IssueSubtasks({
                   <Circle size={15} />
                 )}
               </button>
-              <span className="font-mono text-[10px] text-slate-500">
-                {projectIdentifier}-{task.sequence_id}
-              </span>
+              <PlaneSequenceBadge
+                identifier={projectIdentifier}
+                sequence={task.sequence_id}
+                enableCopy={false}
+                className="text-[10px] py-0 px-1.5"
+              />
               <span
                 className={`text-xs flex-1 transition ${
                   isDone ? "line-through text-slate-500" : "text-slate-200"
