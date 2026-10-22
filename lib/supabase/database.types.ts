@@ -54,6 +54,13 @@ type ProfileRow = {
   onboarding_completed: boolean;
   last_seen_at: string | null;
   profile_embedding: unknown;
+  full_name: string | null;
+  headline: string | null;
+  links: Json | null;
+  startup_name: string | null;
+  startup_stage: string | null;
+  education: string | null;
+  is_published: boolean | null;
   created_at: string;
   updated_at: string;
 };
@@ -129,6 +136,7 @@ type MessageRow = {
   sender_id: string;
   recipient_id: string | null;
   project_id: string | null;
+  channel_id?: string | null;
   room_type: string;
   room_id: string | null;
   channel: string;

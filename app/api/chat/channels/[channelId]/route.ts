@@ -48,6 +48,19 @@ export async function GET(
 
     const isMember = (members || []).some((m) => m.user_id === user.id);
 
+    // Verify user belongs to channel's workspace
+    const { data: isWsMember } = await supabase.rpc("is_workspace_member", {
+      ws_id: channel.workspace_id,
+      check_user: user.id,
+    });
+
+    if (!isWsMember) {
+      return NextResponse.json(
+        { error: "Access denied: not a member of this workspace" },
+        { status: 403 },
+      );
+    }
+
     // If channel is private and user is not a member and not creator, 403
     if (channel.is_private && !isMember && channel.created_by !== user.id) {
       return NextResponse.json(

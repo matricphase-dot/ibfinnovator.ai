@@ -198,7 +198,7 @@ export async function POST(
       .insert({
         channel_id: channelId,
         sender_id: user.id,
-        room_type: "GENERAL",
+        room_type: "CHANNEL",
         content,
         attachments,
         parent_id: parent_id || null,

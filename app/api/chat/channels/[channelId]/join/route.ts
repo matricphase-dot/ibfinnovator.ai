@@ -27,7 +27,20 @@ export async function POST(
       );
     }
 
-    // 2. Add to channel_members
+    // 2. Verify workspace membership
+    const { data: isWsMember } = await supabase.rpc("is_workspace_member", {
+      ws_id: channel.workspace_id,
+      check_user: user.id,
+    });
+
+    if (!isWsMember) {
+      return NextResponse.json(
+        { error: "Access denied: not a member of this workspace" },
+        { status: 403 },
+      );
+    }
+
+    // 3. Add to channel_members
     const { error: joinErr } = await supabase.from("channel_members").upsert(
       {
         channel_id: channelId,

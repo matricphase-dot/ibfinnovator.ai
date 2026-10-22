@@ -67,7 +67,8 @@ export async function GET(req: NextRequest) {
     if (channelIds.length > 0) {
       const { data: memberCounts } = await supabase
         .from("channel_members")
-        .select("channel_id");
+        .select("channel_id")
+        .in("channel_id", channelIds);
       if (memberCounts) {
         for (const m of memberCounts) {
           countsMap[m.channel_id] = (countsMap[m.channel_id] || 0) + 1;

@@ -23,11 +23,16 @@ export async function POST(
         { status: 404 },
       );
     let canRead = false;
-    if (message.sender_id === user.id || message.recipient_id === user.id)
+    if (message.sender_id === user.id || message.recipient_id === user.id) {
       canRead = true;
-    else if (message.room_type === "GENERAL" || message.channel_id)
+    } else if (message.channel_id) {
+      const { data: channelAccess } = await supabase.rpc("can_access_channel", {
+        target_channel: message.channel_id,
+      });
+      canRead = channelAccess === true;
+    } else if (message.room_type === "GENERAL" && !message.channel_id) {
       canRead = true;
-    else if (message.room_id) {
+    } else if (message.room_id) {
       const { data: access } = await supabase.rpc("can_access_team_room", {
         target_room: message.room_id,
       });
