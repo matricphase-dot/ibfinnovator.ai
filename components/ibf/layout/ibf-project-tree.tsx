@@ -101,12 +101,12 @@ export function IbfProjectTree({
   return (
     <div className="space-y-1">
       {/* Section Header */}
-      <div className="flex items-center justify-between px-2 pt-3 pb-1.5 text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
+      <div className="flex items-center justify-between px-2 pt-3 pb-1.5 text-[11px] font-mono uppercase tracking-wider text-slate-500 font-bold">
         <span>Projects</span>
         <button
           type="button"
           onClick={onCreateProject}
-          className="text-slate-500 hover:text-cyan-300 transition p-0.5 rounded hover:bg-white/5"
+          className="text-slate-500 hover:text-slate-900 transition p-0.5 rounded hover:bg-slate-100"
           title="Create New Project"
         >
           <Plus size={14} />
@@ -115,11 +115,11 @@ export function IbfProjectTree({
 
       {projects.length === 0 && (
         <div className="px-2 py-3 text-center">
-          <p className="text-xs text-slate-400">No projects yet</p>
+          <p className="text-xs text-slate-500">No projects yet</p>
           <button
             type="button"
             onClick={onCreateProject}
-            className="mt-2 text-xs font-semibold text-cyan-300 hover:underline flex items-center justify-center gap-1 mx-auto"
+            className="mt-2 text-xs font-semibold text-cyan-700 hover:underline flex items-center justify-center gap-1 mx-auto"
           >
             <Plus size={12} /> Create First Project
           </button>
@@ -218,8 +218,8 @@ export function IbfProjectTree({
               <div
                 className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   isCurrentProject
-                    ? "bg-white/[0.05] text-white"
-                    : "text-slate-300 hover:text-white hover:bg-white/[0.04]"
+                    ? "bg-slate-100 text-slate-900 font-bold"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
                 <div
@@ -229,13 +229,13 @@ export function IbfProjectTree({
                   {/* Caret */}
                   <ChevronRight
                     size={14}
-                    className={`text-slate-500 transition-transform duration-150 flex-shrink-0 ${
-                      isExpanded ? "rotate-90 text-cyan-300" : ""
+                    className={`text-slate-400 transition-transform duration-150 flex-shrink-0 ${
+                      isExpanded ? "rotate-90 text-cyan-600" : ""
                     }`}
                   />
 
                   {/* Project Monogram / Identifier */}
-                  <span className="w-5 h-5 rounded bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+                  <span className="w-5 h-5 rounded bg-cyan-50 border border-cyan-200 text-cyan-700 font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                     {project.emoji || project.identifier.slice(0, 3)}
                   </span>
 
@@ -251,7 +251,7 @@ export function IbfProjectTree({
                     e.stopPropagation();
                     onOpenQuickIssue?.(project.id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-cyan-300 hover:bg-white/10 rounded transition"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-cyan-700 hover:bg-slate-200 rounded transition"
                   title={`Create issue in ${project.name}`}
                 >
                   <Plus size={13} />
@@ -260,7 +260,7 @@ export function IbfProjectTree({
 
               {/* Sub-Tree (Children) */}
               {isExpanded && (
-                <div className="ml-4 pl-3 border-l border-white/[0.06] space-y-0.5 py-0.5">
+                <div className="ml-4 pl-3 border-l border-slate-200 space-y-0.5 py-0.5">
                   {childItems.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -269,8 +269,8 @@ export function IbfProjectTree({
                         href={item.href}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
                           item.isActive
-                            ? "bg-cyan-400/10 text-cyan-300 font-bold border border-cyan-400/20 shadow-xs"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                            ? "bg-cyan-50 text-cyan-700 font-bold border border-cyan-200 shadow-xs"
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -282,8 +282,8 @@ export function IbfProjectTree({
                           <span
                             className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full leading-tight font-semibold ${
                               item.badgeHighlight
-                                ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30"
-                                : "bg-white/5 text-slate-400 border border-white/5"
+                                ? "bg-cyan-100 text-cyan-800 border border-cyan-300"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
                             }`}
                           >
                             {item.badge}
@@ -305,7 +305,7 @@ export function IbfProjectTree({
           <button
             type="button"
             onClick={onCreateProject}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-cyan-300 border border-dashed border-white/[0.08] hover:border-cyan-300/30 hover:bg-cyan-400/[0.03] transition"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-cyan-700 border border-dashed border-slate-300 hover:border-cyan-400 hover:bg-cyan-50/50 transition"
           >
             <Plus size={13} />
             Create New Project

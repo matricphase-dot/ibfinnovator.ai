@@ -46,16 +46,16 @@ export function IbfMobileDrawer({
       />
 
       {/* Off-canvas sliding panel */}
-      <div className="fixed inset-y-0 left-0 max-w-[300px] w-full bg-[#0d121f] border-r border-white/[0.08] shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-250">
+      <div className="fixed inset-y-0 left-0 max-w-[300px] w-full bg-white border-r border-slate-200 shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-250">
         {/* Drawer Header Close Button */}
-        <div className="flex items-center justify-between p-3 border-b border-white/[0.06] bg-[#0a0e19]">
-          <span className="text-xs font-mono font-bold tracking-wider text-slate-400 uppercase">
+        <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50">
+          <span className="text-xs font-mono font-bold tracking-wider text-slate-500 uppercase">
             Navigation
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/60 transition"
             title="Close navigation"
           >
             <X size={16} />

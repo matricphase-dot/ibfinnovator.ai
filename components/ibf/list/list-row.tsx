@@ -48,10 +48,10 @@ export function ListRow({
     <tr
       ref={rowRef}
       onClick={() => onSelectIssue?.(issue)}
-      className={`group cursor-pointer transition-colors duration-150 border-b border-white/[0.04] ${
+      className={`group cursor-pointer transition-colors duration-150 border-b border-slate-100 ${
         isFocused
-          ? "bg-cyan-500/10 border-l-2 border-l-cyan-300"
-          : "hover:bg-white/[0.02]"
+          ? "bg-cyan-50/80 border-l-2 border-l-cyan-500"
+          : "hover:bg-slate-50/80"
       }`}
     >
       {/* Identifier */}
@@ -59,18 +59,18 @@ export function ListRow({
         <PlaneSequenceBadge
           identifier={projectIdentifier}
           sequence={issue.sequence_id}
-          className="group-hover:text-cyan-300"
+          className="group-hover:text-cyan-600"
         />
       </td>
 
       {/* Title & Metadata Tags */}
       <td className="py-2.5 px-4 text-xs">
         <div className="flex items-center gap-2 max-w-xl">
-          <span className="font-semibold text-white group-hover:text-cyan-200 truncate transition-colors">
+          <span className="font-semibold text-slate-900 group-hover:text-cyan-700 truncate transition-colors">
             {issue.title}
           </span>
           {issue.module && (
-            <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 truncate max-w-[120px]">
+            <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200 truncate max-w-[120px]">
               ⊡ {issue.module.name}
             </span>
           )}
@@ -78,12 +78,12 @@ export function ListRow({
             <span
               className={`shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded flex items-center gap-1 border ${
                 allSubtasksDone
-                  ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20"
-                  : "bg-white/5 text-slate-400 border-white/10"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-slate-100 text-slate-600 border-slate-200"
               }`}
               title={`Subtasks: ${completedSubtasks} of ${totalSubtasks} completed`}
             >
-              <CheckSquare size={10} className={allSubtasksDone ? "text-emerald-400" : "text-slate-400"} />
+              <CheckSquare size={10} className={allSubtasksDone ? "text-emerald-600" : "text-slate-400"} />
               {completedSubtasks}/{totalSubtasks}
             </span>
           )}

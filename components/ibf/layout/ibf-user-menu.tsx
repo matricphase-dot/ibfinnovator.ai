@@ -84,14 +84,14 @@ export function IbfUserMenu({ userProfile, isCollapsed = false }: IbfUserMenuPro
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] group ${
-          isOpen ? "bg-white/[0.06] border-white/[0.08]" : ""
+        className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition hover:bg-slate-100 border border-transparent hover:border-slate-200 group ${
+          isOpen ? "bg-slate-100 border-slate-200" : ""
         } ${isCollapsed ? "justify-center px-1" : ""}`}
         title={`${name} (${role})`}
       >
         {/* Avatar with Green Online Dot */}
         <div className="relative flex-shrink-0">
-          <div className="w-8 h-8 rounded-full bg-cyan-300/10 border border-cyan-300/30 text-cyan-300 flex items-center justify-center font-bold text-xs shadow-inner">
+          <div className="w-8 h-8 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 flex items-center justify-center font-bold text-xs shadow-inner">
             {userProfile?.avatar_url ? (
               <img
                 src={userProfile.avatar_url}
@@ -105,16 +105,16 @@ export function IbfUserMenu({ userProfile, isCollapsed = false }: IbfUserMenuPro
           {/* Pulsing Green Online Indicator */}
           <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-[#0d121f]" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white" />
           </span>
         </div>
 
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white tracking-tight truncate group-hover:text-cyan-300 transition">
+            <p className="text-xs font-bold text-slate-900 tracking-tight truncate group-hover:text-cyan-700 transition">
               {name}
             </p>
-            <p className="text-[10px] text-slate-400 capitalize truncate font-mono">
+            <p className="text-[10px] text-slate-500 capitalize truncate font-mono">
               {role.toLowerCase()}
             </p>
           </div>
@@ -123,55 +123,55 @@ export function IbfUserMenu({ userProfile, isCollapsed = false }: IbfUserMenuPro
         {!isCollapsed && (
           <ChevronsUpDown
             size={14}
-            className="text-slate-500 group-hover:text-slate-300 flex-shrink-0 transition"
+            className="text-slate-400 group-hover:text-slate-600 flex-shrink-0 transition"
           />
         )}
       </button>
 
       {/* Popover Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#0d1424] border border-white/[0.1] rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute bottom-full left-0 mb-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
           {/* User Header */}
-          <div className="px-3 py-2 border-b border-white/[0.06] mb-1">
-            <p className="text-xs font-bold text-white truncate">{name}</p>
-            <p className="text-[10px] text-slate-400 font-mono truncate">{email}</p>
+          <div className="px-3 py-2 border-b border-slate-100 mb-1">
+            <p className="text-xs font-bold text-slate-900 truncate">{name}</p>
+            <p className="text-[10px] text-slate-500 font-mono truncate">{email}</p>
           </div>
 
           <div className="space-y-0.5">
             <Link
               href="/settings"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition"
             >
-              <Settings size={14} className="text-slate-400" />
+              <Settings size={14} className="text-slate-500" />
               Account Settings
             </Link>
 
             <button
               type="button"
               onClick={handleCopyInvite}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition text-left"
             >
-              <UserPlus size={14} className="text-slate-400" />
+              <UserPlus size={14} className="text-slate-500" />
               Invite Team Members
             </button>
 
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-400">
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-600">
               <span className="flex items-center gap-2.5">
-                <Moon size={14} className="text-slate-400" />
+                <Moon size={14} className="text-slate-500" />
                 Theme
               </span>
-              <span className="text-[10px] font-mono text-cyan-300 bg-cyan-300/10 px-2 py-0.5 rounded-full border border-cyan-300/20">
-                Dark Precision
+              <span className="text-[10px] font-mono text-cyan-800 bg-cyan-100 px-2 py-0.5 rounded-full border border-cyan-200">
+                Light Crisp
               </span>
             </div>
           </div>
 
-          <div className="mt-1 pt-1 border-t border-white/[0.06]">
+          <div className="mt-1 pt-1 border-t border-slate-100">
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 transition text-left"
             >
               <LogOut size={14} />
               Log Out

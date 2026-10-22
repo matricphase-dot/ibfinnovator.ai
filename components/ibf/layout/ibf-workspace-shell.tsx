@@ -74,15 +74,15 @@ function WorkspaceShellInner({
     : undefined;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#080c14] text-slate-100 font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans">
       {/* 1. Desktop 260px Workspace Sidebar */}
       <div className="hidden lg:flex flex-shrink-0">
         <IbfSidebar
           currentWorkspace={
             currentWorkspace || {
               id: "default",
-              name: "IBF Foundry",
-              slug: "ibf-foundry",
+              name: "My Workspace",
+              slug: "workspace",
             }
           }
           projects={projects}
@@ -106,8 +106,8 @@ function WorkspaceShellInner({
         currentWorkspace={
           currentWorkspace || {
             id: "default",
-            name: "IBF Foundry",
-            slug: "ibf-foundry",
+            name: "My Workspace",
+            slug: "workspace",
           }
         }
         projects={projects}
@@ -127,7 +127,7 @@ function WorkspaceShellInner({
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Topbar */}
         <IbfTopbar
-          workspaceName={currentWorkspace?.name || "IBF Foundry"}
+          workspaceName={currentWorkspace?.name || "Workspace"}
           projectName={activeProject?.name}
           projectIdentifier={activeProject?.identifier}
           projectId={activeProject?.id}
@@ -146,7 +146,7 @@ function WorkspaceShellInner({
         />
 
         {/* Scrollable Canvas */}
-        <main className="flex-1 bg-[#080c14] overflow-y-auto min-w-0">
+        <main className="flex-1 bg-slate-50 overflow-y-auto min-w-0">
           {children}
         </main>
       </div>

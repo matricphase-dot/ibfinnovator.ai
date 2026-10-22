@@ -250,7 +250,7 @@ export function ListView({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search issues by title, ID, assignee..."
-              className="w-full pl-8 pr-3 py-1.5 bg-[#0a0f1d] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-300 transition"
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 shadow-xs transition"
             />
           </div>
         </div>
@@ -258,12 +258,12 @@ export function ListView({
         <div className="flex items-center gap-3">
           {/* Group By Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-slate-400">GROUP BY:</span>
+            <span className="text-[11px] font-mono text-slate-500 font-semibold">GROUP BY:</span>
             <div className="relative inline-flex items-center">
               <select
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
-                className="appearance-none pl-3 pr-7 py-1.5 bg-[#0a0f1d] border border-white/[0.08] rounded-xl text-xs font-semibold text-slate-300 hover:text-white focus:outline-none focus:ring-1 focus:ring-cyan-300 cursor-pointer"
+                className="appearance-none pl-3 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 shadow-xs cursor-pointer"
               >
                 <option value="state">State</option>
                 <option value="priority">Priority</option>
@@ -276,26 +276,26 @@ export function ListView({
           </div>
 
           {/* Keyboard Shortcuts Hint */}
-          <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-mono text-slate-500 bg-white/[0.02] border border-white/[0.05] px-2.5 py-1 rounded-lg">
+          <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
             <span>Nav:</span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">j</kbd>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">k</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">j</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">k</kbd>
             <span>Open:</span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">↵</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">↵</kbd>
             <span>State:</span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">s</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">s</kbd>
             <span>Priority:</span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">p</kbd>
+            <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">p</kbd>
           </div>
         </div>
       </div>
 
       {/* Spreadsheet Table */}
-      <div className="w-full bg-[#080d18] border border-white/[0.06] rounded-2xl overflow-hidden shadow-inner">
+      <div className="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02] text-[10px] font-mono uppercase tracking-wider text-slate-400 select-none">
+              <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-mono uppercase tracking-wider text-slate-500 select-none">
                 <th className="py-2.5 px-4 w-28">Identifier</th>
                 <th className="py-2.5 px-4">Title</th>
                 <th className="py-2.5 px-4 w-36">State</th>
@@ -304,7 +304,7 @@ export function ListView({
                 <th className="py-2.5 px-4 w-36">Due Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="divide-y divide-slate-100">
               {groupedSections.map((section) => (
                 <React.Fragment key={section.key}>
                   {groupBy !== "none" ? (

@@ -47,20 +47,7 @@ export async function getActiveWorkspace(
     }
   }
 
-  // 1. Try to find workspace where user is an accepted member
-  const { data: membership } = await supabase
-    .from("workspace_members")
-    .select("workspace:workspaces(*)")
-    .eq("user_id", userId)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (membership?.workspace) {
-    return membership.workspace as unknown as Workspace;
-  }
-
-  // 1b. Check if user owns any workspace directly
+  // 1. Check if user owns any workspace directly (primary)
   const { data: ownedWs } = await supabase
     .from("workspaces")
     .select("*")
@@ -79,31 +66,27 @@ export async function getActiveWorkspace(
     return ownedWs as Workspace;
   }
 
-  // 2. Try primary community workspace (if accessible)
-  const { data: communityWs } = await supabase
-    .from("workspaces")
-    .select("*")
-    .eq("slug", "ibf-community")
+  // 2. Try to find workspace where user is an explicitly invited/joined member
+  const { data: membership } = await supabase
+    .from("workspace_members")
+    .select("workspace:workspaces(*)")
+    .eq("user_id", userId)
+    .order("joined_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
-  if (communityWs) {
-    await supabase
-      .from("workspace_members")
-      .upsert(
-        { workspace_id: communityWs.id, user_id: userId, role: "member" },
-        { onConflict: "workspace_id,user_id" },
-      );
-    return communityWs as Workspace;
+  if (membership?.workspace) {
+    return membership.workspace as unknown as Workspace;
   }
 
-  // 3. Fallback: Create an isolated personal workspace (NEVER hijack another tenant's workspace)
+  // 3. Fallback: Create an isolated personal workspace (NEVER hijack or auto-enroll into another tenant's workspace)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, username")
+    .select("name, username, full_name")
     .eq("id", userId)
     .maybeSingle();
 
-  const rawName = (profile?.name || profile?.username || "Personal").trim();
+  const rawName = (profile?.full_name || profile?.name || profile?.username || "Personal").trim();
   const baseName = rawName.slice(0, 50) || "Personal";
 
   let cleanPrefix = (profile?.username || `user-${userId.substring(0, 8)}`)
@@ -138,6 +121,13 @@ export async function getActiveWorkspace(
       },
       { onConflict: "workspace_id,user_id" },
     );
+
+    // Link any orphan projects owned by this user to their new workspace
+    await supabase
+      .from("projects")
+      .update({ workspace_id: created.id })
+      .eq("founder_id", userId)
+      .is("workspace_id", null);
 
     // Initialize default #general channel for new workspace
     try {

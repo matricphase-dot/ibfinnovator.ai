@@ -217,17 +217,17 @@ export function PlaneSequenceBadge({
   return (
     <span
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1 font-mono text-[11px] font-bold text-cyan-400 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/20 px-2 py-0.5 rounded-[5px] transition cursor-pointer select-none group ${className}`}
+      className={`inline-flex items-center gap-1 font-mono text-[11px] font-bold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-2 py-0.5 rounded-[5px] transition cursor-pointer select-none group ${className}`}
       title={enableCopy ? `Click to copy ${fullId}` : fullId}
     >
       <span>#{fullId}</span>
       {enableCopy &&
         (copied ? (
-          <Check size={10} className="text-emerald-400 shrink-0" />
+          <Check size={10} className="text-emerald-600 shrink-0" />
         ) : (
           <Copy
             size={10}
-            className="opacity-0 group-hover:opacity-100 transition text-cyan-300 shrink-0"
+            className="opacity-0 group-hover:opacity-100 transition text-cyan-600 shrink-0"
           />
         ))}
     </span>

@@ -89,27 +89,27 @@ export function KanbanColumn({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex flex-col bg-[#080d18] border rounded-2xl p-3 min-h-[550px] max-h-[calc(100vh-210px)] shadow-inner transition-colors duration-200 ${
+      className={`flex flex-col bg-slate-100/70 border rounded-2xl p-3 min-h-[550px] max-h-[calc(100vh-210px)] shadow-xs transition-colors duration-200 ${
         isDragOver
-          ? "border-cyan-400/50 bg-[#0b1424]"
-          : "border-white/[0.06] hover:border-white/10"
+          ? "border-cyan-400 bg-cyan-50/60"
+          : "border-slate-200 hover:border-slate-300"
       }`}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between px-1.5 pb-3 border-b border-white/[0.04]">
+      <div className="flex items-center justify-between px-1.5 pb-3 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <span className={`w-2.5 h-2.5 rounded-full ${config.bg} ${config.border} border`} />
-          <span className="text-xs font-bold text-white tracking-tight">
+          <span className="text-xs font-bold text-slate-800 tracking-tight">
             {label}
           </span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400 font-semibold">
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200/80 font-semibold shadow-2xs">
             {issues.length}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsInlineOpen((prev) => !prev)}
-            className="p-1 text-slate-400 hover:text-cyan-300 hover:bg-white/5 rounded-lg transition"
+            className="p-1 text-slate-400 hover:text-cyan-700 hover:bg-slate-200/60 rounded-lg transition"
             title={`Quick add issue to ${label}`}
           >
             <Plus size={14} />
@@ -118,7 +118,7 @@ export function KanbanColumn({
       </div>
 
       {/* Cards Scroll Container */}
-      <div className="flex-1 overflow-y-auto space-y-2.5 pt-3 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+      <div className="flex-1 overflow-y-auto space-y-2.5 pt-3 pr-1 scrollbar-thin scrollbar-thumb-slate-200">
         {issues.map((issue) => (
           <div
             key={issue.id}
@@ -136,12 +136,12 @@ export function KanbanColumn({
         ))}
 
         {issues.length === 0 && !isInlineOpen && (
-          <div className="h-28 border border-dashed border-white/[0.06] rounded-xl flex flex-col items-center justify-center text-[11px] text-slate-600 gap-1.5 select-none">
+          <div className="h-28 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-[11px] text-slate-400 gap-1.5 select-none bg-white/40">
             <span>No issues in {label}</span>
             <button
               type="button"
               onClick={() => setIsInlineOpen(true)}
-              className="text-[10px] text-cyan-400/70 hover:text-cyan-300 underline underline-offset-2"
+              className="text-[10px] font-semibold text-cyan-600 hover:text-cyan-700 underline underline-offset-2"
             >
               + Create issue
             </button>
@@ -151,8 +151,8 @@ export function KanbanColumn({
 
       {/* Column Footer: Rapid-Fire Inline Creator */}
       {isInlineOpen ? (
-        <form onSubmit={handleInlineSubmit} className="pt-2.5 mt-2 border-t border-white/[0.06]">
-          <div className="flex items-center gap-1.5 bg-[#0e1626] border border-cyan-400/40 rounded-xl p-1.5 focus-within:ring-1 focus-within:ring-cyan-300">
+        <form onSubmit={handleInlineSubmit} className="pt-2.5 mt-2 border-t border-slate-200">
+          <div className="flex items-center gap-1.5 bg-white border border-cyan-400 rounded-xl p-1.5 focus-within:ring-2 focus-within:ring-cyan-500/20 shadow-xs">
             <input
               ref={inputRef}
               type="text"
@@ -166,10 +166,10 @@ export function KanbanColumn({
                   setInlineTitle("");
                 }
               }}
-              className="flex-1 bg-transparent px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none"
+              className="flex-1 bg-transparent px-2 py-1 text-xs text-slate-900 placeholder-slate-400 focus:outline-none"
             />
             {inlineSubmitting ? (
-              <Loader2 size={13} className="animate-spin text-cyan-300 mx-1" />
+              <Loader2 size={13} className="animate-spin text-cyan-600 mx-1" />
             ) : (
               <button
                 type="button"
@@ -177,7 +177,7 @@ export function KanbanColumn({
                   setIsInlineOpen(false);
                   setInlineTitle("");
                 }}
-                className="p-1 text-slate-500 hover:text-slate-300 transition rounded-md"
+                className="p-1 text-slate-400 hover:text-slate-600 transition rounded-md"
                 title="Cancel"
               >
                 <X size={13} />
@@ -192,18 +192,18 @@ export function KanbanColumn({
                 setIsInlineOpen(false);
                 onOpenCreateModal?.(state);
               }}
-              className="hover:text-cyan-300 transition"
+              className="hover:text-cyan-600 font-medium transition"
             >
               Full modal ↗
             </button>
           </div>
         </form>
       ) : (
-        <div className="pt-2 mt-2 border-t border-white/[0.04]">
+        <div className="pt-2 mt-2 border-t border-slate-200">
           <button
             type="button"
             onClick={() => setIsInlineOpen(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] rounded-xl transition"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 hover:bg-white rounded-xl transition shadow-2xs"
           >
             <Plus size={13} />
             <span>New Issue</span>

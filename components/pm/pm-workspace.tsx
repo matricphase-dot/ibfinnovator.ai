@@ -315,18 +315,18 @@ export function ProjectManagementWorkspace({
   });
 
   return (
-    <div className="flex flex-col min-h-full bg-[#070b14] text-slate-100">
+    <div className="flex flex-col min-h-full bg-slate-50 text-slate-900">
       {/* Top Workspace Bar or Sub-Filter Bar */}
       {hideTopBar ? (
         cycles.length > 0 && (activeTab === "board" || activeTab === "list") ? (
-          <div className="px-6 py-2.5 border-b border-white/[0.04] bg-[#090e1a] flex items-center justify-between gap-4">
+          <div className="px-6 py-2.5 border-b border-slate-200 bg-white flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-[11px] font-mono text-slate-400">SPRINT FILTER:</span>
+              <span className="text-[11px] font-mono text-slate-500 font-semibold">SPRINT FILTER:</span>
               <div className="relative inline-flex items-center">
                 <select
                   value={selectedCycleId}
                   onChange={(e) => setSelectedCycleId(e.target.value)}
-                  className="appearance-none pl-7 pr-4 py-1 bg-[#0e1626] border border-white/[0.08] rounded-lg text-xs font-semibold text-slate-300 hover:text-white focus:outline-none focus:ring-1 focus:ring-cyan-300 cursor-pointer"
+                  className="appearance-none pl-7 pr-4 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 cursor-pointer"
                 >
                   <option value="all">All Sprints</option>
                   <option value="unassigned">Backlog (No Sprint)</option>
@@ -343,43 +343,43 @@ export function ProjectManagementWorkspace({
             </div>
             <div className="flex items-center gap-2">
               {isLive && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono text-emerald-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live Sync
                 </span>
               )}
-              <div className="text-[11px] font-mono text-slate-400">
+              <div className="text-[11px] font-mono text-slate-500 font-medium">
                 {filteredIssues.length} issues
               </div>
             </div>
           </div>
         ) : null
       ) : (
-        <div className="px-6 py-4 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-4 bg-[#0a0f1e]/60 backdrop-blur-md sticky top-16 z-30">
+        <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-white sticky top-16 z-30 shadow-xs">
           <div className="flex items-center gap-3">
             <Link
               href={`/projects/${projectId}`}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition"
+              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition"
               title="Back to project overview"
             >
               <ArrowLeft size={16} />
             </Link>
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center font-bold text-xs">
+              <span className="w-8 h-8 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-600 grid place-items-center font-bold text-xs">
                 <FolderKanban size={16} />
               </span>
               <div>
-                <h1 className="text-sm font-bold text-white flex items-center gap-2">
+                <h1 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   {projectName}
-                  <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-cyan-300/10 text-cyan-300 border border-cyan-300/20">
+                  <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200">
                     {projectIdentifier}
                   </span>
                 </h1>
-                <p className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                <p className="text-[11px] text-slate-500 font-mono flex items-center gap-2">
                   <span>{filteredIssues.length} Issues · {cycles.length} Sprints</span>
                   {isLive && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Live
                     </span>
                   )}
@@ -396,7 +396,7 @@ export function ProjectManagementWorkspace({
               <select
                 value={selectedCycleId}
                 onChange={(e) => setSelectedCycleId(e.target.value)}
-                className="appearance-none pl-7 pr-4 py-1.5 bg-[#0e1626] border border-white/[0.08] rounded-xl text-xs font-semibold text-slate-300 hover:text-white focus:outline-none focus:ring-1 focus:ring-cyan-300 cursor-pointer"
+                className="appearance-none pl-7 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 cursor-pointer"
               >
                 <option value="all">All Sprints</option>
                 <option value="unassigned">Backlog (No Sprint)</option>
@@ -412,13 +412,13 @@ export function ProjectManagementWorkspace({
             </div>
           )}
 
-          <div className="flex items-center gap-1 p-1 bg-[#0e1626] border border-white/[0.08] rounded-xl text-xs font-semibold">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold">
             <button
               onClick={() => handleTabChange("board")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
                 activeTab === "board"
-                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Kanban size={14} />
@@ -428,8 +428,8 @@ export function ProjectManagementWorkspace({
               onClick={() => handleTabChange("list")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
                 activeTab === "list"
-                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <List size={14} />
@@ -439,8 +439,8 @@ export function ProjectManagementWorkspace({
               onClick={() => handleTabChange("cycles")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
                 activeTab === "cycles"
-                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <RotateCw size={14} />
@@ -450,8 +450,8 @@ export function ProjectManagementWorkspace({
               onClick={() => handleTabChange("modules")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
                 activeTab === "modules"
-                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Layers size={14} />
@@ -461,8 +461,8 @@ export function ProjectManagementWorkspace({
               onClick={() => handleTabChange("pages")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
                 activeTab === "pages"
-                  ? "bg-cyan-300 text-slate-950 font-bold shadow-xs"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <FileText size={14} />
@@ -475,7 +475,7 @@ export function ProjectManagementWorkspace({
         <div className="flex items-center gap-2">
           <Link
             href="/chat"
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-800/80 hover:bg-slate-700/80 text-cyan-300 text-xs font-semibold rounded-xl border border-cyan-500/20 transition hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition shadow-xs"
             title="Open Team Chat"
           >
             <MessageSquare size={14} />
@@ -483,7 +483,7 @@ export function ProjectManagementWorkspace({
           </Link>
           <button
             onClick={() => openCreateModal("todo")}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-300 hover:bg-cyan-200 text-slate-950 text-xs font-bold rounded-xl transition shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
           >
             <Plus size={15} />
             New Issue
@@ -496,13 +496,13 @@ export function ProjectManagementWorkspace({
       <div className="flex-1 p-6 overflow-hidden flex flex-col">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="flex items-center gap-2 text-slate-400 text-xs">
-              <Loader2 size={18} className="animate-spin text-cyan-300" />
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <Loader2 size={18} className="animate-spin text-cyan-600" />
               Loading project management workspace…
             </div>
           </div>
         ) : error ? (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
             {error}
           </div>
         ) : (

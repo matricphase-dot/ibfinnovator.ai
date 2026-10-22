@@ -125,7 +125,7 @@ export function IbfTopbar({
   ];
 
   return (
-    <header className="sticky top-0 z-30 bg-[#0d1422] border-b border-white/[0.06] select-none flex-shrink-0">
+    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 select-none flex-shrink-0 shadow-xs">
       {/* 1. TOP BAR: Hamburger + Breadcrumbs + Search Trigger + New Issue */}
       <div className="h-14 px-4 sm:px-6 flex items-center justify-between gap-4">
         {/* Left: Mobile Toggle & Breadcrumbs */}
@@ -134,7 +134,7 @@ export function IbfTopbar({
             <button
               type="button"
               onClick={onToggleMobileSidebar}
-              className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition"
+              className="lg:hidden p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition"
               title="Open Navigation"
             >
               <Menu size={18} />
@@ -146,16 +146,16 @@ export function IbfTopbar({
             {breadcrumbs ? (
               breadcrumbs.map((crumb, idx) => (
                 <React.Fragment key={crumb.label}>
-                  {idx > 0 && <ChevronRight size={12} className="text-slate-600 flex-shrink-0" />}
+                  {idx > 0 && <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />}
                   {crumb.href ? (
                     <Link
                       href={crumb.href}
-                      className="text-slate-400 hover:text-white truncate transition"
+                      className="text-slate-600 hover:text-slate-900 truncate transition"
                     >
                       {crumb.label}
                     </Link>
                   ) : (
-                    <span className="text-white font-bold truncate">{crumb.label}</span>
+                    <span className="text-slate-900 font-bold truncate">{crumb.label}</span>
                   )}
                 </React.Fragment>
               ))
@@ -163,21 +163,21 @@ export function IbfTopbar({
               <>
                 <Link
                   href="/dashboard"
-                  className="text-slate-400 hover:text-white truncate transition"
+                  className="text-slate-600 hover:text-slate-900 truncate transition"
                 >
-                  {workspaceName || "IBF Foundry"}
+                  {workspaceName || "Workspace"}
                 </Link>
 
                 {projectName && (
                   <>
-                    <ChevronRight size={12} className="text-slate-600 flex-shrink-0" />
+                    <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
                     <Link
                       href={projectId ? `/projects/${projectId}/board` : "/dashboard"}
-                      className="text-slate-300 hover:text-white truncate flex items-center gap-1.5 transition"
+                      className="text-slate-700 hover:text-slate-900 truncate flex items-center gap-1.5 transition font-semibold"
                     >
                       <span className="truncate">{projectName}</span>
                       {projectIdentifier && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/5 text-cyan-300 border border-white/5">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
                           {projectIdentifier}
                         </span>
                       )}
@@ -187,8 +187,8 @@ export function IbfTopbar({
 
                 {activeView && (
                   <>
-                    <ChevronRight size={12} className="text-slate-600 flex-shrink-0" />
-                    <span className="text-white font-bold truncate">{viewTitle}</span>
+                    <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
+                    <span className="text-slate-900 font-bold truncate">{viewTitle}</span>
                   </>
                 )}
               </>
@@ -201,15 +201,15 @@ export function IbfTopbar({
           <button
             type="button"
             onClick={onOpenCommandPalette}
-            className="w-full flex items-center justify-between px-3 py-1.5 bg-[#0a0f1d] hover:bg-[#10182b] border border-white/[0.08] hover:border-cyan-400/30 rounded-xl text-xs text-slate-400 transition group shadow-inner"
+            className="w-full flex items-center justify-between px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-xs text-slate-600 transition group"
           >
             <div className="flex items-center gap-2">
-              <Search size={14} className="text-slate-500 group-hover:text-cyan-300 transition" />
-              <span className="text-slate-400 group-hover:text-slate-300">
+              <Search size={14} className="text-slate-400 group-hover:text-cyan-700 transition" />
+              <span className="text-slate-500 group-hover:text-slate-700">
                 Search or jump to...
               </span>
             </div>
-            <div className="flex items-center gap-1 font-mono text-[10px] bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 rounded text-slate-400 group-hover:text-cyan-300 group-hover:border-cyan-400/30 transition">
+            <div className="flex items-center gap-1 font-mono text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 group-hover:text-slate-700 transition shadow-xs">
               <span>{isMac ? "⌘" : "Ctrl"}</span>
               <span>K</span>
             </div>
@@ -221,7 +221,7 @@ export function IbfTopbar({
           <button
             type="button"
             onClick={onOpenCommandPalette}
-            className="md:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition"
+            className="md:hidden p-2 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition"
             title="Search (Cmd+K)"
           >
             <Search size={16} />
@@ -231,12 +231,12 @@ export function IbfTopbar({
           <button
             type="button"
             onClick={onOpenCreateIssue}
-            className="flex items-center gap-2 px-3 py-1.5 bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-bold text-xs rounded-xl transition shadow-[0_0_15px_rgba(0,245,212,0.2)] active:scale-95"
+            className="flex items-center gap-2 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl transition shadow-xs active:scale-95"
             title="Create New Issue (Press C)"
           >
             <Plus size={14} />
             <span className="hidden sm:inline">New Issue</span>
-            <kbd className="hidden sm:inline font-mono text-[10px] bg-slate-950/20 px-1 rounded font-semibold">
+            <kbd className="hidden sm:inline font-mono text-[10px] bg-cyan-700/60 px-1 rounded font-semibold text-white">
               C
             </kbd>
           </button>
@@ -245,7 +245,7 @@ export function IbfTopbar({
 
       {/* 2. PROJECT VIEW TABS (Board, List, Cycles, Modules, Pages, Settings) */}
       {showTabs && projectName && (
-        <div className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto scrollbar-none border-t border-white/[0.04]">
+        <div className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto scrollbar-none border-t border-slate-100">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeView === tab.id;
@@ -257,18 +257,18 @@ export function IbfTopbar({
                 onClick={() => handleTabClick(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition border-b-2 whitespace-nowrap ${
                   isActive
-                    ? "border-[#00f5d4] text-[#00f5d4] bg-cyan-400/[0.04]"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.02]"
+                    ? "border-cyan-600 text-cyan-700 font-bold bg-cyan-50/50"
+                    : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                <Icon size={14} className={isActive ? "text-[#00f5d4]" : "opacity-75"} />
+                <Icon size={14} className={isActive ? "text-cyan-600" : "opacity-75"} />
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span
                     className={`ml-1 text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                       isActive
-                        ? "bg-cyan-400/20 text-cyan-300"
-                        : "bg-white/5 text-slate-400"
+                        ? "bg-cyan-100 text-cyan-800"
+                        : "bg-slate-100 text-slate-600"
                     }`}
                   >
                     {tab.badge}

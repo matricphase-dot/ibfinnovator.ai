@@ -96,7 +96,7 @@ export function KanbanBoard({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search board issues..."
-              className="w-full pl-8 pr-3 py-1.5 bg-[#0a0f1d] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-300 transition"
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 shadow-xs transition"
             />
           </div>
         </div>
@@ -110,7 +110,7 @@ export function KanbanBoard({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as BoardSortOption)}
-              className="appearance-none pl-7 pr-4 py-1.5 bg-[#0a0f1d] border border-white/[0.08] rounded-xl text-xs font-semibold text-slate-300 hover:text-white focus:outline-none focus:ring-1 focus:ring-cyan-300 cursor-pointer"
+              className="appearance-none pl-7 pr-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 shadow-xs cursor-pointer"
             >
               <option value="manual">Sort: Default</option>
               <option value="priority">Sort: Priority (Urgent 1st)</option>
@@ -118,14 +118,14 @@ export function KanbanBoard({
               <option value="sequence">Sort: Newest Sequence</option>
             </select>
           </div>
-          <span className="text-[11px] font-mono text-slate-500 px-1">
+          <span className="text-[11px] font-mono text-slate-500 px-1 font-medium">
             {processedIssues.length} visible
           </span>
         </div>
       </div>
 
       {/* 5-Lane Kanban Grid */}
-      <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/10">
+      <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-200">
         <div className="grid grid-cols-5 gap-4 min-w-[1100px] h-full items-start">
           {BOARD_COLUMNS.map((col) => {
             const colIssues = processedIssues.filter((i) => i.state === col.state);

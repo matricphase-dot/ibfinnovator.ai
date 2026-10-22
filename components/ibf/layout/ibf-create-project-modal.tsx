@@ -74,18 +74,18 @@ export function IbfCreateProjectModal({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-md bg-[#0d1424] border border-white/[0.1] rounded-2xl shadow-2xl p-6 z-50 animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+      <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 z-50 animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 flex items-center justify-center">
+            <span className="w-8 h-8 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-600 flex items-center justify-center">
               <FolderKanban size={16} />
             </span>
-            <h2 className="text-base font-bold text-white tracking-tight">Create Project</h2>
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">Create Project</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition"
           >
             <X size={16} />
           </button>
@@ -93,7 +93,7 @@ export function IbfCreateProjectModal({
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Project Title
             </label>
             <input
@@ -108,12 +108,12 @@ export function IbfCreateProjectModal({
                   setIdentifier(e.target.value.slice(0, 3).toUpperCase());
                 }
               }}
-              className="w-full px-3.5 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Identifier Prefix (1-5 chars)
             </label>
             <input
@@ -125,18 +125,18 @@ export function IbfCreateProjectModal({
               onChange={(e) =>
                 setIdentifier(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
               }
-              className="w-full px-3.5 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm font-mono text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition uppercase"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-cyan-700 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition uppercase"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Domain / Vertical
             </label>
             <select
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white focus:outline-none focus:border-cyan-300 transition"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
             >
               <option value="Technology">Technology & Software</option>
               <option value="AI & Machine Learning">AI & Machine Learning</option>
@@ -148,7 +148,7 @@ export function IbfCreateProjectModal({
           </div>
 
           <div>
-            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Description (Optional)
             </label>
             <textarea
@@ -156,22 +156,22 @@ export function IbfCreateProjectModal({
               placeholder="Briefly describe what this project builds..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-[#080d18] border border-white/[0.1] rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-300 transition resize-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition resize-none"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
+              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !title.trim()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-cyan-300 hover:bg-cyan-200 text-slate-950 font-bold text-xs rounded-xl transition disabled:opacity-50 shadow-md"
+              className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs rounded-xl transition disabled:opacity-50 shadow-xs"
             >
               {submitting ? (
                 <>

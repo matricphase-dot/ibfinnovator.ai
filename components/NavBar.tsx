@@ -22,13 +22,13 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
   return (
     <>
       <header
-        className={`h-16 flex items-center px-5 lg:px-8 border-b z-50 ${dashboard ? "bg-[#0d1422] border-white/[.07]" : "bg-[#0a0f1e]/80 backdrop-blur-xl border-white/[.07] sticky top-0"}`}
+        className={`h-16 flex items-center px-5 lg:px-8 border-b z-50 ${dashboard ? "bg-white border-slate-200 shadow-2xs" : "bg-[#0a0f1e]/80 backdrop-blur-xl border-white/[.07] sticky top-0"}`}
       >
         <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="w-9 h-9 rounded-lg bg-cyan-300 grid place-items-center text-slate-950 shadow-[0_0_25px_rgba(0,245,212,.15)] transition group-hover:rotate-6">
+          <span className="w-9 h-9 rounded-lg bg-cyan-600 grid place-items-center text-white shadow-xs transition group-hover:rotate-6">
             <Sparkles size={18} />
           </span>
-          <span className="font-black text-xl tracking-tight text-white">
+          <span className={`font-black text-xl tracking-tight ${dashboard ? "text-slate-900" : "text-white"}`}>
             IBF
           </span>
           {!dashboard && (
@@ -56,28 +56,28 @@ export default function NavBar({ dashboard = false }: { dashboard?: boolean }) {
               <Link
                 href="/notifications"
                 aria-label="Notifications"
-                className="relative p-2 text-slate-400 hover:text-cyan-300"
+                className="relative p-2 text-slate-400 hover:text-cyan-600"
               >
                 <Bell size={20} />
                 <span className="sr-only" aria-live="polite">
                   Unread notifications available
                 </span>
-                <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-300 border-2 border-[#0d1422]" />
+                <i className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-600 border-2 border-white" />
               </Link>
-              <div className="h-7 w-px bg-white/10" />
+              <div className="h-7 w-px bg-slate-200" />
               <Link href="/settings" className="flex items-center gap-3 group">
-                <div className="w-9 h-9 rounded-full bg-cyan-300/10 border border-cyan-300/20 text-cyan-300 grid place-items-center font-bold text-sm">
+                <div className="w-9 h-9 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 grid place-items-center font-bold text-sm">
                   {initials}
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-bold leading-none text-white group-hover:text-cyan-300">
+                  <p className="text-sm font-bold leading-none text-slate-900 group-hover:text-cyan-600">
                     {name}
                   </p>
                   <p className="text-xs text-slate-500 mt-1 capitalize">
                     {role.toLowerCase()}
                   </p>
                 </div>
-                <ChevronDown size={15} className="text-slate-500" />
+                <ChevronDown size={15} className="text-slate-400" />
               </Link>
             </>
           ) : (

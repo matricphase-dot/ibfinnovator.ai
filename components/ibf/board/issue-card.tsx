@@ -82,18 +82,18 @@ export function IssueCard({
           onClick?.();
         }
       }}
-      className="p-3 bg-[var(--plane-surface-1)] hover:bg-[var(--plane-surface-2)] border border-[var(--plane-border-subtle)] hover:border-[var(--plane-border-medium)] rounded-[var(--plane-radius-md)] transition-all duration-150 cursor-pointer select-none group shadow-xs hover:shadow-md flex flex-col gap-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+      className="p-3.5 bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-slate-300 rounded-xl transition-all duration-150 cursor-pointer select-none group shadow-2xs hover:shadow-xs flex flex-col gap-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
     >
       {/* Header: ID + Estimate + State */}
       <div className="flex items-center justify-between">
         <PlaneSequenceBadge
           identifier={projectIdentifier}
           sequence={issue.sequence_id}
-          className="group-hover:text-cyan-300"
+          className="group-hover:text-cyan-600"
         />
         <div className="flex items-center gap-1.5">
           {issue.estimate_points !== null && issue.estimate_points !== undefined && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/5 text-slate-300 border border-white/10 font-mono">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
               {issue.estimate_points} pts
             </span>
           )}
@@ -102,7 +102,7 @@ export function IssueCard({
       </div>
 
       {/* Title */}
-      <h3 className="text-xs font-semibold text-white leading-snug line-clamp-2 group-hover:text-slate-100">
+      <h3 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-cyan-700 transition-colors">
         {issue.title}
       </h3>
 
@@ -110,7 +110,7 @@ export function IssueCard({
       {((issue.labels && issue.labels.length > 0) || issue.module || hasSubtasks) && (
         <div className="flex items-center gap-1.5 flex-wrap">
           {issue.module && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 truncate max-w-[130px]">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200 truncate max-w-[130px]">
               ⊡ {issue.module.name}
             </span>
           )}
@@ -131,12 +131,12 @@ export function IssueCard({
             <span
               className={`text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1 border ${
                 allSubtasksDone
-                  ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20"
-                  : "bg-white/5 text-slate-400 border-white/10"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-slate-100 text-slate-600 border-slate-200"
               }`}
               title={`Subtasks: ${completedSubtasks} of ${totalSubtasks} completed`}
             >
-              <CheckSquare size={11} className={allSubtasksDone ? "text-emerald-400" : "text-slate-400"} />
+              <CheckSquare size={11} className={allSubtasksDone ? "text-emerald-600" : "text-slate-500"} />
               {completedSubtasks}/{totalSubtasks}
             </span>
           )}
@@ -144,13 +144,13 @@ export function IssueCard({
       )}
 
       {/* Footer: Priority + Due Date + Assignee */}
-      <div className="flex items-center justify-between pt-1 border-t border-[var(--plane-border-subtle)] text-[11px] text-slate-400">
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
         <div className="flex items-center gap-2">
           <span title={`Priority: ${issue.priority}`}>
             <PriorityIcon priority={issue.priority} size={13} />
           </span>
           {issue.due_date && (
-            <span className="flex items-center gap-1 text-[10px] text-slate-400">
+            <span className="flex items-center gap-1 text-[10px] text-slate-500">
               <Calendar size={11} />
               {issue.due_date}
             </span>
@@ -165,7 +165,7 @@ export function IssueCard({
             size="xs"
           />
         ) : (
-          <span title="Unassigned" className="text-slate-600">
+          <span title="Unassigned" className="text-slate-400">
             <User size={13} />
           </span>
         )}

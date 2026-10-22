@@ -3,52 +3,52 @@
 @import "tailwindcss";
 
 :root {
-  /* IBF Plane Workspace Theme Tokens */
-  --ibf-canvas: #080c14;            /* Main content area */
-  --ibf-sidebar: #0d121f;           /* Sidebar navigation */
-  --ibf-topbar: #0d1422;            /* Top navigation bar */
-  --ibf-surface: #111a2e;           /* Cards, dropdowns, panels */
-  --ibf-surface-hover: #16223b;     /* Interactive hover state */
-  --ibf-surface-active: #1b2947;    /* Selected row or active tab */
+  /* IBF Plane Workspace Theme Tokens (Light & Bright Modern SaaS) */
+  --ibf-canvas: #f8fafc;            /* Clean light slate background */
+  --ibf-sidebar: #ffffff;           /* Crisp white sidebar */
+  --ibf-topbar: #ffffff;            /* Crisp white topbar */
+  --ibf-surface: #ffffff;           /* Cards, dropdowns, panels */
+  --ibf-surface-hover: #f1f5f9;     /* Interactive hover state */
+  --ibf-surface-active: #e2e8f0;    /* Selected row or active tab */
   
-  --ibf-border-subtle: rgba(255, 255, 255, 0.06);
-  --ibf-border-medium: rgba(255, 255, 255, 0.12);
+  --ibf-border-subtle: #e2e8f0;
+  --ibf-border-medium: #cbd5e1;
   
-  --ibf-brand: #00f5d4;             /* IBF Cyan Accent */
-  --ibf-brand-dim: rgba(0, 245, 212, 0.1);
+  --ibf-brand: #0891b2;             /* Clean Cyan Accent (accessible on light: cyan-600) */
+  --ibf-brand-dim: rgba(8, 145, 178, 0.08);
   
-  --ibf-text-primary: #f8fafc;
-  --ibf-text-secondary: #94a3b8;
-  --ibf-text-muted: #64748b;
+  --ibf-text-primary: #0f172a;      /* slate-900 */
+  --ibf-text-secondary: #475569;    /* slate-600 */
+  --ibf-text-muted: #94a3b8;        /* slate-400 */
 
   /* Plane 1:1 Design System Tokens */
-  --plane-canvas: #080c14;
-  --plane-sidebar: #0d121f;
-  --plane-topbar: #0d1422;
-  --plane-surface-1: #0f172a;
-  --plane-surface-2: #131f38;
-  --plane-surface-hover: #182645;
-  --plane-surface-active: #1e2f54;
+  --plane-canvas: #f8fafc;
+  --plane-sidebar: #ffffff;
+  --plane-topbar: #ffffff;
+  --plane-surface-1: #ffffff;
+  --plane-surface-2: #f8fafc;
+  --plane-surface-hover: #f1f5f9;
+  --plane-surface-active: #e2e8f0;
 
-  --plane-border-subtle: rgba(255, 255, 255, 0.06);
-  --plane-border-medium: rgba(255, 255, 255, 0.12);
-  --plane-border-strong: rgba(255, 255, 255, 0.20);
+  --plane-border-subtle: #e2e8f0;
+  --plane-border-medium: #cbd5e1;
+  --plane-border-strong: #94a3b8;
 
-  --plane-accent: #00f5d4;
-  --plane-accent-dim: rgba(0, 245, 212, 0.12);
-  --plane-accent-glow: rgba(0, 245, 212, 0.25);
+  --plane-accent: #0891b2;
+  --plane-accent-dim: rgba(8, 145, 178, 0.08);
+  --plane-accent-glow: rgba(8, 145, 178, 0.20);
 
   --plane-state-backlog: #64748b;
-  --plane-state-todo: #94a3b8;
-  --plane-state-in-progress: #f59e0b;
-  --plane-state-done: #10b981;
-  --plane-state-canceled: #ef4444;
+  --plane-state-todo: #475569;
+  --plane-state-in-progress: #d97706;
+  --plane-state-done: #059669;
+  --plane-state-canceled: #dc2626;
 
-  --plane-priority-urgent: #ef4444;
-  --plane-priority-high: #f97316;
-  --plane-priority-medium: #eab308;
-  --plane-priority-low: #3b82f6;
-  --plane-priority-none: #475569;
+  --plane-priority-urgent: #dc2626;
+  --plane-priority-high: #ea580c;
+  --plane-priority-medium: #ca8a04;
+  --plane-priority-low: #2563eb;
+  --plane-priority-none: #64748b;
 
   --plane-radius-sm: 4px;
   --plane-radius-md: 8px;
@@ -81,8 +81,8 @@ html {
 
 body {
   margin: 0;
-  background: var(--ibf-canvas, #080c14);
-  color: var(--ibf-text-primary, #f8fafc);
+  background: var(--ibf-canvas, #f8fafc);
+  color: var(--ibf-text-primary, #0f172a);
   font-family: var(--font-body);
   font-weight: 400;
   line-height: 1.6;
@@ -297,38 +297,38 @@ button:disabled {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #64748b;
   transition: all 0.15s ease;
 }
 
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 .sidebar-link.active {
-  background: rgba(0, 245, 212, 0.1);
-  color: #00f5d4;
-  border: 1px solid rgba(0, 245, 212, 0.2);
+  background: #ecfeff;
+  color: #0891b2;
+  border: 1px solid #a5f3fc;
 }
 
 .app-main {
   min-height: calc(100vh - 64px);
-  background: #080c14;
-  color: #f8fafc;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .app-main article {
-  background: #0d1424;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border-color: #e2e8f0;
 }
 
 .app-main input,
 .app-main textarea,
 .app-main select {
-  background: #0e1626;
-  color: #f8fafc;
-  border-color: rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
 .editorial-wrap {
