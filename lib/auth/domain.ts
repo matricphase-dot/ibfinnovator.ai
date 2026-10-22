@@ -24,6 +24,18 @@ export const DEFAULT_APP_HOME = IS_PROD
 export const DEFAULT_SIGNIN_URL = `${MARKETING_ORIGIN}/auth/signin`;
 
 /**
+ * Builds the canonical signin URL on the marketing apex domain
+ * with an optional encoded target destination on the app domain.
+ */
+export function getSigninUrl(nextPath?: string): string {
+  if (!nextPath) return DEFAULT_SIGNIN_URL;
+  const target = nextPath.startsWith("http")
+    ? nextPath
+    : `${APP_ORIGIN}${nextPath.startsWith("/") ? nextPath : "/" + nextPath}`;
+  return `${DEFAULT_SIGNIN_URL}?next=${encodeURIComponent(target)}`;
+}
+
+/**
  * Validates and sanitizes a post-auth redirect target.
  * Only allows trusted origins (app.innovators-global.com, localhost in dev)
  * or local relative paths.

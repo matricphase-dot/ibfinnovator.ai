@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { DEFAULT_SIGNIN_URL, MARKETING_ORIGIN } from "@/lib/auth/domain";
 
 export interface IbfUserMenuProps {
   userProfile?: {
@@ -63,15 +64,15 @@ export function IbfUserMenu({ userProfile, isCollapsed = false }: IbfUserMenuPro
       await supabase.auth.signOut();
       await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
       toast.success("Logged out successfully");
-      router.push("/auth/signin");
+      window.location.assign(DEFAULT_SIGNIN_URL);
     } catch {
-      router.push("/auth/signin");
+      window.location.assign(DEFAULT_SIGNIN_URL);
     }
   }
 
   function handleCopyInvite() {
     if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.origin + "/auth/signup");
+      navigator.clipboard.writeText(`${MARKETING_ORIGIN}/auth/signup`);
       toast.success("Workspace invite link copied to clipboard!");
       setIsOpen(false);
     }

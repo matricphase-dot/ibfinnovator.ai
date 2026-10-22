@@ -75,14 +75,41 @@ const PROTECTED_PREFIXES = [
   "/bookmarks",
   "/auth/complete-onboarding",
   "/auth/choose-role",
-  "/projects",
   "/your-issues",
 ];
 
+const PROTECTED_PROJECT_SUBROUTES = [
+  "/board",
+  "/list",
+  "/cycles",
+  "/modules",
+  "/pages",
+  "/analytics",
+  "/settings",
+];
+
 function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p + "/"),
-  );
+  if (PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    return true;
+  }
+
+  // Creating a new project requires authentication
+  if (pathname === "/projects/new" || pathname.startsWith("/projects/new/")) {
+    return true;
+  }
+
+  // Internal workspace project management subroutes require authentication
+  if (pathname.startsWith("/projects/")) {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length >= 3) {
+      const sub = `/${segments[2]}`;
+      if (PROTECTED_PROJECT_SUBROUTES.includes(sub)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function touchPresenceCookie(response: NextResponse, req: NextRequest): NextResponse {
@@ -194,6 +221,11 @@ export default async function middleware(req: NextRequest) {
   if (isAppDomain) {
     // Public informational pages belong on the marketing apex
     if (pathname === "/privacy" || pathname === "/help") {
+      return NextResponse.redirect(`${MARKETING_ORIGIN}${pathname}${search}`);
+    }
+
+    // Public projects directory & public project profiles belong on the marketing apex
+    if (!isProtectedPath(pathname) && (pathname === "/projects" || pathname.startsWith("/projects/"))) {
       return NextResponse.redirect(`${MARKETING_ORIGIN}${pathname}${search}`);
     }
 

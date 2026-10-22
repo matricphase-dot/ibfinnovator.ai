@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import FileUploader, { type UploadedFile } from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
 import { useSupabaseBrowser } from "@/lib/supabase/browser";
+import { getSigninUrl } from "@/lib/auth/domain";
 export default function Team() {
   const supabase = useSupabaseBrowser();
   const { projectId } = useParams<{ projectId: string }>(),
@@ -28,7 +29,7 @@ export default function Team() {
       if (!r.ok) {
         // ROOT FIX: defaults + 404 guard (was: stale room persists, .members crash).
         if (r.status === 401) {
-          window.location.assign(`/auth/signin?next=/team/${projectId}`);
+          window.location.assign(getSigninUrl(`/team/${projectId}`));
           return;
         }
         if (r.status === 404) setD(null);

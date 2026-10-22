@@ -25,6 +25,25 @@ export async function getActiveWorkspace(
     return membership.workspace as unknown as Workspace;
   }
 
+  // 1b. Check if user owns any workspace directly
+  const { data: ownedWs } = await supabase
+    .from("workspaces")
+    .select("*")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (ownedWs) {
+    await supabase
+      .from("workspace_members")
+      .upsert(
+        { workspace_id: ownedWs.id, user_id: userId, role: "owner" },
+        { onConflict: "workspace_id,user_id" },
+      );
+    return ownedWs as Workspace;
+  }
+
   // 2. Try primary community workspace
   const { data: communityWs } = await supabase
     .from("workspaces")
@@ -43,29 +62,24 @@ export async function getActiveWorkspace(
     return communityWs as Workspace;
   }
 
-  // 3. Fallback: retrieve any existing workspace or create one
-  const { data: anyWs } = await supabase
-    .from("workspaces")
-    .select("*")
-    .order("created_at", { ascending: true })
-    .limit(1)
+  // 3. Fallback: Create an isolated personal workspace (NEVER hijack another tenant's workspace)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name, username")
+    .eq("id", userId)
     .maybeSingle();
 
-  if (anyWs) {
-    await supabase
-      .from("workspace_members")
-      .upsert(
-        { workspace_id: anyWs.id, user_id: userId, role: "member" },
-        { onConflict: "workspace_id,user_id" },
-      );
-    return anyWs as Workspace;
-  }
+  const baseName = profile?.name?.trim() || profile?.username?.trim() || "Personal";
+  const userPrefix = (profile?.username || `user-${userId.substring(0, 8)}`)
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-");
+  const uniqueSlug = `${userPrefix}-ws`;
 
-  const { data: created } = await supabase
+  const { data: created, error: createErr } = await supabase
     .from("workspaces")
     .insert({
-      name: "IBF Community",
-      slug: "ibf-community",
+      name: `${baseName}'s Workspace`,
+      slug: uniqueSlug,
       owner_id: userId,
     })
     .select()
@@ -78,6 +92,10 @@ export async function getActiveWorkspace(
       role: "owner",
     });
     return created as Workspace;
+  }
+
+  if (createErr) {
+    console.error("Failed to create isolated personal workspace:", createErr);
   }
 
   return null;

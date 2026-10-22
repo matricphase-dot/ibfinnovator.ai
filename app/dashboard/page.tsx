@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { getSigninUrl } from "@/lib/auth/domain";
 
 interface Project {
   id: string;
@@ -51,8 +52,8 @@ export default function Dashboard() {
           const profileData = await profileRes.json().catch(() => null);
           setProfile(profileData);
         } else {
-          // If unauthenticated, redirect to signin
-          window.location.assign("/auth/signin?next=/dashboard");
+          // If unauthenticated, redirect to canonical signin on marketing apex
+          window.location.assign(getSigninUrl("/dashboard"));
           return;
         }
 

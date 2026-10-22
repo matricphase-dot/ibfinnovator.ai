@@ -15,6 +15,7 @@ import { FormEvent, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import FileUploader from "@/components/FileUploader";
 import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { getSigninUrl } from "@/lib/auth/domain";
 type Tab = "profile" | "notifications" | "security" | "investor";
 export default function Settings() {
   const [p, setP] = useState<any>(null),
@@ -36,7 +37,7 @@ export default function Settings() {
       .then((x) => {
         // ROOT FIX: 401 {error} must not become profile (was: p.name.slice crash).
         if (!x || x.error || !x.id) {
-          window.location.assign("/auth/signin?next=/settings");
+          window.location.assign(getSigninUrl("/settings"));
           return;
         }
         setP(x);

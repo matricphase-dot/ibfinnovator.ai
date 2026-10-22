@@ -8,6 +8,7 @@ import FileUploader, { type UploadedFile } from "@/components/FileUploader";
 import AttachmentPreview from "@/components/AttachmentPreview";
 import MessageActions from "@/components/MessageActions";
 import { useSupabaseBrowser } from "@/lib/supabase/browser";
+import { getSigninUrl } from "@/lib/auth/domain";
 export default function DirectChat() {
   const supabase = useSupabaseBrowser(),
     { projectId } = useParams<{ projectId: string }>(),
@@ -41,7 +42,7 @@ export default function DirectChat() {
         setMsgs(Array.isArray(d.messages) ? d.messages : []);
         setError("");
       } else if (r.status === 401) {
-        window.location.assign(`/auth/signin?next=/chat/direct/${projectId}`);
+        window.location.assign(getSigninUrl(`/chat/direct/${projectId}`));
         return;
       } else setError(typeof d?.error === "string" ? d.error : "Unable to load chat");
     } catch (e: unknown) {

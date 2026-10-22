@@ -209,7 +209,11 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        set $forwarded_proto $http_x_forwarded_proto;
+        if ($forwarded_proto = "") {
+            set $forwarded_proto $scheme;
+        }
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 120s;
         proxy_connect_timeout 30s;
